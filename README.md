@@ -78,6 +78,10 @@ Firecrawl use is capped per source per day (`FIRECRAWL_DAILY` in `gt/feeds.py`),
 - **Aircraft types and operators come from hexdb.io** (free, keyless), looked up once per airframe and cached.
 - Country shapes are Natural Earth (public domain). The bundled MapLibre GL JS keeps its own BSD licence header.
 
+## Licence
+
+Ground Truth's own code is released under the [MIT License](LICENSE). Bundled third-party files keep their own terms: MapLibre GL JS in `web/vendor/` is BSD-3-Clause (`web/vendor/maplibre-LICENSE.txt`) and the Natural Earth shapes in `ref/` are public domain. The MIT License covers the code only, not the data it fetches: each feed's data stays under its provider's terms (see Data terms above).
+
 ## Caveats
 
 - The source map is one curator's selection of social-media posts. Treat it as unverified.

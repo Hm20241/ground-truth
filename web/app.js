@@ -1,0 +1,679 @@
+/* Ground Truth v0.6 - watch floor client. All API paths are relative so the app runs behind a prefix. */
+(() => {
+  "use strict";
+  const THEATRES = {
+    "global": ["Global", "#e4e7ea", [-20, 18, 4]],
+    "ukraine-russia": ["Ukraine – Russia", "#5aa7ff", [36.5, 49.2, 5.2]],
+    "middle-east": ["Middle East / Gulf", "#f2a33a", [50.5, 27.5, 4.6]],
+    "europe-nato": ["Europe / NATO", "#a98bff", [15, 54, 3.8]],
+    "americas": ["Americas / US", "#3ecf8e", [-85, 33, 3.2]],
+    "indo-pacific": ["Indo-Pacific", "#f472b6", [125, 27, 3.8]],
+    "south-asia": ["South & Central Asia", "#2dd4bf", [70, 30, 4]],
+    "africa": ["Africa", "#e5c84b", [20, 8, 3]],
+  };
+  const CATS = {
+    strike: ["Strike / explosion", "#f05252"], energy: ["Energy / infrastructure", "#f59e0b"],
+    missile: ["Missile / air defence", "#e879f9"], drone: ["Drone", "#a3e635"], maritime: ["Maritime", "#38bdf8"],
+    alert: ["Alert / force posture", "#fde047"], cyber: ["Comms / outage", "#2dd4bf"], security: ["Security incident", "#c084fc"],
+    casualty: ["Casualties", "#fb7185"], forces: ["Forces / equipment", "#94a3b8"], aviation: ["Aviation", "#93c5fd"],
+    political: ["Political / statement", "#818cf8"], report: ["Report", "#9ca3af"], other: ["Other", "#6b7280"],
+  };
+  const UKMTO_COL = { Attack: "#f05252", "Suspicious Activity": "#f59e0b", Advisory: "#38bdf8", Hijack: "#c084fc" };
+  const S = { theatre: "global", cats: new Set(Object.keys(CATS)), q: "", hours: 0, brush: null,
+              events: null, feeds: {}, status: {}, summary: {}, sel: null, ai: { ov: null, ev: {} } };
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const api = (p) => fetch("api/" + p, { cache: "no-store" }).then((r) => (r.ok ? r.json() : Promise.reject(r.status)));
+  const fmtT = (ms) => new Date(ms).toISOString().slice(11, 16) + "Z";
+  const fmtD = (ms) => new Date(ms).toISOString().slice(5, 10).replace("-", "/");
+  const ago = (ms) => { const m = Math.round((Date.now() - ms) / 60000); return m < 60 ? m + "m ago" : m < 2880 ? Math.round(m / 60) + "h ago" : Math.round(m / 1440) + "d ago"; };
+  const nf = (n) => (n == null ? "–" : Number(n).toLocaleString("en-US"));
+
+  // ---------- map ----------
+  const map = new maplibregl.Map({
+    container: "map", attributionControl: { compact: true }, center: [30, 35], zoom: 2.4, maxPitch: 0, dragRotate: false,
+    style: {
+      version: 8,
+      glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
+      sources: {
+        base: { type: "raster", tileSize: 256, maxzoom: 16, attribution: "Basemap © Esri",
+          tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"] },
+        ref: { type: "raster", tileSize: 256, maxzoom: 16,
+          tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"] },
+      },
+      layers: [
+        { id: "bg", type: "background", paint: { "background-color": "#0d0f11" } },
+        { id: "base", type: "raster", source: "base", paint: { "raster-brightness-max": 0.85, "raster-saturation": -0.4 } },
+      ],
+    },
+  });
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+  map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
+
+  const empty = { type: "FeatureCollection", features: [] };
+  const LAYERS = [
+    // key, label, feed for status, default on
+    ["events", "Curated events (source map)", "mymaps", true],
+    ["overlays", "Map overlays: fronts, lanes, zones", "mymaps", true],
+    ["front", "DeepState front line", "front", true],
+    ["thermal", "NASA thermal anomalies (24h)", "firms", true],
+    ["ukmto", "UKMTO maritime incidents", "ukmto", true],
+    ["mil", "Military aircraft (ADS-B)", "mil", true],
+    ["ships", "Ships (AIS, last hour)", "ships", true],
+    ["gfw", "Ship traffic (GFW, ~4 days behind)", "gfw", true],
+    ["outages", "Internet outages (IODA, 72h)", "outages", true],
+    ["advisories", "US travel advisories (Level 3–4)", "advisories", false],
+    ["gdelt", "GDELT conflict signal (2h)", "gdelt", false],
+    ["czib", "EASA conflict-zone airspace", "czib", false],
+    ["cables", "Submarine cables", "cables", false],
+  ];
+  const GROUPS = {
+    events: ["ev-halo", "ev-pt", "ev-label"], overlays: ["ov-fill", "ov-line", "ov-border", "ov-lane"], front: ["front-fill", "front-line"],
+    thermal: ["th-pt"], ukmto: ["uk-pt"], mil: ["mil-pt", "mil-label"], gdelt: ["gd-pt"], czib: ["cz-fill", "cz-line"], cables: ["cab-line"],
+    ships: ["ship-pt"], outages: ["out-fill", "out-line"], advisories: ["adv-fill", "adv-line"], gfw: ["gfw-fill", "gfw-line", "gfw-gap"],
+  };
+  const SHIP_COL = { tanker: "#f2b33d", cargo: "#38bdf8", military: "#f05252", passenger: "#a3e635", fishing: "#2dd4bf", tug: "#9aa4ae", service: "#9aa4ae", other: "#c9ced4", unknown: "#c9ced4" };
+  // Global Fishing Watch data is CC BY-NC 4.0: this attribution must appear wherever it is shown.
+  const GFW_ATTR = `<a href="https://globalfishingwatch.org" target="_blank" rel="noopener">Powered by Global Fishing Watch</a>`;
+  const GFW_COL = ["case", ["!", ["has", "chg"]], "#9aa4ae", ["<=", ["get", "chg"], -50], "#f05252", ["<=", ["get", "chg"], -20], "#f2b33d", [">=", ["get", "chg"], 20], "#38bdf8", "#9aa4ae"];
+  const gfwCol = (c) => (c == null ? "#9aa4ae" : c <= -50 ? "#f05252" : c <= -20 ? "#f2b33d" : c >= 20 ? "#38bdf8" : "#9aa4ae");
+  const IODA_SRC = { bgp: "routing (BGP)", "ping-slash24": "active probing", "merit-nt": "darknet traffic", gtr: "Google traffic" };
+
+  // ---------- military aircraft: silhouettes by role (48-unit box, nose up, rotated by track on the map) ----------
+  const AC_ROLES = { fighter: "fighter / attack", bomber: "bomber", tanker: "tanker", transport: "transport", isr: "ISR / patrol / AEW",
+    helicopter: "helicopter", tiltrotor: "tiltrotor", drone: "drone", jet: "VIP / airliner / bizjet", light: "trainer / light", other: "type unknown" };
+  const AC_SHORT = { fighter: "fighter", bomber: "bomber", tanker: "tanker", transport: "transport", isr: "ISR", helicopter: "heli",
+    tiltrotor: "tiltrotor", drone: "drone", jet: "VIP/jet", light: "light", other: "unknown" };
+  const AC_COL = { tanker: "#38bdf8", isr: "#f2b33d", drone: "#f2b33d", bomber: "#c084fc" }, AC_BASE = "#e8ecf0", AC_EMERG = "#f05252";
+  const RING = (cx, cy, r) => `M${cx + r} ${cy} A${r} ${r} 0 1 1 ${cx - r} ${cy} A${r} ${r} 0 1 1 ${cx + r} ${cy}`;
+  const JET = "M22.5 5Q24 1 25.5 5L25.5 41Q24 44 22.5 41Z M25.5 18L43 29L43 31.5L25.5 25Z M22.5 18L5 29L5 31.5L22.5 25Z M25.5 37L32 42L32 44L25.5 41.5Z M22.5 37L16 42L16 44L22.5 41.5Z";
+  const AC_SHAPES = {
+    fighter: { fill: "M24 2L26.5 14L41 30L41 33L27 31L27.5 39L33 44L33 46L24 44L15 46L15 44L20.5 39L21 31L7 33L7 30L21.5 14Z" },
+    bomber: { fill: "M22.5 4Q24 1 25.5 4L25.5 42L22.5 42Z M25 15L46 30L46 33L25 25Z M23 15L2 30L2 33L23 25Z M25 37L33 43L33 45L25 42Z M23 37L15 43L15 45L23 42Z" },
+    transport: { fill: "M21 6Q24 1 27 6L27 40Q24 44 21 40Z M27 17L45 24L45 27L27 23Z M21 17L3 24L3 27L21 23Z M27 38L34 42L34 44.5L27 42Z M21 38L14 42L14 44.5L21 42Z" },
+    jet: { fill: JET },
+    tanker: { fill: JET + " M23.2 41L24.8 41L24.8 47.5L23.2 47.5Z M24 44.5L28.5 46.6L28.5 47.8L24 46.2Z M24 44.5L19.5 46.6L19.5 47.8L24 46.2Z" },
+    isr: { fill: JET, stroke: [[RING(24, 27, 6.5), 2.6]] },
+    helicopter: { fill: "M24 11Q29 11 29 20Q29 29 24 30Q19 29 19 20Q19 11 24 11Z M23 28L25 28L25 44L23 44Z M19 41L29 41L29 43.4L19 43.4Z",
+      stroke: [[RING(24, 20, 17), 1.8], ["M12 8L36 32 M36 8L12 32", 2]] },
+    tiltrotor: { fill: "M22 6Q24 2 26 6L26 40L22 40Z M8 18L40 18L40 22L8 22Z M17 37L31 37L31 40.5L17 40.5Z", stroke: [[RING(8, 20, 7.5), 2], [RING(40, 20, 7.5), 2]] },
+    drone: { fill: "M23 8Q24 4 25 8L25 38L23 38Z M2 19L46 19L46 22L2 22Z M25 35L31 41L30 42.5L24.5 37.5Z M23 35L17 41L18 42.5L23.5 37.5Z" },
+    light: { fill: "M22.5 9Q24 6 25.5 9L25 38L23 38Z M8 18L40 18L40 23L8 23Z M18 35L30 35L30 38L18 38Z M18 6L30 6L30 7.6L18 7.6Z" },
+    other: { fill: "M24 3L39 43L24 35L9 43Z" },
+  };
+  function drawAircraft(role, col, px) {
+    const c = document.createElement("canvas"), sh = AC_SHAPES[role] || AC_SHAPES.other, k = px / 48;
+    c.width = c.height = px;
+    const g = c.getContext("2d"); g.scale(k, k); g.lineJoin = "round";
+    const body = new Path2D(sh.fill);
+    g.strokeStyle = "#0d0f11"; g.lineWidth = 2.4; g.stroke(body);                         // dark edge, readable over busy layers
+    (sh.stroke || []).forEach(([d, w]) => { g.lineWidth = w + 2.4; g.stroke(new Path2D(d)); });
+    g.fillStyle = col; g.fill(body); g.strokeStyle = col;
+    (sh.stroke || []).forEach(([d, w]) => { g.lineWidth = w; g.stroke(new Path2D(d)); });
+    return c;
+  }
+  const acCol = (role) => AC_COL[role] || AC_BASE;
+  const AC_URL = Object.fromEntries(Object.keys(AC_ROLES).map((r) => [r, drawAircraft(r, acCol(r), 48).toDataURL()]));
+  const acIcon = (role) => `<img class="acico" src="${AC_URL[role] || AC_URL.other}" alt="">`;
+  function addAircraftImages() {
+    Object.keys(AC_ROLES).forEach((r) => [["", acCol(r)], ["-e", AC_EMERG]].forEach(([sfx, col]) => {
+      const c = drawAircraft(r, col, 96);
+      map.addImage("ac-" + r + sfx, { width: 96, height: 96, data: c.getContext("2d").getImageData(0, 0, 96, 96).data }, { pixelRatio: 2 });
+    }));
+  }
+  // Planespotters photo API, asked by the browser: their terms want server clients to send a contact address, and the
+  // image must load from their CDN into the viewer's browser, unchanged, credited, the thumbnail linking to its photo page.
+  const PHOTOS = new Map(); // hex -> Promise<html>, this session only (their terms allow caching answers for 24 h)
+  const PS_IMG = /^https:\/\/[a-z0-9.-]+\.(plnspttrs|planespotters)\.net\//i, PS_LINK = /^https:\/\/www\.planespotters\.net\//i;
+  const noPhoto = () => `<span class="muted small">No photo of this airframe on Planespotters.</span>`;
+  function acPhoto(hex, reg) {
+    if (!/^[0-9a-f]{6}$/i.test(hex)) return Promise.resolve(noPhoto());
+    if (!PHOTOS.has(hex)) PHOTOS.set(hex, (async () => {
+      const get = async (path) => {
+        const r = await fetch("https://api.planespotters.net/pub/photos/" + path);
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return (await r.json()).photos || [];
+      };
+      let ph = await get("hex/" + hex);
+      if (!ph.length && reg && reg.length >= 4 && /[A-Z]/i.test(reg)) ph = await get("reg/" + encodeURIComponent(reg));
+      const x = ph[0], img = x && (x.thumbnail_large || x.thumbnail);
+      if (!img || !PS_IMG.test(img.src || "") || !PS_LINK.test(x.link || "")) return noPhoto();
+      return `<a href="${esc(x.link)}" target="_blank"><img src="${esc(img.src)}" alt="Photo of ${esc(reg || hex)}"></a>` +
+        `<div class="muted small">Photo: ${esc(x.photographer || "unknown")} · <a href="${esc(x.link)}" target="_blank">Planespotters.net</a></div>`;
+    })().catch(() => { PHOTOS.delete(hex); return `<span class="muted small">Photo lookup failed (Planespotters unreachable).</span>`; }));
+    return PHOTOS.get(hex);
+  }
+
+  map.on("load", () => {
+    addAircraftImages();
+    ["cables", "advisories", "outages", "gfw", "czib", "front", "overlays", "gdelt", "thermal", "gfwgap", "ships", "ukmto", "events", "mil"].forEach((id) => map.addSource(id, { type: "geojson", data: empty }));
+    map.addLayer({ id: "cab-line", type: "line", source: "cables", layout: { visibility: "none" }, paint: { "line-color": "#22d3ee", "line-opacity": 0.28, "line-width": 0.8 } });
+    map.addLayer({ id: "adv-fill", type: "fill", source: "advisories", layout: { visibility: "none" }, paint: { "fill-color": ["match", ["get", "level"], 4, "#f05252", "#f2853d"], "fill-opacity": ["match", ["get", "level"], 4, 0.12, 0.07] } });
+    map.addLayer({ id: "adv-line", type: "line", source: "advisories", layout: { visibility: "none" }, paint: { "line-color": ["match", ["get", "level"], 4, "#f05252", "#f2853d"], "line-opacity": 0.5, "line-width": 0.8, "line-dasharray": [3, 3] } });
+    map.addLayer({ id: "out-fill", type: "fill", source: "outages", paint: { "fill-color": "#a78bfa", "fill-opacity": ["case", ["get", "ongoing"], 0.3, ["get", "watched"], 0.18, 0.07] } });
+    map.addLayer({ id: "out-line", type: "line", source: "outages", paint: { "line-color": "#a78bfa", "line-opacity": ["case", ["any", ["get", "ongoing"], ["get", "watched"]], 0.8, 0.3], "line-width": ["case", ["get", "ongoing"], 1.6, 0.8] } });
+    map.addLayer({ id: "gfw-fill", type: "fill", source: "gfw", paint: { "fill-color": GFW_COL, "fill-opacity": ["case", ["==", ["get", "kind"], "chokepoint"], 0.22, 0.06] } });
+    map.addLayer({ id: "gfw-line", type: "line", source: "gfw", paint: { "line-color": GFW_COL, "line-opacity": 0.75, "line-width": ["case", ["==", ["get", "kind"], "chokepoint"], 1.8, 1], "line-dasharray": [4, 2] } });
+    map.addLayer({ id: "cz-fill", type: "fill", source: "czib", layout: { visibility: "none" }, paint: { "fill-color": "#f2b33d", "fill-opacity": 0.07 } });
+    map.addLayer({ id: "cz-line", type: "line", source: "czib", layout: { visibility: "none" }, paint: { "line-color": "#f2b33d", "line-opacity": 0.6, "line-width": 1, "line-dasharray": [2, 2] } });
+    map.addLayer({ id: "front-fill", type: "fill", source: "front", paint: { "fill-color": ["get", "fill"], "fill-opacity": ["*", 0.75, ["get", "fill_opacity"]] } });
+    map.addLayer({ id: "front-line", type: "line", source: "front", paint: { "line-color": ["get", "stroke"], "line-opacity": 0.55, "line-width": 0.7 } });
+    map.addLayer({ id: "base-ref", type: "raster", source: "ref", paint: { "raster-opacity": 0.75 } });
+    map.addLayer({ id: "ov-fill", type: "fill", source: "overlays", filter: ["==", ["geometry-type"], "Polygon"], paint: { "fill-color": ["coalesce", ["get", "stroke"], "#999"], "fill-opacity": ["*", 0.6, ["coalesce", ["get", "fill_opacity"], 0.3]] } });
+    const lineOf = ["==", ["geometry-type"], "LineString"];
+    map.addLayer({ id: "ov-line", type: "line", source: "overlays", filter: ["all", lineOf, ["!", ["in", ["get", "overlay_type"], ["literal", ["border", "lane"]]]]], paint: {
+      "line-color": ["match", ["get", "overlay_type"], "frontline", "#ff5b5b", ["coalesce", ["get", "stroke"], "#aaa"]],
+      "line-width": ["match", ["get", "overlay_type"], "frontline", 2.2, 1.2], "line-opacity": 0.9 } });
+    map.addLayer({ id: "ov-border", type: "line", source: "overlays", filter: ["all", lineOf, ["==", ["get", "overlay_type"], "border"]],
+      paint: { "line-color": "#4f8cff", "line-width": 1.6, "line-dasharray": [3, 2], "line-opacity": 0.9 } });
+    map.addLayer({ id: "ov-lane", type: "line", source: "overlays", filter: ["all", lineOf, ["==", ["get", "overlay_type"], "lane"]],
+      paint: { "line-color": "#b48cff", "line-width": 1.8, "line-dasharray": [1, 1.5], "line-opacity": 0.95 } });
+    map.addLayer({ id: "gd-pt", type: "circle", source: "gdelt", layout: { visibility: "none" }, paint: { "circle-radius": 2.6, "circle-color": "#d7dbe0", "circle-opacity": 0.4 } });
+    map.addLayer({ id: "th-pt", type: "circle", source: "thermal", paint: {
+      "circle-radius": ["interpolate", ["linear"], ["get", "frp"], 0, 1.4, 50, 3, 300, 6], "circle-color": "#ff7a1a",
+      "circle-opacity": ["interpolate", ["linear"], ["zoom"], 2, 0.45, 7, 0.85], "circle-blur": 0.3 } });
+    map.addLayer({ id: "gfw-gap", type: "circle", source: "gfwgap", paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 3.5, 8, 6], "circle-color": "#0d0f11", "circle-stroke-color": "#fb923c", "circle-stroke-width": 2 } });
+    map.addLayer({ id: "ship-pt", type: "circle", source: "ships", paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 1.4, 6, 2.6, 10, 4.5], "circle-color": ["get", "col"],
+      "circle-opacity": ["case", ["get", "moving"], 0.85, 0.45], "circle-stroke-width": 0 } });
+    map.addLayer({ id: "uk-pt", type: "circle", source: "ukmto", paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 3.5, 8, 7], "circle-color": "#0d0f11",
+      "circle-stroke-color": ["coalesce", ["get", "col"], "#38bdf8"], "circle-stroke-width": 2, "circle-opacity": ["get", "op"], "circle-stroke-opacity": ["get", "op"] } });
+    map.addLayer({ id: "ev-halo", type: "circle", source: "events", filter: ["==", ["get", "recent"], true], paint: {
+      "circle-radius": 14, "circle-color": ["get", "col"], "circle-opacity": 0.18, "circle-blur": 0.6 } });
+    map.addLayer({ id: "ev-pt", type: "circle", source: "events", paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 3.6, 6, 6, 10, 8], "circle-color": ["get", "col"],
+      "circle-stroke-color": ["case", ["has", "thermal"], "#ff7a1a", "#0d0f11"], "circle-stroke-width": ["case", ["has", "thermal"], 2.6, 1.2],
+      "circle-opacity": ["case", ["get", "est"], 0.75, 1] } });
+    map.addLayer({ id: "ev-label", type: "symbol", source: "events", minzoom: 5.5, layout: {
+      "text-field": ["get", "title"], "text-size": 11, "text-offset": [0, 1.1], "text-anchor": "top", "text-max-width": 12, "text-font": ["Open Sans Regular"] },
+      paint: { "text-color": "#cfd5db", "text-halo-color": "#0d0f11", "text-halo-width": 1.4 } });
+    map.addLayer({ id: "mil-pt", type: "symbol", source: "mil", layout: {
+      "icon-image": ["concat", "ac-", ["coalesce", ["get", "role"], "other"], ["case", ["to-boolean", ["get", "emerg"]], "-e", ""]],
+      "icon-size": ["interpolate", ["linear"], ["zoom"], 2, 0.36, 6, 0.5, 9, 0.66], "icon-rotate": ["get", "track"],
+      "icon-rotation-alignment": "map", "icon-allow-overlap": true },
+      paint: { "icon-opacity": 0.95 } });
+    map.addLayer({ id: "mil-label", type: "symbol", source: "mil", minzoom: 5, layout: {
+      "text-field": ["coalesce", ["get", "flight"], ["get", "type"]], "text-size": 10, "text-offset": [0, 1.2], "text-anchor": "top", "text-font": ["Open Sans Regular"] },
+      paint: { "text-color": "#aeb6bf", "text-halo-color": "#0d0f11", "text-halo-width": 1.2 } });
+
+    ["ev-pt", "uk-pt", "mil-pt", "ship-pt", "gfw-gap", "th-pt", "gd-pt", "ov-line", "ov-border", "ov-lane", "ov-fill", "front-fill", "cz-fill", "out-fill", "gfw-fill", "adv-fill"].forEach((l) => {
+      map.on("mouseenter", l, () => (map.getCanvas().style.cursor = "pointer"));
+      map.on("mouseleave", l, () => (map.getCanvas().style.cursor = ""));
+    });
+    map.on("click", (e) => {
+      const order = ["ev-pt", "uk-pt", "mil-pt", "ship-pt", "gfw-gap", "th-pt", "gd-pt", "ov-line", "ov-border", "ov-lane", "ov-fill", "cz-fill", "front-fill", "out-fill", "gfw-fill", "adv-fill"];
+      const hits = map.queryRenderedFeatures(e.point, { layers: order.filter((l) => map.getLayer(l) && map.getLayoutProperty(l, "visibility") !== "none") });
+      if (!hits.length) return;
+      hits.sort((a, b) => order.indexOf(a.layer.id) - order.indexOf(b.layer.id));
+      popupFor(hits[0], e.lngLat);
+    });
+    buildRail();
+    loadAll();
+    setInterval(loadLive, 45000);
+    setInterval(loadAll, 5 * 60000);
+  });
+
+  // ---------- popups ----------
+  let popup = null;
+  function showPopup(lngLat, html) {
+    if (popup) popup.remove();
+    popup = new maplibregl.Popup({ maxWidth: "360px", offset: 10 }).setLngLat(lngLat).setHTML(html).addTo(map);
+    const p = popup; requestAnimationFrame(() => fitPopup(p));
+    return popup;
+  }
+  // Pan just enough to keep a popup inside the map (tall ones, e.g. with a photo, can overflow either way).
+  function fitPopup(p) {
+    if (p !== popup || !p.isOpen()) return;
+    if (map.isMoving()) return map.once("moveend", () => fitPopup(p));
+    const m = map.getContainer().getBoundingClientRect(), r = p.getElement().getBoundingClientRect(), pad = 12;
+    let dx = 0, dy = 0;
+    if (r.top < m.top + pad || r.height > m.height - 2 * pad) dy = r.top - m.top - pad;
+    else if (r.bottom > m.bottom - pad) dy = r.bottom - m.bottom + pad;
+    if (r.left < m.left + pad) dx = r.left - m.left - pad; else if (r.right > m.right - pad) dx = r.right - m.right + pad;
+    if (dx || dy) map.panBy([dx, dy], { duration: 250 });
+  }
+  function popupFor(f, lngLat) {
+    const p = f.properties, id = f.layer.id;
+    if (id === "ev-pt") return eventPopup(S.events.features.find((x) => x.properties.id === p.id), lngLat);
+    if (id === "uk-pt") {
+      return showPopup(lngLat, `<div class="pop"><h5>UKMTO ${esc(p.type)} #${p.num}</h5><div class="meta">${esc(p.date)} · ${esc(p.where || "")} · position ${p.geo_method === "offset" ? "from stated range/bearing" : "approximate (area)"}</div>${esc(p.text)}<div><a href="${esc(p.url)}" target="_blank" rel="noopener">UKMTO notice ↗</a></div></div>`);
+    }
+    if (id === "mil-pt") {
+      const role = AC_ROLES[p.role] ? p.role : "other", hx = String(p.hex || ""), pid = "acph-" + hx.replace(/[^0-9a-z]/gi, "");
+      const alt = p.alt === "ground" ? "on the ground" : `${nf(p.alt)} ft`;
+      const pop = showPopup(lngLat, `<div class="pop"><h5>${esc(p.flight || p.hex)} <span class="muted">${esc(p.type || "")}</span></h5>` +
+        `<div class="actype">${acIcon(role)}<b>${esc(p.tname || p.type || "Type not broadcast")}</b></div>` +
+        `<div class="meta">${esc(AC_ROLES[role])}${p.owner ? " · " + esc(p.owner) : ""}${p.icao_reg ? ` · registry type ${esc(p.icao_reg)}, transponder says ${esc(p.type || "–")}` : ""}</div>` +
+        `<div class="acphoto" id="${pid}"><span class="muted small">Looking for a photo…</span></div>` +
+        `<div class="meta">Reg ${esc(p.reg || "–")} · hex ${esc(p.hex)}</div>Alt ${alt} · ${nf(p.gs)} kt · track ${Math.round(p.track)}°<br>Squawk ${esc(p.squawk || "–")}${p.emerg ? ` · <b style="color:#f05252">EMERGENCY ${esc(p.emerg)}</b>` : ""}<br><span class="muted small">NIC ${esc(p.nic ?? "–")} · NACp ${esc(p.nacp ?? "–")} (low values can indicate GNSS interference)</span><div><a href="https://globe.adsb.lol/?icao=${esc(p.hex)}" target="_blank" rel="noopener">Track on adsb.lol ↗</a></div></div>`);
+      acPhoto(hx, p.reg).then((h) => {
+        const el = document.getElementById(pid); if (!el) return;
+        el.innerHTML = h; el.classList.add("done");
+        const img = el.querySelector("img"), place = () => { if (popup === pop) { pop.setLngLat(pop.getLngLat()); fitPopup(pop); } }; // re-anchor to the new size
+        if (img && !img.complete) img.addEventListener("load", place, { once: true }); else place();
+      });
+      return pop;
+    }
+    if (id === "ship-pt") {
+      return showPopup(lngLat, `<div class="pop"><h5>${esc(p.name || "Unnamed vessel")} <span class="muted">${esc(p.cls)}</span></h5><div class="meta">MMSI ${esc(p.mmsi)} · heard ${esc((p.ts || "").slice(11, 16))}Z</div>${p.sog != null ? nf(p.sog) + " kt" : "speed –"} · course ${p.cog != null ? Math.round(p.cog) + "°" : "–"}${p.dest ? " · to " + esc(p.dest) : ""}<div><a href="https://www.marinetraffic.com/en/ais/details/ships/mmsi:${esc(p.mmsi)}" target="_blank" rel="noopener">MarineTraffic ↗</a></div><div class="muted small">AISStream, volunteer receivers. Positions are self-reported and can be spoofed.</div></div>`);
+    }
+    if (id === "out-fill") {
+      const o = S.feeds.outages || {}, c = (o.countries || []).find((x) => x.code === p.code) || { events: [] };
+      const regs = (o.regions || []).filter((r) => r.country === p.code).slice(0, 6);
+      return showPopup(lngLat, `<div class="pop"><h5>${esc(p.name)} · internet outage${p.ongoing ? ` <b style="color:#a78bfa">ONGOING</b>` : ""}</h5><div class="meta">IODA (Georgia Tech), last ${esc(o.window_h || 72)} h</div>
+        <ul class="small">${c.events.map((e) => `<li>${esc(e.start.slice(5, 16).replace("T", " "))}Z · ${esc(e.hours)} h · ${esc(IODA_SRC[e.source] || e.source)} · score ${nf(e.score)}${e.ongoing ? " · ongoing" : ""}</li>`).join("")}</ul>
+        ${regs.length ? `<div class="sub">Regions</div><ul class="small">${regs.map((r) => `<li>${esc(r.region)} · ${esc(r.start.slice(5, 16).replace("T", " "))}Z · ${esc(r.hours)} h · ${esc(IODA_SRC[r.source] || r.source)}</li>`).join("")}</ul>` : ""}
+        <div><a href="https://ioda.inetintel.cc.gatech.edu/country/${esc(p.code)}" target="_blank" rel="noopener">IODA dashboard ↗</a></div><div class="muted small">Automatic detection. Google-traffic dips alone can be noise; routing plus probing together is the strong signal.</div></div>`);
+    }
+    if (id === "gfw-fill") {
+      const a = ((S.feeds.gfw || {}).areas || {})[p.key];
+      return a && showPopup(lngLat, `<div class="pop">${gfwHtml(a, true)}</div>`);
+    }
+    if (id === "gfw-gap") {
+      return showPopup(lngLat, `<div class="pop"><h5>AIS switched off: ${esc(p.name || "unnamed vessel")} <span class="muted">${esc((p.type || "").replace(/_/g, " "))}</span></h5>
+        <div class="meta">${esc(p.flag || "flag ?")} · MMSI ${esc(p.mmsi || "–")} · off ${esc((p.start || "").slice(5, 16).replace("T", " "))}Z for ${nf(p.hours)} h${p.km != null ? ` · back on ${nf(Math.round(p.km))} km away` : ""}</div>
+        ${p.mmsi ? `<div><a href="https://www.marinetraffic.com/en/ais/details/ships/mmsi:${esc(p.mmsi)}" target="_blank" rel="noopener">MarineTraffic ↗</a></div>` : ""}
+        <div class="muted small">GFW "AIS off" event (prototype model): a gap of 12 h or more starting at least 50 nm from shore where satellite reception is good. Data runs about 4 days behind. ${GFW_ATTR}</div></div>`);
+    }
+    if (id === "adv-fill") return showPopup(lngLat, `<div class="pop"><h5>${esc(p.country)}: Level ${esc(p.level)}</h5><div class="meta">US State Department travel advisory · updated ${esc(p.date)}</div>${esc(p.label)}<div><a href="${esc(p.url)}" target="_blank" rel="noopener">Advisory ↗</a></div></div>`);
+    if (id === "th-pt") return showPopup(lngLat, `<div class="pop"><h5>Thermal anomaly</h5><div class="meta">${p.sat === "N21" ? "NOAA-21" : "NOAA-20"} VIIRS · ${esc(p.ts)} · conf ${esc(p.conf)} · ${esc(p.dn === "N" ? "night" : "day")}</div>Fire radiative power ${p.frp} MW.<br><span class="muted small">Could be a strike fire, a gas flare or a field fire. Corroborate before trusting.</span></div>`);
+    if (id === "gd-pt") return showPopup(lngLat, `<div class="pop"><h5>${esc(p.place)}</h5><div class="meta">GDELT CAMEO ${esc(p.cameo)} · ${esc(p.actor1)} → ${esc(p.actor2)} · ${p.mentions} mentions</div><a href="${esc(p.url)}" target="_blank" rel="noopener">Source article ↗</a><br><span class="muted small">Machine-coded from news. Noisy.</span></div>`);
+    if (id === "cz-fill") return showPopup(lngLat, `<div class="pop"><h5>${esc(p.name)}</h5><div class="meta">EASA Conflict Zone Information Bulletin · valid until ${esc(p.valid_until)}</div></div>`);
+    if (id === "front-fill") return showPopup(lngLat, `<div class="pop"><h5>${esc(p.label)}</h5><div class="meta">DeepStateMap · ${esc((S.feeds.front || {}).updated || "")}</div></div>`);
+    return showPopup(lngLat, `<div class="pop"><h5>${esc(p.title)}</h5><div class="meta">Map overlay · ${esc(p.overlay_type)}</div>${p.note && p.note !== "null" ? esc(p.note) : ""}</div>`);
+  }
+  function eventPopup(f, lngLat) {
+    if (!f) return;
+    const p = f.properties, cat = CATS[p.category] || CATS.other;
+    const where = [p.country_name, p.sea && !["offshore", "open ocean"].includes(p.sea) ? p.sea : null].filter(Boolean).join(" · ");
+    let extra = "";
+    if (p.thermal) extra += `<div class="post">🛰 <b>Satellite thermal corroboration:</b> ${p.thermal.n} VIIRS detection(s) within ${p.thermal.nearest_km} km, max FRP ${p.thermal.max_frp} MW, first ${esc(p.thermal.first)}.</div>`;
+    if (p.ukmto) extra += `<div class="post">⚓ <b>UKMTO incidents within 60 km:</b> ${p.ukmto.map((u) => `#${u.num} ${esc(u.type)} (${esc(u.date)})`).join(", ")}</div>`;
+    const html = `<div class="pop"><h5>${esc(p.title)}</h5>
+      <div class="meta"><span style="color:${cat[1]}">●</span> ${esc(cat[0])} · ${p.ts_ms ? fmtD(p.ts_ms) + " " + fmtT(p.ts_ms) + (p.ts_source === "batch-estimate" ? " (est.)" : "") : "undated"} · ${esc(where || (THEATRES[p.theatre] || [p.theatre])[0])}</div>
+      <div>${p.platform === "x" ? "𝕏" : p.platform === "reddit" ? "Reddit" : "Web"} · <b>${esc(p.handle || "")}</b> · <a href="${esc(p.url)}" target="_blank" rel="noopener">Open source ↗</a></div>
+      ${extra}
+      ${aiNote(S.ai.ev[p.id])}
+      ${p.platform === "x" ? `<div id="xpost"><button id="loadpost">Load post text</button></div>` : ""}
+      <div class="muted small" style="margin-top:6px">Single-curator report, unverified. Category auto-assigned.</div></div>`;
+    showPopup(lngLat || f.geometry.coordinates, html);
+    const b = $("loadpost");
+    if (b) b.onclick = () => {
+      b.textContent = "Loading…";
+      api("xpost?id=" + encodeURIComponent(p.post_id)).then((x) => {
+        $("xpost").innerHTML = `<div class="post">${esc(x.text || "(no text)")}${(x.media || []).filter((m) => m.url).slice(0, 1).map((m) => `<img src="${esc(m.url)}" alt="" loading="lazy">`).join("")}<div class="muted small">${esc(x.author || "")} · ${esc(x.created_at || "")}${x.views ? " · " + nf(x.views) + " views" : ""}${x.community_note ? " · has Community Note" : ""}</div></div>`;
+      }).catch(() => ($("xpost").innerHTML = `<div class="muted small">Could not load the post (fxtwitter unavailable).</div>`));
+    };
+  }
+
+  // ---------- data ----------
+  function loadAll() {
+    Promise.allSettled([api("events"), api("summary"), api("status"), api("czib_geo"), api("feed/front"), api("feed/ukmto"),
+      api("feed/firms"), api("feed/gdelt"), api("feed/cables"), api("analysis"), api("analysis/events"),
+      api("outages_geo"), api("advisories_geo"), api("feed/outages"), api("feed/ships"), api("feed/gfw")]).then(([ev, sum, st, cz, fr, uk, fi, gd, cb, ao, ae, og, ag, ou, sh, gw]) => {
+      if (ao.value) S.ai.ov = ao.value;
+      if (ae.value) S.ai.ev = ae.value;
+      if (ev.value) S.events = ev.value;
+      if (sum.value) S.summary = sum.value;
+      if (st.value) S.status = st.value.feeds || {};
+      if (cz.value) map.getSource("czib").setData(cz.value);
+      if (fr.value && fr.value.data) { S.feeds.front = fr.value.data; map.getSource("front").setData(fr.value.data.geojson); }
+      if (uk.value && uk.value.data) { S.feeds.ukmto = uk.value.data; setUkmto(); }
+      if (fi.value && fi.value.data) setThermal(fi.value.data);
+      if (gd.value && gd.value.data) setGdelt(gd.value.data);
+      if (cb.value && cb.value.data) map.getSource("cables").setData(cb.value.data.geojson);
+      if (og.value) map.getSource("outages").setData(og.value);
+      if (ag.value) map.getSource("advisories").setData(ag.value);
+      if (ou.value && ou.value.data) S.feeds.outages = ou.value.data;
+      if (sh.value && sh.value.data) setShips(sh.value.data);
+      if (gw.value && gw.value.data) setGfw(gw.value.data);
+      render();
+    });
+    loadLive();
+  }
+  function loadLive() {
+    api("feed/mil").then((r) => {
+      if (!r.data) return;
+      S.feeds.mil = r.data;
+      r.data.geojson.features.forEach((f) => { f.properties.emerg = f.properties.emergency && f.properties.emergency !== "none" ? f.properties.emergency : null; });
+      map.getSource("mil").setData(r.data.geojson);
+      renderKpis(); renderLayerCounts(); renderAcLegend();
+    }).catch(() => {});
+  }
+  function setUkmto() {
+    const items = (S.feeds.ukmto.items || []).filter((i) => i.coord);
+    const newest = items.length ? Date.parse(items[0].date) : Date.now();
+    map.getSource("ukmto").setData({ type: "FeatureCollection", features: items.map((i) => ({ type: "Feature", geometry: { type: "Point", coordinates: i.coord },
+      properties: { ...i, col: UKMTO_COL[i.type] || "#38bdf8", op: Math.max(0.35, 1 - (newest - Date.parse(i.date)) / (45 * 86400000)) } })) });
+  }
+  function setThermal(d) {
+    S.feeds.firms = d;
+    map.getSource("thermal").setData({ type: "FeatureCollection", features: d.points.map(([lon, lat, frp, ts, conf, dn, sat]) => ({ type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] }, properties: { frp, ts, conf, dn, sat } })) });
+  }
+  function setShips(d) {
+    S.feeds.ships = d;
+    map.getSource("ships").setData({ type: "FeatureCollection", features: d.points.map(([lon, lat, sog, cog, cls, name, mmsi, ts, dest]) => ({ type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] },
+      properties: { sog, cog, cls, name, mmsi, ts, dest, col: SHIP_COL[cls] || "#c9ced4", moving: (sog || 0) >= 1 } })) });
+  }
+  function setGfw(d) {
+    S.feeds.gfw = d;
+    map.getSource("gfw").setData({ type: "FeatureCollection", features: Object.entries(d.areas || {}).map(([key, a]) => ({ type: "Feature",
+      geometry: { type: "Polygon", coordinates: [a.ring] },
+      properties: { key, kind: a.kind, label: a.label, ...(a.change_vs_last_year_pct != null ? { chg: a.change_vs_last_year_pct } : {}) } })) });
+    map.getSource("gfwgap").setData({ type: "FeatureCollection", features: (d.gaps || []).map((g) => ({ type: "Feature", geometry: { type: "Point", coordinates: [g.lon, g.lat] },
+      properties: { name: g.name, flag: g.flag, mmsi: g.mmsi, type: g.type, start: g.start, hours: g.hours, km: g.km } })) });
+  }
+  // Weekly means of the daily counts (newest, still-filling day left out), last bar = the last 7 full days.
+  function sparkWeeks(daily, w = 300, h = 44) {
+    const d = (daily || []).slice(0, -1), wk = [];
+    for (let i = d.length % 7; i + 7 <= d.length; i += 7) {
+      const xs = d.slice(i, i + 7).filter((x) => x != null);
+      wk.push(xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+    }
+    if (!wk.length) return "";
+    const max = Math.max(1, ...wk.filter((x) => x != null)), bw = w / wk.length;
+    return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Weekly mean ships per day over the last year">${wk.map((v, i) => v == null ? "" :
+      `<rect x="${(i * bw + 0.4).toFixed(1)}" y="${(h - (v / max) * (h - 2)).toFixed(1)}" width="${Math.max(1, bw - 0.8).toFixed(1)}" height="${((v / max) * (h - 2)).toFixed(1)}" fill="${i === wk.length - 1 ? "#38bdf8" : "#5b6672"}"><title>${nf(Math.round(v))} a day</title></rect>`).join("")}</svg>`;
+  }
+  function gfwHtml(a, full) {
+    const pct = (x) => (x == null ? "–" : `${x > 0 ? "+" : ""}${x}%`), col = gfwCol(a.change_vs_last_year_pct);
+    const types = (a.types_by_day || {})[a.last_full_day];
+    let h = `<h5>${esc(a.label)} <span class="muted">${a.kind === "chokepoint" ? "chokepoint" : "sea area"}${a.stale ? " · stale" : ""}</span></h5>
+      <div class="meta">Non-fishing ships seen per day · through ${esc(a.last_full_day)} (about 4 days behind)</div>
+      <div><b style="color:${col}">${nf(a.avg_7d)}</b> a day over the last 7 days · <b style="color:${col}">${pct(a.change_vs_last_year_pct)}</b> vs the same week last year (${nf(a.same_week_last_year_avg)}) · ${pct(a.change_vs_28d_pct)} vs the 4 weeks before</div>
+      ${sparkWeeks(a.daily)}<div class="sparkax"><span>a year ago</span><span>last week</span></div>
+      <div class="small">Flags, ships a day last week: ${(a.top_flags_7d || []).slice(0, 6).map(([f, n]) => `${esc(f === "?" ? "unknown" : f)} ${nf(n)}`).join(" · ") || "–"}</div>`;
+    if (types) h += `<div class="small">Types on ${esc(a.last_full_day.slice(5))}: ${Object.entries(types).map(([t, n]) => `${esc(t.replace(/_/g, " "))} ${nf(n)}`).join(" · ")}</div>`;
+    if (full && (a.ships_last_full_day || []).length) {
+      const sh = a.ships_last_full_day;
+      h += `<div class="sub">Ships seen ${esc(a.last_full_day.slice(5))} (${nf(sh.length)})</div><ul class="small">${sh.slice(0, 12).map((x) =>
+        `<li>${x.mmsi ? `<a href="https://www.marinetraffic.com/en/ais/details/ships/mmsi:${esc(x.mmsi)}" target="_blank" rel="noopener">${esc(x.name || "unnamed")}</a>` : esc(x.name || "unnamed")} · ${esc(x.flag || "?")} · ${esc((x.type || "").replace(/_/g, " "))}${x.kn != null ? ` · ${nf(x.kn)} kt` : x.jump ? " · position jump" : ""}</li>`).join("")}${sh.length > 12 ? `<li class="muted">and ${nf(sh.length - 12)} more</li>` : ""}</ul>`;
+    }
+    if (a.gaps_30d != null) h += `<div class="small">AIS-off events starting here, last 30 days: <b>${nf(a.gaps_30d)}</b></div>`;
+    return h + `<div class="muted small">Satellite plus shore AIS. Ships with AIS off are not counted, so a fall can mean fewer ships or more ships running dark. ${GFW_ATTR}</div>`;
+  }
+  function setGdelt(d) {
+    S.feeds.gdelt = d;
+    map.getSource("gdelt").setData({ type: "FeatureCollection", features: d.points.map(([lon, lat, cameo, place, a1, a2, mentions, url]) => ({ type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] }, properties: { cameo, place, actor1: a1, actor2: a2, mentions, url } })) });
+  }
+
+  // ---------- filtering + render ----------
+  function filtered(ignoreTime) {
+    if (!S.events) return [];
+    const q = S.q.trim().toLowerCase();
+    const newest = Math.max(...S.events.features.map((f) => f.properties.ts_ms || 0));
+    return S.events.features.filter((f) => {
+      const p = f.properties;
+      if (p.kind !== "event") return false;
+      if (S.theatre !== "global" && p.theatre !== S.theatre) return false;
+      if (!S.cats.has(p.category)) return false;
+      if (!ignoreTime) {
+        if (S.hours && p.ts_ms && newest - p.ts_ms > S.hours * 3600000) return false;
+        if (S.brush && p.ts_ms && (p.ts_ms < S.brush[0] || p.ts_ms > S.brush[1])) return false;
+      }
+      if (q && ![p.title, p.handle, p.country_name, p.sea, p.category].join(" ").toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }
+  function render() {
+    if (!S.events) return;
+    const list = filtered();
+    const newest = Math.max(...S.events.features.map((f) => f.properties.ts_ms || 0));
+    const ids = new Set(list.map((f) => f.properties.id));
+    map.getSource("events").setData({ type: "FeatureCollection", features: list.map((f) => ({ ...f, properties: { ...f.properties,
+      col: (CATS[f.properties.category] || CATS.other)[1], recent: !!f.properties.ts_ms && newest - f.properties.ts_ms < 6 * 3600000,
+      est: f.properties.ts_source === "batch-estimate" } })) });
+    map.getSource("overlays").setData({ type: "FeatureCollection", features: S.events.features.filter((f) => f.properties.kind === "overlay" && (S.theatre === "global" || f.properties.theatre === S.theatre)) });
+    renderFeed(list);
+    renderTheatreCounts();
+    renderKpis();
+    renderLayerCounts();
+    drawTimeline();
+    if (!$("tab-brief").classList.contains("hidden")) renderBrief();
+    if (!$("tab-sea").classList.contains("hidden")) renderSea();
+    if (!$("tab-sources").classList.contains("hidden")) renderSources();
+    if (!$("tab-ai").classList.contains("hidden")) renderAnalyst();
+    $("mapsrc").innerHTML = `Source map: <b>${esc(S.summary.map_title || "")}</b><br>${nf(S.summary.events_total)} events · newest ${S.summary.newest_event_age_min != null ? S.summary.newest_event_age_min + " min ago" : "–"}<br>Archived snapshots power history; see Sources.`;
+    void ids;
+  }
+  function renderFeed(list) {
+    const rows = list.slice().sort((a, b) => (b.properties.ts_ms || 0) - (a.properties.ts_ms || 0));
+    $("feedcount").textContent = `${rows.length} events${S.theatre !== "global" ? " in " + THEATRES[S.theatre][0] : ""}${S.brush ? " · time-brushed" : ""}`;
+    $("feed").innerHTML = rows.map((f) => {
+      const p = f.properties, c = (CATS[p.category] || CATS.other)[1];
+      const where = p.sea && !["offshore", "open ocean"].includes(p.sea) ? p.sea : p.country_name || "";
+      return `<li data-id="${p.id}" style="--c:${c}"><div class="t">${esc(p.title)}</div><div class="m">
+        <span class="time">${p.ts_ms ? fmtD(p.ts_ms) + " " + fmtT(p.ts_ms) : "–"}</span><span>${p.ts_ms ? ago(p.ts_ms) : ""}</span>
+        <span>${esc(where)}</span><span>${esc(p.handle || "")}</span>
+        ${p.ts_source === "batch-estimate" ? '<span class="badge est">time est.</span>' : ""}
+        ${p.thermal ? '<span class="badge th">thermal ✓</span>' : ""}${p.ukmto ? '<span class="badge uk">UKMTO nearby</span>' : ""}${sigBadge(S.ai.ev[p.id])}</div></li>`;
+    }).join("");
+  }
+  $("feed").addEventListener("click", (e) => {
+    const li = e.target.closest("li"); if (!li) return;
+    const f = S.events.features.find((x) => x.properties.id === li.dataset.id); if (!f) return;
+    map.flyTo({ center: f.geometry.coordinates, zoom: Math.max(map.getZoom(), 6.5), speed: 1.6 });
+    eventPopup(f, f.geometry.coordinates);
+    if (window.innerWidth <= 900) window.scrollTo(0, 0);
+  });
+
+  function buildRail() {
+    $("theatres").innerHTML = Object.entries(THEATRES).map(([k, [n, c]]) =>
+      `<button data-th="${k}" class="${k === S.theatre ? "on" : ""}"><span class="sw" style="background:${c}"></span><span class="nm">${n}</span><span class="ct" id="ct-${k}">–</span></button>`).join("");
+    $("theatres").onclick = (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      S.theatre = b.dataset.th; S.brush = null;
+      [...$("theatres").children].forEach((x) => x.classList.toggle("on", x === b));
+      const [lon, lat, z] = THEATRES[S.theatre][2]; map.flyTo({ center: [lon, lat], zoom: z, speed: 1.4 });
+      $("rail").classList.remove("open"); render();
+    };
+    $("layers").innerHTML = LAYERS.map(([k, label, feed, on]) =>
+      `<label><input type="checkbox" data-layer="${k}" ${on ? "checked" : ""}><span class="dot" id="dot-${k}"></span>${label}<span class="n" id="n-${k}"></span></label>` +
+      (k === "mil" ? `<div class="aclegend" id="aclegend"></div>` : "")).join("");
+    $("layers").onchange = (e) => {
+      const k = e.target.dataset.layer; if (!k) return;
+      GROUPS[k].forEach((l) => map.getLayer(l) && map.setLayoutProperty(l, "visibility", e.target.checked ? "visible" : "none"));
+    };
+    $("cats").innerHTML = Object.entries(CATS).map(([k, [n, c]]) => `<button class="chip" data-cat="${k}"><i style="background:${c}"></i>${n}</button>`).join("");
+    $("cats").onclick = (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      const k = b.dataset.cat;
+      if (e.altKey || e.metaKey) { S.cats = new Set([k]); } else { S.cats.has(k) ? S.cats.delete(k) : S.cats.add(k); }
+      [...$("cats").children].forEach((x) => x.classList.toggle("off", !S.cats.has(x.dataset.cat)));
+      render();
+    };
+  }
+  function renderTheatreCounts() {
+    const all = S.events.features.filter((f) => f.properties.kind === "event");
+    Object.keys(THEATRES).forEach((k) => { const el = $("ct-" + k); if (el) el.textContent = k === "global" ? all.length : all.filter((f) => f.properties.theatre === k).length || "·"; });
+  }
+  function renderAcLegend() {
+    const el = $("aclegend"), n = (S.feeds.mil || {}).roles || {};
+    if (el) el.innerHTML = Object.keys(AC_ROLES).filter((r) => n[r]).map((r) => `<span title="${esc(AC_ROLES[r])}">${acIcon(r)}${esc(AC_SHORT[r])} ${n[r]}</span>`).join("");
+  }
+  function renderLayerCounts() {
+    const st = S.status, n = {
+      events: S.summary.events_total, overlays: S.events ? S.events.features.filter((f) => f.properties.kind === "overlay").length : null,
+      front: (S.feeds.front || {}).count, thermal: (S.feeds.firms || {}).count, ukmto: (S.feeds.ukmto || {}).located,
+      mil: (S.feeds.mil || {}).count, gdelt: (S.feeds.gdelt || {}).count, czib: S.summary.airspace_czib_active, cables: null,
+      ships: (S.feeds.ships || {}).count, outages: (S.feeds.outages || {}).count, gfw: (S.feeds.gfw || {}).count,
+      advisories: S.summary.travel_advisories ? (S.summary.travel_advisories.level4 || 0) + (S.summary.travel_advisories.level3 || 0) : null };
+    LAYERS.forEach(([k, , feed]) => {
+      const d = $("dot-" + k), e = $("n-" + k);
+      if (d) d.className = "dot " + (st[feed] ? (st[feed].ok ? "ok" : "bad") : "");
+      if (e) e.textContent = n[k] != null ? nf(n[k]) : "";
+    });
+  }
+  function renderKpis() {
+    const s = S.summary, pla = s.taiwan_pla || {}, il = s.israel_alerts || {};
+    const pic = (S.ai.ov || {}).picture;
+    const k = [
+      [s.map_day ? "Day " + s.map_day : "–", "Source map"],
+      ...(pic ? [[`${pic.overall_tension}/10 ${TREND[pic.trend] || ""}`, "Analyst tension", pic.overall_tension >= 7]] : []),
+      [nf(s.events_6h), "Events, last 6h", s.events_6h > 10],
+      [nf(s.events_24h), "Events, 24h"],
+      [nf(s.thermal_corroborated), "Thermal-corroborated"],
+      [nf((S.feeds.mil || {}).count ?? s.mil_aircraft), "Mil aircraft (ADS-B)"],
+      [nf(s.ukmto_incidents_7d), "UKMTO incidents, 7d", s.ukmto_incidents_7d > 3],
+      [s.ru_losses_personnel_today != null ? "+" + nf(s.ru_losses_personnel_today) : "–", "RU losses (UA GS)"],
+      [pla.aircraft != null ? `${pla.aircraft} / ${pla.plan_ships}` : "–", "PLA aircraft / ships"],
+      [nf(il.cities_alerted_24h), "Israel alerts, 24h", il.active_now > 0],
+    ];
+    $("kpis").innerHTML = k.map(([v, l, w]) => `<div class="kpi ${w ? "warn" : ""}"><b>${esc(v)}</b><small>${esc(l)}</small></div>`).join("");
+  }
+
+  // ---------- timeline ----------
+  let tlBins = [];
+  function drawTimeline() {
+    const cv = $("timeline"), dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    const g = cv.getContext("2d"); g.scale(dpr, dpr); g.clearRect(0, 0, W, H);
+    const evs = filtered(true).filter((f) => f.properties.ts_ms);
+    if (!evs.length) { tlBins = []; return; }
+    const t0 = Math.floor(Math.min(...evs.map((f) => f.properties.ts_ms)) / 3600000) * 3600000;
+    const t1 = Math.ceil(Math.max(...evs.map((f) => f.properties.ts_ms)) / 3600000) * 3600000;
+    const n = Math.max(1, (t1 - t0) / 3600000), bw = W / n;
+    const bins = Array.from({ length: n }, (_, i) => ({ t: t0 + i * 3600000, by: {} }));
+    evs.forEach((f) => { const i = Math.min(n - 1, Math.floor((f.properties.ts_ms - t0) / 3600000)); bins[i].by[f.properties.theatre] = (bins[i].by[f.properties.theatre] || 0) + 1; });
+    const max = Math.max(1, ...bins.map((b) => Object.values(b.by).reduce((a, c) => a + c, 0)));
+    const newest = t1;
+    bins.forEach((b, i) => {
+      let y = H - 12;
+      Object.entries(b.by).forEach(([th, c]) => {
+        const h = (c / max) * (H - 16); g.fillStyle = (THEATRES[th] || ["", "#888"])[1];
+        const inRange = (!S.hours || newest - b.t <= S.hours * 3600000) && (!S.brush || (b.t + 3600000 > S.brush[0] && b.t < S.brush[1]));
+        g.globalAlpha = inRange ? 0.9 : 0.25; g.fillRect(i * bw + 0.5, y - h, Math.max(1, bw - 1), h); y -= h;
+      });
+    });
+    g.globalAlpha = 1; g.fillStyle = "#5d656e"; g.font = "10px Overpass Mono, monospace";
+    bins.forEach((b, i) => { const d = new Date(b.t); if (d.getUTCHours() % 12 === 0) { g.fillText(d.toISOString().slice(5, 10).replace("-", "/") + " " + String(d.getUTCHours()).padStart(2, "0") + "Z", i * bw + 2, H - 1); g.fillRect(i * bw, 0, 1, H - 12); } });
+    if (S.brush) { g.strokeStyle = "#f2b33d"; g.lineWidth = 1; const x0 = ((S.brush[0] - t0) / 3600000) * bw, x1 = ((S.brush[1] - t0) / 3600000) * bw; g.strokeRect(x0, 1, x1 - x0, H - 14); }
+    tlBins = { t0, bw };
+  }
+  (() => {
+    const cv = $("timeline"); let down = null;
+    const tAt = (x) => tlBins.t0 + (x / tlBins.bw) * 3600000;
+    cv.addEventListener("pointerdown", (e) => { if (!tlBins.t0) return; down = e.offsetX; });
+    cv.addEventListener("pointerup", (e) => {
+      if (down == null) return;
+      const a = Math.min(down, e.offsetX), b = Math.max(down, e.offsetX); down = null;
+      if (b - a < 4) { S.brush = null; } else { S.brush = [tAt(a), tAt(b)]; S.hours = 0; [...$("range").children].forEach((x) => x.classList.toggle("on", x.dataset.h === "0")); }
+      render();
+    });
+    $("range").onclick = (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      S.hours = +b.dataset.h; S.brush = null; [...$("range").children].forEach((x) => x.classList.toggle("on", x === b)); render();
+    };
+    window.addEventListener("resize", drawTimeline);
+  })();
+
+  // ---------- tabs ----------
+  $("tabs").onclick = (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    [...$("tabs").children].forEach((x) => x.classList.toggle("on", x === b));
+    ["feed", "brief", "sea", "ai", "sources"].forEach((t) => $("tab-" + t).classList.toggle("hidden", t !== b.dataset.tab));
+    ({ brief: renderBrief, sea: renderSea, ai: renderAnalyst, sources: renderSources })[b.dataset.tab]?.();
+  };
+  $("q").addEventListener("input", (e) => { S.q = e.target.value; render(); });
+  $("btnRail").onclick = () => $("rail").classList.toggle("open");
+  $("globe").onchange = (e) => map.setProjection({ type: e.target.checked ? "globe" : "mercator" });
+
+  // ---------- analyst (model output: always escaped) ----------
+  const TREND = { rising: "▲", steady: "■", easing: "▼" };
+  const SIGC = ["", "#5d656e", "#8a929b", "#f2b33d", "#f2853d", "#f05252"];
+  function sigBadge(a) {
+    if (!a || !a.significance) return "";
+    return `<span class="badge sig" style="--s:${SIGC[a.significance] || "#8a929b"}" title="Analyst: significance ${a.significance}/5, ${esc(a.confidence)}, ${esc(a.escalation)}">S${a.significance} · ${esc(a.confidence || "")}</span>`;
+  }
+  function aiNote(a) {
+    if (!a) return "";
+    const tags = (a.market_tags || []).filter((t) => t !== "none");
+    return `<div class="post ai"><b>Analyst</b> <span class="badge sig" style="--s:${SIGC[a.significance] || "#8a929b"}">S${esc(a.significance)}/5</span> <span class="muted small">${esc(a.confidence)} · ${esc(a.escalation)} · ${esc(a.event_type || "")}</span>
+      <div>${esc(a.summary)}</div><div class="muted small">${esc(a.rationale || "")}${tags.length ? " · market themes: " + tags.map(esc).join(", ") : ""}</div></div>`;
+  }
+  function renderAnalyst() {
+    const ov = S.ai.ov || {}, p = ov.picture, total = ((S.events || {}).features || []).filter((f) => f.properties.kind === "event").length;
+    const done = Object.keys(S.ai.ev || {}).length;
+    const lvl = (n) => (n >= 8 ? "var(--bad)" : n >= 5 ? "var(--accent)" : "var(--ok)");
+    const list = (a, cls) => (a && a.length ? `<ul class="${cls || ""}">${a.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "");
+    const runs = (ov.runs || []).slice(0, 6).map((r) => `<li>${esc((r.stored_at || "").slice(5, 16).replace("T", " "))}Z · ${esc(r.kind)} · ${esc(r.n)} · ${esc(r.secs)}s · ${esc(r.model || "")}</li>`).join("");
+    const foot = `<div class="card"><h4>Analyst runs</h4><div class="row"><span><b>${nf(done)}</b> of ${nf(total)} events analysed</span><span>writes ${ov.writes_enabled ? "enabled" : "disabled"}</span></div>${runs ? `<ul class="muted small">${runs}</ul>` : '<div class="muted small">No runs yet.</div>'}
+      <div class="muted small" style="margin-top:6px">Claude reads every new event and, every few hours, the whole picture. Its notes are machine analysis of unverified reports: a lead, not a fact.</div></div>`;
+    if (!p) { $("tab-ai").innerHTML = `<div class="card"><h4>Situation assessment</h4><div class="muted">No assessment yet.</div></div>` + foot; return; }
+    const th = (p.theatres || []).slice().sort((a, b) => (b.status || 0) - (a.status || 0));
+    $("tab-ai").innerHTML = `<div class="card ai-head"><h4>${esc(p.headline)}</h4>
+        <div class="meter" title="Global tension ${esc(p.overall_tension)}/10"><i style="width:${(p.overall_tension || 0) * 10}%;background:${lvl(p.overall_tension)}"></i></div>
+        <div class="row"><span>Tension <b>${esc(p.overall_tension)}/10</b> ${esc(TREND[p.trend] || "")} ${esc(p.trend)}</span><span>Confidence <b>${esc(p.confidence)}</b></span><span>${esc((p.generated_at || "").slice(5, 16).replace("T", " "))}Z</span></div>
+        <div>${esc(p.bluf)}</div>${p.changes_since_last && p.changes_since_last.length ? `<div class="sub">Since last assessment</div>${list(p.changes_since_last)}` : ""}</div>` +
+      th.map((t) => `<div class="card"><h4><span class="sw" style="background:${(THEATRES[t.theatre] || ["", "#888"])[1]}"></span>${esc((THEATRES[t.theatre] || [t.theatre])[0])}<span class="lvl" style="color:${lvl(t.status)}">${esc(t.status)}/10 ${esc(TREND[t.trend] || "")}</span></h4>
+        <div>${esc(t.summary)}</div>${list(t.key_developments)}${t.watch && t.watch.length ? `<div class="sub">Watch</div>${list(t.watch, "muted")}` : ""}</div>`).join("") +
+      ((p.indicators || []).length ? `<div class="card"><h4>Escalation indicators</h4><table class="src">${p.indicators.map((i) => `<tr><td>${esc(i.indicator)}<div class="muted small">${esc(i.note)}</div></td><td class="st st-${esc((i.state || "").replace(" ", "-"))}">${esc(i.state)}</td></tr>`).join("")}</table></div>` : "") +
+      ((p.market_risk || []).length ? `<div class="card"><h4>Market risk themes</h4><ul>${p.market_risk.map((m) => `<li><b>${esc((m.theme || "").replace("_", " "))}</b> <span class="badge">${esc(m.direction)}</span> ${esc(m.why)}</li>`).join("")}</ul><div class="muted small">Geopolitical context for later trading research, not trade advice.</div></div>` : "") +
+      ((p.cross_theatre || []).length ? `<div class="card"><h4>Cross-theatre links</h4>${list(p.cross_theatre)}</div>` : "") +
+      ((p.gaps || []).length ? `<div class="card"><h4>Gaps</h4>${list(p.gaps, "muted")}</div>` : "") + foot;
+  }
+
+  function renderBrief() {
+    api("brief").then((b) => {
+      const s = S.summary;
+      const head = `<div class="card"><h4>Situation picture</h4><div class="row"><span>Generated <b>${esc((b.generated || "").slice(11, 16))}Z</b></span><span>${esc(b.method)}</span></div>
+        <ul><li><b>${nf(s.events_24h)}</b> curated events in the last 24h across ${Object.keys(s.events_24h_by_theatre || {}).length} theatres; <b>${nf(s.thermal_corroborated)}</b> strike/energy reports have a NASA thermal detection nearby.</li>
+        <li>Maritime: <b>${nf(s.ukmto_incidents_7d)}</b> UKMTO incidents in 7 days${s.ukmto_latest ? `, latest #${s.ukmto_latest.num} ${esc(s.ukmto_latest.type)} on ${esc(s.ukmto_latest.date)} (${esc(s.ukmto_latest.where || "")})` : ""}.</li>
+        <li>Ukraine: Russian losses per Ukraine's General Staff +${nf(s.ru_losses_personnel_today)} personnel (day ${nf(s.ru_losses_day)}). DeepState front snapshot ${esc((S.feeds.front || {}).updated || "–")}.</li>
+        <li>Taiwan: ${(s.taiwan_pla || {}).aircraft ?? "–"} PLA aircraft, ${(s.taiwan_pla || {}).plan_ships ?? "–"} PLAN ships (MND ${esc((s.taiwan_pla || {}).date || "")}). Israel: ${nf((s.israel_alerts || {}).cities_alerted_24h)} alert areas in 24h, last ${esc(((s.israel_alerts || {}).last_alert || "").replace("T", " ").slice(0, 16))}Z.</li>
+        <li>${nf(s.airspace_czib_active)} active EASA conflict-zone airspace bulletins.</li>${briefExtra(s)}</ul></div>`;
+      $("tab-brief").innerHTML = head + b.theatres.map((t) => `<div class="card"><h4><span class="sw" style="background:${(THEATRES[t.theatre] || ["", "#888"])[1]}"></span>${esc(t.label)}</h4>
+        <div class="row"><span><b>${t.count}</b> events</span><span><b>${t.last_24h}</b> in 24h</span><span><b>${t.thermal}</b> thermal ✓</span></div>
+        <div class="row">Mostly: ${t.top_categories.map((c) => `${esc((CATS[c.category] || CATS.other)[0])} (${c.n})`).join(", ")}</div>
+        <div class="row">Hotspots: ${t.hotspots.map((h) => `${esc(h.place)} (${h.n})`).join(", ")}</div>
+        <ul>${t.headlines.map((h) => `<li><a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.title)}</a> <span class="muted small">${esc((h.ts || "").slice(11, 16))}Z · ${esc(h.handle || "")}</span></li>`).join("")}</ul></div>`).join("");
+    });
+  }
+  function briefExtra(s) {
+    const io = s.internet_outages, ta = s.travel_advisories, sh = s.ships_last_hour_by_area, gf = s.ship_traffic_gfw;
+    let h = "";
+    if (io) {
+      const w = io.watched_countries || [], r = io.watched_regions || [];
+      h += `<li>Internet: ${w.length ? w.map((c) => `<b>${esc(c.country)}</b>${c.ongoing ? " (ongoing)" : ""}`).join(", ") : "no watched country"} with outages in ${esc(io.window_h)} h; ${nf(r.length)} regional outages in watched countries${r.length ? ` (latest ${esc(r[0].region)}, ${esc(r[0].country)})` : ""}. IODA.</li>`;
+    }
+    if (ta) h += `<li>US travel advisories: <b>${nf(ta.level4)}</b> countries at Level 4, ${nf(ta.level3)} at Level 3${(ta.level_changes || []).length ? `; changes: ${ta.level_changes.slice(0, 3).map((c) => `${esc(c.country)} ${esc(c.from)}→${esc(c.to)}`).join(", ")}` : `; no level changes since ${esc((ta.watching_since || "").slice(0, 10))}`}.</li>`;
+    if (sh) h += `<li>Ships heard in the last hour (AIS): ${Object.entries(sh).filter(([, v]) => v.ships_1h).map(([k, v]) => `${esc(k.replace("_", " "))} ${nf(v.ships_1h)}`).join(", ") || "none"}. No volunteer AIS coverage in the Gulf or Red Sea.</li>`;
+    if (gf && gf.areas) {
+      const one = ([k, a]) => `${esc(a.label)} <b>${nf(a.avg_7d)}</b>/day${a.change_vs_last_year_pct != null ? ` (${a.change_vs_last_year_pct > 0 ? "+" : ""}${a.change_vs_last_year_pct}% vs a year ago)` : ""}`;
+      const ar = Object.entries(gf.areas);
+      h += `<li>Ship traffic through ${esc(gf.data_through)}: ${ar.filter(([, a]) => a.kind === "chokepoint").map(one).join(", ")}. Seas: ${ar.filter(([, a]) => a.kind === "sea").map(one).join(", ")}. ${nf((gf.ais_off_events_30d || []).length)} recent AIS-off events. ${GFW_ATTR}.</li>`;
+    }
+    return h;
+  }
+  function renderSea() {
+    const d = S.feeds.ukmto || { items: [] }, g = S.feeds.gfw;
+    const gfwCards = g && g.areas ? `<div class="sub" style="margin:0 0 6px">Ship traffic, non-fishing ships a day (Global Fishing Watch, through ${esc(g.data_through)})</div>` +
+      Object.entries(g.areas).map(([k, a]) => `<div class="card gfwcard" data-area="${esc(k)}" style="cursor:pointer">${gfwHtml(a, false)}</div>`).join("") : "";
+    $("tab-sea").innerHTML = gfwCards + `<div class="muted small" style="margin-bottom:8px">UKMTO notices scraped via Firecrawl (site blocks plain clients). Positions from stated range/bearing where given, else area centroid.</div>` +
+      d.items.map((i) => `<div class="card" style="cursor:${i.coord ? "pointer" : "default"}" data-c="${i.coord ? i.coord.join(",") : ""}"><h4><span class="sw" style="background:${UKMTO_COL[i.type] || "#38bdf8"}"></span>${esc(i.type)} #${i.num}<span class="muted small" style="margin-left:auto">${esc(i.date)}</span></h4><div class="small">${esc(i.text)}</div><div class="row" style="margin:6px 0 0">${esc(i.where || "unlocated")} · <a href="${esc(i.url)}" target="_blank" rel="noopener">notice ↗</a></div></div>`).join("");
+    $("tab-sea").onclick = (e) => {
+      const ga = e.target.closest(".gfwcard");
+      if (ga && e.target.tagName !== "A") {
+        // Zoom to the area and open its popup here: other layers (e.g. the Hormuz minefield zone) can cover the box on the map.
+        const a = ((S.feeds.gfw || {}).areas || {})[ga.dataset.area], r = a.ring, xs = r.map((p) => p[0]), ys = r.map((p) => p[1]);
+        const w = Math.min(...xs), s = Math.min(...ys), e2 = Math.max(...xs), n = Math.max(...ys);
+        map.fitBounds([[w, s], [e2, n]], { padding: 60, maxZoom: 9 });
+        return showPopup([(w + e2) / 2, (s + n) / 2], `<div class="pop">${gfwHtml(a, true)}</div>`);
+      }
+      const c = e.target.closest(".card"); if (c && c.dataset.c && e.target.tagName !== "A") { const [lo, la] = c.dataset.c.split(",").map(Number); map.flyTo({ center: [lo, la], zoom: 8 }); } };
+  }
+  function renderSources() {
+    api("status").then((st) => {
+      S.status = st.feeds;
+      const label = { mymaps: "Global War News Map (My Maps KML)", mil: "Military ADS-B (adsb.lol → adsb.fi), types from hexdb.io", front: "DeepStateMap front line", losses: "russianwarship.rip (UA General Staff)", firms: "NASA FIRMS NOAA-20 + NOAA-21 VIIRS", ukmto: "UKMTO via Firecrawl", gdelt: "GDELT 2.0 event export", tzeva: "Tzeva Adom (Israel alerts)", pla: "Taiwan MND PLA report", czib: "EASA CZIB airspace", official: "CENTCOM + War Dept + UK MoD", cables: "TeleGeography cables", outages: "IODA internet outages (Georgia Tech)", advisories: "US State Dept travel advisories", ships: "AISStream ship positions", gfw: "Global Fishing Watch ship traffic" };
+      $("tab-sources").innerHTML = `<table class="src"><tr><th>Feed</th><th>Status</th><th>Age</th></tr>${Object.entries(st.feeds).map(([k, v]) => `<tr><td>${esc(label[k] || k)}</td><td style="color:${v.ok ? "var(--ok)" : "var(--bad)"}">${v.ok ? "OK" : "FAIL"}${v.error ? `<div class="muted small">${esc(v.error)}</div>` : ""}</td><td class="muted">${v.age_s != null ? (v.age_s < 120 ? v.age_s + "s" : Math.round(v.age_s / 60) + "m") : "–"}</td></tr>`).join("")}</table>
+        <div class="card" style="margin-top:10px"><h4>Official statements</h4><ul id="offl"></ul></div>
+        <div class="muted small">Ground Truth ${esc(st.version)} · personal, non-commercial use. Content belongs to its sources; links go back to originals. Ship traffic: ${GFW_ATTR} (CC BY-NC 4.0). Aircraft types from <a href="https://hexdb.io" target="_blank" rel="noopener">hexdb.io</a>; aircraft photos © their photographers via <a href="https://www.planespotters.net" target="_blank" rel="noopener">Planespotters.net</a>.</div>`;
+      api("feed/official").then((o) => { $("offl").innerHTML = ((o.data || {}).items || []).slice(0, 10).map((i) => `<li><span class="badge">${esc(i.source)}</span> <a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a></li>`).join(""); });
+    });
+  }
+
+  setInterval(() => { $("utc").textContent = new Date().toISOString().slice(11, 19); }, 1000);
+})();

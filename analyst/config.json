@@ -1,0 +1,8 @@
+{
+  "_comment": "Optional overrides for analyst.py CFG: base_url (the watch floor's address), claude (path to the Claude Code CLI), models, effort and cadence. Add slow_until (UTC, YYYY-MM-DDTHH:MM:SSZ) to apply the slow settings below until that time; after it, full pace returns by itself.",
+  "slow": {
+    "cycle_min_gap_min": 55,
+    "picture_every_h": 6.0,
+    "picture_new_events_trigger": 1000
+  }
+}

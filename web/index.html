@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ground Truth</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='12' fill='none' stroke='%23f2b33d' stroke-width='4'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23f2b33d'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800&family=Overpass+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="vendor/maplibre-gl.css?v=5.6.0" rel="stylesheet">
+<link href="style.css?v=0.6.0" rel="stylesheet">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <button class="icon-btn only-narrow" id="btnRail" aria-label="Theatres and layers">☰</button>
+    <div class="brand"><span class="mark"></span><div><b>GROUND TRUTH</b><small>Global conflict watch floor</small></div></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="clock"><span id="utc">--:--:--</span><small>UTC</small></div>
+  </header>
+
+  <aside class="rail" id="rail">
+    <section>
+      <h3>Theatre</h3>
+      <div id="theatres" class="theatres"></div>
+    </section>
+    <section>
+      <h3>Layers</h3>
+      <div id="layers" class="layers"></div>
+    </section>
+    <section>
+      <h3>Event type</h3>
+      <div id="cats" class="chips"></div>
+    </section>
+    <section class="foot">
+      <div id="mapsrc"></div>
+      <label class="proj"><input type="checkbox" id="globe"> Globe projection</label>
+    </section>
+  </aside>
+
+  <main class="stage">
+    <div id="map"></div>
+    <div class="timeline" id="timelineWrap">
+      <div class="tl-head">
+        <span>Events per hour, curated map, by theatre</span>
+        <div class="seg" id="range">
+          <button data-h="6">6h</button><button data-h="24">24h</button><button data-h="0" class="on">All</button>
+        </div>
+      </div>
+      <canvas id="timeline" height="64"></canvas>
+    </div>
+  </main>
+
+  <aside class="panel" id="panel">
+    <nav class="tabs" id="tabs">
+      <button data-tab="feed" class="on">Feed</button>
+      <button data-tab="brief">Brief</button>
+      <button data-tab="sea">Maritime</button>
+      <button data-tab="ai">Analyst</button>
+      <button data-tab="sources">Sources</button>
+    </nav>
+    <div class="tabbody" id="tab-feed">
+      <input id="q" class="search" placeholder="Filter events, places, sources…" autocomplete="off">
+      <div id="feedcount" class="muted small"></div>
+      <ol id="feed" class="feed"></ol>
+    </div>
+    <div class="tabbody hidden" id="tab-brief"></div>
+    <div class="tabbody hidden" id="tab-sea"></div>
+    <div class="tabbody hidden" id="tab-ai"></div>
+    <div class="tabbody hidden" id="tab-sources"></div>
+  </aside>
+</div>
+<script src="vendor/maplibre-gl.js?v=5.6.0"></script>
+<script src="app.js?v=0.6.0"></script>
+</body>
+</html>

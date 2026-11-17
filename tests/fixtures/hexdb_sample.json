@@ -1,0 +1,38 @@
+{
+ "ae5f95": {
+  "type": "KC-46A Pegasus",
+  "icao": "KC46",
+  "mfr": "Boeing",
+  "owner": "United States Air Force",
+  "reg": "18-46042"
+ },
+ "ae01d5": {
+  "type": "RC-135U",
+  "icao": "R135",
+  "mfr": "Boeing",
+  "owner": "United States Air Force",
+  "reg": "64-14849"
+ },
+ "ae1470": {
+  "type": "C-17A Globemaster III",
+  "icao": "C17",
+  "mfr": "Boeing",
+  "owner": "United States Air Force",
+  "reg": "07-7178"
+ },
+ "3b9bd1": {
+  "type": "Atlantique ATL 2",
+  "icao": "ATLA",
+  "mfr": "Breguet",
+  "owner": "French Navy",
+  "reg": "23"
+ },
+ "505c06": {
+  "type": "ACJ319 115X",
+  "icao": "A319",
+  "mfr": "Airbus",
+  "owner": "Government of Slovakia",
+  "reg": "OM-BYA"
+ },
+ "ae59fe": null
+}

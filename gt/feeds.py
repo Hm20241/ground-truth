@@ -14,6 +14,10 @@ airframe, and a role (tanker, ISR, fighter, ...) for the map icons. Photos are f
 Ukraine, Russian regions and Poland every 60 s (alerts.in.ua SITREP, ubilling.net.ua fallback).
 0.8.0 adds US embassy and consulate alerts (gt/embassy.py, keyless): 38 posts' own alert RSS, conditional
 requests, Middle East and Europe posts every 5 min, the rest every 15 min.
+0.9.0 tracks tankers: the AIS feed keeps a 30-day vessel registry (gt/ais.py 1.1), flags from the MMSI (gt/mid.py),
+marks ships on sanctions, shadow-fleet and detention lists (gt/sanctions.py, OpenSanctions, CC BY-NC, daily) and
+adds IMF PortWatch chokepoint transits (gt/portwatch.py, every 6 h). Both new sources are non-commercial: never
+for the trading agent.
 """
 import email.utils
 import csv
@@ -29,7 +33,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 import zipfile
 
-from . import aircraft, alerts, embassy, geo
+from . import aircraft, alerts, embassy, geo, portwatch, sanctions
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # GT_DATA moves all state out of the code folder (the container mounts code read-only at /app, data at /data).
@@ -605,29 +609,101 @@ def advisories():
 
 # ---------------- ships (AISStream, sampled) ----------------
 
-def ships():
-    from . import ais
-    p = os.path.join(CACHE, "ais_vessels.json")
+MAX_SHIP_POINTS = 3000  # keeps feed/ships (and its public copy) to a few hundred KB
+SHIP_RANK = {"tanker": 0, "cargo": 1, "military": 2, "passenger": 3}
+
+
+def _load_json(path, default):
     try:
-        vessels = json.load(open(p))
+        return json.load(open(path))
     except Exception:
-        vessels = {}
-    heard, st = ais.sample()
+        return default
+
+
+def _dump_json(path, obj):
+    with open(path + ".tmp", "w") as fh:
+        json.dump(obj, fh, separators=(",", ":"))
+    os.replace(path + ".tmp", path)
+
+
+def ships():
+    """One AIS sample merged into the 3-hour store and the 30-day registry, then the map points, tanker cards,
+    tanker tracks and listed ships for the page. Points: [lon, lat, sog, cog, class, name, mmsi, ts, dest, hdg,
+    flag, marks, imo, draught, length]; marks come from the OpenSanctions vessel lists (non-commercial)."""
+    from . import ais, mid
     now = dt.datetime.now(dt.timezone.utc)
-    vessels = ais.merge(vessels, heard, now)
-    json.dump(vessels, open(p, "w"), separators=(",", ":"))
+    bo = ais.Backoff(os.path.join(CACHE, "ais_backoff.json"))
+    bo.check(now)
+    vp, rp = os.path.join(CACHE, "ais_vessels.json"), os.path.join(CACHE, "ais_registry.json")
+    vessels, reg = _load_json(vp, {}), _load_json(rp, {})
+    try:
+        heard, st = ais.sample()
+    except ais.HandshakeError as e:
+        if e.code == 429:
+            bo.hit(now)
+        raise
+    bo.clear()
+    now = dt.datetime.now(dt.timezone.utc)
+    ais.learn(reg, heard, now.date())
+    reg = ais.prune_registry(reg, now.date())
+    vessels = ais.merge(vessels, heard, now, reg)
+    _dump_json(vp, vessels)
+    _dump_json(rp, reg)
+    return ships_view(vessels, reg, st, now, ais, mid)
+
+
+def ships_view(vessels, reg, st, now, ais, mid):
     counts = ais.counts(vessels, now)
+    for c in counts.values():
+        c["listed"] = 0
     hour = (now - dt.timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    pts = []
+    pts, tankers, listed, tracks = [], [], [], {}
     for mmsi, v in vessels.items():
-        if v.get("lat") is None or (v.get("ts") or "") < hour or not ais.box_of(v["lat"], v["lon"]):
+        if v.get("lat") is None or (v.get("ts") or "") < hour:
             continue
-        pts.append([v["lon"], v["lat"], v.get("sog"), v.get("cog"), ais.ship_class(v.get("type")), v.get("name") or "",
-                    int(mmsi), v.get("ts"), v.get("dest") or "", v.get("hdg")])
-    boxes = {k: dict(label=b[0], theatre=b[1], **counts[k]) for k, b in ais.BOXES.items()}
-    return {"count": len(pts), "sample": st, "areas": boxes, "points": pts,
+        box = ais.box_of(v["lat"], v["lon"])
+        if not box:
+            continue
+        cls, flag = ais.ship_class(v.get("type")), mid.iso2_of(mmsi)
+        hit = sanctions.lookup(imo=v.get("imo"), mmsi=mmsi)
+        marks = hit["marks"] if hit else ""
+        pts.append([v["lon"], v["lat"], v.get("sog"), v.get("cog"), cls, v.get("name") or "", int(mmsi), v.get("ts"),
+                    v.get("dest") or "", v.get("hdg"), flag, marks, v.get("imo") or "", v.get("dr"), v.get("len")])
+        card = None
+        if cls == "tanker" or hit:
+            hist = ((reg.get(mmsi) or {}).get("dr") or [])
+            card = {"mmsi": int(mmsi), "name": v.get("name") or "", "cls": cls, "flag": flag, "imo": v.get("imo") or "",
+                    "area": box, "lon": v["lon"], "lat": v["lat"], "ts": v.get("ts"), "sog": v.get("sog"), "cog": v.get("cog"),
+                    "hdg": v.get("hdg"), "dest": v.get("dest") or "", "eta": v.get("eta") or "", "dr": v.get("dr"),
+                    "dr_was": hist[-2] if len(hist) >= 2 else None, "len": v.get("len"), "marks": marks}
+        if cls == "tanker":
+            tankers.append(card)
+            if len(v.get("trk") or []) >= 2:
+                tracks[mmsi] = [[p[0], p[1]] for p in v["trk"]]
+        if hit:
+            if set(marks) & set("SG"):  # area counts: sanctioned or shadow fleet; a port-state detention alone is common
+                counts[box]["listed"] += 1
+            listed.append(dict(card, lists=hit.get("lists") or [], list_name=hit.get("name") or "", url=hit.get("url") or "",
+                               match="IMO" if v.get("imo") and hit.get("imo") == v.get("imo") else "MMSI"))
+    if len(pts) > MAX_SHIP_POINTS:  # keep listed ships, tankers and cargo first, then ships under way
+        pts.sort(key=lambda p: (not p[11], SHIP_RANK.get(p[4], 9), (p[2] or 0) < 1))
+        pts = pts[:MAX_SHIP_POINTS]
+    order = lambda c: (min(("SGD".index(m) for m in c["marks"] if m in "SGD"), default=3), c["area"], -(c["sog"] or 0))
+    tankers.sort(key=order)
+    listed.sort(key=order)
+    heard_1h = sum(c["ships_1h"] for c in counts.values())
+    typed_1h = sum(c["typed"] for c in counts.values())
+    boxes = {k: dict(label=b[0], theatre=b[1], bbox=[b[3], b[2], b[5], b[4]], no_live_coverage=k in ais.NO_COVERAGE, **counts[k])
+             for k, b in ais.BOXES.items()}
+    return {"count": len(pts), "sample": st, "areas": boxes, "points": pts, "tankers": tankers, "tracks": tracks,
+            "listed": listed, "typed_pct": round(100.0 * typed_1h / heard_1h) if heard_1h else None,
+            "registry": {"ships": len(reg), "with_type": sum(1 for e in reg.values() if e.get("t")),
+                         "with_imo": sum(1 for e in reg.values() if e.get("imo")), "days": ais.REG_DAYS},
+            "lists": {"attribution": sanctions.ATTRIBUTION, "attribution_url": sanctions.ATTRIBUTION_URL,
+                      "licence": sanctions.LICENCE},
             "note": "Volunteer terrestrial AIS receivers: dense in Europe, absent in the Gulf and Red Sea. "
-                    "No ships in an area means no coverage, not no traffic. Military ships rarely transmit."}
+                    "No ships in an area means no coverage, not no traffic. Military ships rarely transmit. "
+                    "List marks match a ship's IMO or MMSI to a public list entry; MMSIs get reused and spoofed."}
 
 
 # ---------------- chokepoint traffic (Global Fishing Watch, ~4 days behind) ----------------
@@ -700,5 +776,7 @@ REGISTRY = {
     "advisories": (advisories, 6 * 3600),
     "ships": (ships, 300),
     "gfw": (gfw_traffic, 6 * 3600),
+    "portwatch": (portwatch.poll, 6 * 3600),  # IMF PortWatch chokepoint transits, ~3 days behind (non-commercial)
+    "vessellists": (sanctions.poll, 86400),    # OpenSanctions maritime lists; CSV only when the version changes
     "cables": (cables, 7 * 86400),
 }

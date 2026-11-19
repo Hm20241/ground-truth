@@ -1,0 +1,53 @@
+{
+ "name": "maritime",
+ "title": "Maritime-related sanctions",
+ "type": "collection",
+ "version": "20261118150306-fnv",
+ "updated_at": "2026-11-18T15:03:06",
+ "last_export": "2026-11-18T15:03:06",
+ "last_change": "2026-11-18T12:58:04",
+ "index_url": "https://data.opensanctions.org/artifacts/maritime/20261118150306-fnv/index.json",
+ "coverage": {
+  "start": "2025-04-01",
+  "countries": [],
+  "frequency": "daily"
+ },
+ "datasets": [
+  "eu_journal_sanctions",
+  "eu_fsf",
+  "be_fod_sanctions",
+  "us_ofac_sdn",
+  "kp_rusi_reports",
+  "gb_fcdo_sanctions",
+  "fr_tresor_gels_avoir",
+  "ext_abuja_mou_psc",
+  "abuja_mou_detention",
+  "ca_dfatd_sema_sanctions",
+  "us_cbp_forced_labor",
+  "ua_war_sanctions",
+  "us_trade_csl",
+  "un_1718_vessels",
+  "tokyo_mou_detention",
+  "eu_sanctions_map",
+  "ae_local_terrorists",
+  "black_sea_mou_detention",
+  "ext_tokyo_mou_psc",
+  "ch_seco_sanctions",
+  "paris_mou_banned",
+  "us_ofac_cons",
+  "mc_fund_freezes"
+ ],
+ "resources": [
+  {
+   "name": "maritime.csv",
+   "checksum": "aa226abc9d4c700bcea7ba01cef7b723ad2b60c7",
+   "mime_type": "text/csv",
+   "title": "Maritime-centric tabular format",
+   "size": 6222,
+   "mime_type_label": "Comma-separated table",
+   "path": "maritime.csv",
+   "url": "https://data.opensanctions.org/artifacts/maritime/20261118150306-fnv/maritime.csv"
+  }
+ ],
+ "result": "success"
+}

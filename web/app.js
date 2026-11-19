@@ -1,6 +1,8 @@
-/* Ground Truth v0.8 - watch floor client. All API paths are relative so the app runs behind a prefix.
+/* Ground Truth v0.9 - watch floor client. All API paths are relative so the app runs behind a prefix.
    0.7.0: air-raid and missile alerts (Israel: Tzeva Adom; Ukraine, Russia, Poland: alerts.in.ua), Alerts tab, siren banner.
-   0.8.0: US embassy alerts (38 posts' own feeds): map rings, popups, an Alerts-tab card, banner rows for shelter/departure. */
+   0.8.0: US embassy alerts (38 posts' own feeds): map rings, popups, an Alerts-tab card, banner rows for shelter/departure.
+   0.9.0: tankers: heading arrows, 3-hour tracks, Tankers / Cargo / Other filter, flag, IMO, draught; rings for ships on
+   sanctions, shadow-fleet and detention lists (OpenSanctions); IMF PortWatch chokepoint transits (map, popup, table). */
 (() => {
   "use strict";
   const THEATRES = {
@@ -65,6 +67,7 @@
     ["ukmto", "UKMTO maritime incidents", "ukmto", true],
     ["mil", "Military aircraft (ADS-B)", "mil", true],
     ["ships", "Ships (AIS, last hour)", "ships", true],
+    ["choke", "Chokepoint transits (IMF PortWatch, ~3 days behind)", "portwatch", true],
     ["gfw", "Ship traffic (GFW, ~4 days behind)", "gfw", true],
     ["outages", "Internet outages (IODA, 72h)", "outages", true],
     ["advisories", "US travel advisories (Level 3–4)", "advisories", false],
@@ -75,18 +78,35 @@
   const GROUPS = {
     events: ["ev-halo", "ev-pt", "ev-label"], overlays: ["ov-fill", "ov-line", "ov-border", "ov-lane"], front: ["front-fill", "front-line"],
     thermal: ["th-pt"], ukmto: ["uk-pt"], mil: ["mil-pt", "mil-label"], gdelt: ["gd-pt"], czib: ["cz-fill", "cz-line"], cables: ["cab-line"],
-    ships: ["ship-pt"], outages: ["out-fill", "out-line"], advisories: ["adv-fill", "adv-line"], gfw: ["gfw-fill", "gfw-line", "gfw-gap"],
+    ships: ["ship-trk", "ship-pt", "ship-arrow", "ship-listed", "ais-nocov", "ais-nocov-label"], choke: ["pw-pt", "pw-label"], outages: ["out-fill", "out-line"], advisories: ["adv-fill", "adv-line"], gfw: ["gfw-fill", "gfw-line", "gfw-gap"],
     alerts: ["ar-fill", "ar-line", "ar-dash"], israel: ["il-fill", "il-line", "il-halo", "il-pt", "il-label"],
     embassy: ["em-pt", "em-label"],
   };
   // Click priority, top first; the same list sets the pointer cursor. Region fills are huge, so they come late.
-  const CLICK_ORDER = ["ev-pt", "il-pt", "em-pt", "uk-pt", "mil-pt", "ship-pt", "gfw-gap", "th-pt", "gd-pt", "ov-line", "ov-border", "ov-lane", "il-fill",
+  const CLICK_ORDER = ["ev-pt", "il-pt", "em-pt", "uk-pt", "mil-pt", "ship-listed", "ship-arrow", "ship-pt", "pw-pt", "gfw-gap", "th-pt", "gd-pt", "ov-line", "ov-border", "ov-lane", "il-fill",
     "ov-fill", "cz-fill", "ar-fill", "front-fill", "out-fill", "gfw-fill", "adv-fill"];
   const SHIP_COL = { tanker: "#f2b33d", cargo: "#38bdf8", military: "#f05252", passenger: "#a3e635", fishing: "#2dd4bf", tug: "#9aa4ae", service: "#9aa4ae", other: "#c9ced4", unknown: "#c9ced4" };
   // Global Fishing Watch data is CC BY-NC 4.0: this attribution must appear wherever it is shown.
   const GFW_ATTR = `<a href="https://globalfishingwatch.org" target="_blank" rel="noopener">Powered by Global Fishing Watch</a>`;
   const GFW_COL = ["case", ["!", ["has", "chg"]], "#9aa4ae", ["<=", ["get", "chg"], -50], "#f05252", ["<=", ["get", "chg"], -20], "#f2b33d", [">=", ["get", "chg"], 20], "#38bdf8", "#9aa4ae"];
   const gfwCol = (c) => (c == null ? "#9aa4ae" : c <= -50 ? "#f05252" : c <= -20 ? "#f2b33d" : c >= 20 ? "#38bdf8" : "#9aa4ae");
+  // 0.9.0 shipping. PortWatch (IMF) wants this citation wherever its data is shown; OpenSanctions is CC BY-NC 4.0.
+  const PW_ATTR = `<a href="https://portwatch.imf.org" target="_blank" rel="noopener">Sources: UN Global Platform; IMF PortWatch (portwatch.imf.org)</a>`;
+  const OS_ATTR = `Vessel lists: <a href="https://www.opensanctions.org/datasets/maritime/" target="_blank" rel="noopener">OpenSanctions</a> (CC BY-NC 4.0), from OFAC, EU, UK, GUR and others`;
+  const MARK = { S: ["Sanctioned", "#f05252"], G: ["Shadow fleet (GUR list)", "#fb923c"], D: ["Detained (port state control)", "#f2b33d"] };
+  // Rings only for sanctioned (S) or shadow-fleet-listed (G) ships: a port-state detention (D) alone is common (7,000+ ships)
+  // and is usually a safety defect, so it shows in popups and lists, not as a ring.
+  const SG_FILTER = ["any", ["in", "S", ["get", "marks"]], ["in", "G", ["get", "marks"]]];
+  const isSG = (m) => /[SG]/.test(m || "");
+  const SHIP_GRPS = [["tanker", "Tankers"], ["cargo", "Cargo"], ["other", "Other"]];
+  const shipGrp = (cls) => (cls === "tanker" || cls === "cargo" ? cls : "other");
+  const AREA_NAME = (k) => (((S.feeds.ships || {}).areas || {})[k] || {}).label || String(k).replace(/_/g, " ");
+  let REGION_NAMES = null;
+  const regionName = (iso2) => {
+    if (!iso2) return "";
+    try { REGION_NAMES = REGION_NAMES || new Intl.DisplayNames(["en"], { type: "region" }); return REGION_NAMES.of(iso2) || iso2; } catch (e) { return iso2; }
+  };
+  const markBadges = (m) => [...(m || "")].map((c) => MARK[c] ? `<span class="badge mk" style="border-color:${MARK[c][1]};color:${MARK[c][1]}">${esc(MARK[c][0])}</span>` : "").join(" ");
   const IODA_SRC = { bgp: "routing (BGP)", "ping-slash24": "active probing", "merit-nt": "darknet traffic", gtr: "Google traffic" };
 
   // ---------- military aircraft: silhouettes by role (48-unit box, nose up, rotated by track on the map) ----------
@@ -125,6 +145,10 @@
   const acCol = (role) => AC_COL[role] || AC_BASE;
   const AC_URL = Object.fromEntries(Object.keys(AC_ROLES).map((r) => [r, drawAircraft(r, acCol(r), 48).toDataURL()]));
   const acIcon = (role) => `<img class="acico" src="${AC_URL[role] || AC_URL.other}" alt="">`;
+  function addShipImages() {
+    const c = drawAircraft("other", SHIP_COL.tanker, 96); // the plain arrow, in tanker gold
+    map.addImage("ship-tanker", { width: 96, height: 96, data: c.getContext("2d").getImageData(0, 0, 96, 96).data }, { pixelRatio: 2 });
+  }
   function addAircraftImages() {
     Object.keys(AC_ROLES).forEach((r) => [["", acCol(r)], ["-e", AC_EMERG]].forEach(([sfx, col]) => {
       const c = drawAircraft(r, col, 96);
@@ -155,8 +179,8 @@
   }
 
   map.on("load", () => {
-    addAircraftImages();
-    ["cables", "advisories", "outages", "gfw", "czib", "front", "alertreg", "ilarea", "overlays", "gdelt", "thermal", "gfwgap", "ships", "ukmto", "events", "mil", "embpt", "ilpt"].forEach((id) => map.addSource(id, { type: "geojson", data: empty }));
+    addAircraftImages(); addShipImages();
+    ["cables", "advisories", "outages", "gfw", "czib", "front", "alertreg", "ilarea", "overlays", "gdelt", "thermal", "gfwgap", "aisbox", "pw", "shiptrk", "ships", "ukmto", "events", "mil", "embpt", "ilpt"].forEach((id) => map.addSource(id, { type: "geojson", data: empty }));
     map.addLayer({ id: "cab-line", type: "line", source: "cables", layout: { visibility: "none" }, paint: { "line-color": "#22d3ee", "line-opacity": 0.28, "line-width": 0.8 } });
     map.addLayer({ id: "adv-fill", type: "fill", source: "advisories", layout: { visibility: "none" }, paint: { "fill-color": ["match", ["get", "level"], 4, "#f05252", "#f2853d"], "fill-opacity": ["match", ["get", "level"], 4, 0.12, 0.07] } });
     map.addLayer({ id: "adv-line", type: "line", source: "advisories", layout: { visibility: "none" }, paint: { "line-color": ["match", ["get", "level"], 4, "#f05252", "#f2853d"], "line-opacity": 0.5, "line-width": 0.8, "line-dasharray": [3, 3] } });
@@ -192,9 +216,32 @@
       "circle-opacity": ["interpolate", ["linear"], ["zoom"], 2, 0.45, 7, 0.85], "circle-blur": 0.3 } });
     map.addLayer({ id: "gfw-gap", type: "circle", source: "gfwgap", paint: {
       "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 3.5, 8, 6], "circle-color": "#0d0f11", "circle-stroke-color": "#fb923c", "circle-stroke-width": 2 } });
-    map.addLayer({ id: "ship-pt", type: "circle", source: "ships", paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 1.4, 6, 2.6, 10, 4.5], "circle-color": ["get", "col"],
+    // 0.9.0: AIS boxes with no live receivers get a dashed outline and a note, so an empty map isn't read as empty seas
+    map.addLayer({ id: "ais-nocov", type: "line", source: "aisbox", filter: ["==", ["geometry-type"], "Polygon"], paint: {
+      "line-color": "#9aa4ae", "line-opacity": 0.5, "line-width": 1, "line-dasharray": [2, 3] } });
+    map.addLayer({ id: "ais-nocov-label", type: "symbol", source: "aisbox", minzoom: 3.6, filter: ["==", ["geometry-type"], "Point"], layout: {
+      "text-field": ["get", "note"], "text-size": 10.5, "text-max-width": 14, "text-optional": true, "text-font": ["Open Sans Regular"] },
+      paint: { "text-color": "#aeb6bf", "text-halo-color": "#0d0f11", "text-halo-width": 1.3 } });
+    // IMF PortWatch chokepoints: sized by tankers a day (7-day mean), coloured by the change against the same week a year ago
+    map.addLayer({ id: "pw-pt", type: "circle", source: "pw", paint: {
+      "circle-radius": ["interpolate", ["linear"], ["sqrt", ["get", "t7"]], 0, 4, 3, 7, 10, 13], "circle-color": GFW_COL, "circle-opacity": 0.85,
+      "circle-stroke-color": "#0d0f11", "circle-stroke-width": 1.6 } });
+    map.addLayer({ id: "pw-label", type: "symbol", source: "pw", minzoom: 3.4, layout: {
+      "text-field": ["get", "lbl"], "text-size": 10.5, "text-offset": [0, 1.3], "text-anchor": "top", "text-max-width": 12, "text-optional": true, "text-font": ["Open Sans Regular"] },
+      paint: { "text-color": "#cfd5db", "text-halo-color": "#0d0f11", "text-halo-width": 1.3 } });
+    map.addLayer({ id: "ship-trk", type: "line", source: "shiptrk", paint: {
+      "line-color": SHIP_COL.tanker, "line-opacity": 0.4, "line-width": ["interpolate", ["linear"], ["zoom"], 3, 0.6, 8, 1.6] } });
+    map.addLayer({ id: "ship-pt", type: "circle", source: "ships", filter: ["!", ["get", "arrow"]], paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, ["case", ["==", ["get", "cls"], "tanker"], 2, 1.4], 6, ["case", ["==", ["get", "cls"], "tanker"], 3.4, 2.6], 10, 4.5],
+      "circle-color": ["get", "col"],
       "circle-opacity": ["case", ["get", "moving"], 0.85, 0.45], "circle-stroke-width": 0 } });
+    map.addLayer({ id: "ship-arrow", type: "symbol", source: "ships", filter: ["get", "arrow"], layout: {
+      "icon-image": "ship-tanker", "icon-size": ["interpolate", ["linear"], ["zoom"], 2, 0.2, 6, 0.3, 10, 0.44], "icon-rotate": ["get", "rot"],
+      "icon-rotation-alignment": "map", "icon-allow-overlap": true, "icon-ignore-placement": true } });
+    map.addLayer({ id: "ship-listed", type: "circle", source: "ships", filter: SG_FILTER, paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 4, 6, 6.5, 10, 9], "circle-color": "rgba(0,0,0,0)",
+      "circle-stroke-color": ["match", ["slice", ["get", "marks"], 0, 1], "S", MARK.S[1], "G", MARK.G[1], MARK.D[1]], "circle-stroke-width": 1.8 } });
+    applyShipFilter();
     map.addLayer({ id: "uk-pt", type: "circle", source: "ukmto", paint: {
       "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 3.5, 8, 7], "circle-color": "#0d0f11",
       "circle-stroke-color": ["coalesce", ["get", "col"], "#38bdf8"], "circle-stroke-width": 2, "circle-opacity": ["get", "op"], "circle-stroke-opacity": ["get", "op"] } });
@@ -296,9 +343,8 @@
       });
       return pop;
     }
-    if (id === "ship-pt") {
-      return showPopup(lngLat, `<div class="pop"><h5>${esc(p.name || "Unnamed vessel")} <span class="muted">${esc(p.cls)}</span></h5><div class="meta">MMSI ${esc(p.mmsi)} · heard ${esc((p.ts || "").slice(11, 16))}Z</div>${p.sog != null ? nf(p.sog) + " kt" : "speed –"} · course ${p.cog != null ? Math.round(p.cog) + "°" : "–"}${p.dest ? " · to " + esc(p.dest) : ""}<div><a href="https://www.marinetraffic.com/en/ais/details/ships/mmsi:${esc(p.mmsi)}" target="_blank" rel="noopener">MarineTraffic ↗</a></div><div class="muted small">AISStream, volunteer receivers. Positions are self-reported and can be spoofed.</div></div>`);
-    }
+    if (id === "ship-pt" || id === "ship-arrow" || id === "ship-listed") return shipPopup(p, lngLat);
+    if (id === "pw-pt") return pwPopup(p.id, lngLat);
     if (id === "out-fill") {
       const o = S.feeds.outages || {}, c = (o.countries || []).find((x) => x.code === p.code) || { events: [] };
       const regs = (o.regions || []).filter((r) => r.country === p.code).slice(0, 6);
@@ -352,7 +398,7 @@
   function loadAll() {
     Promise.allSettled([api("events"), api("summary"), api("status"), api("czib_geo"), api("feed/front"), api("feed/ukmto"),
       api("feed/firms"), api("feed/gdelt"), api("feed/cables"), api("analysis"), api("analysis/events"),
-      api("outages_geo"), api("advisories_geo"), api("feed/outages"), api("feed/ships"), api("feed/gfw")]).then(([ev, sum, st, cz, fr, uk, fi, gd, cb, ao, ae, og, ag, ou, sh, gw]) => {
+      api("outages_geo"), api("advisories_geo"), api("feed/outages"), api("feed/ships"), api("feed/gfw"), api("feed/portwatch")]).then(([ev, sum, st, cz, fr, uk, fi, gd, cb, ao, ae, og, ag, ou, sh, gw, pw]) => {
       if (ao.value) S.ai.ov = ao.value;
       if (ae.value) S.ai.ev = ae.value;
       if (ev.value) S.events = ev.value;
@@ -369,6 +415,7 @@
       if (ou.value && ou.value.data) S.feeds.outages = ou.value.data;
       if (sh.value && sh.value.data) setShips(sh.value.data);
       if (gw.value && gw.value.data) setGfw(gw.value.data);
+      if (pw.value && pw.value.data) setPw(pw.value.data);
       render();
     });
     loadLive();
@@ -394,8 +441,78 @@
   }
   function setShips(d) {
     S.feeds.ships = d;
-    map.getSource("ships").setData({ type: "FeatureCollection", features: d.points.map(([lon, lat, sog, cog, cls, name, mmsi, ts, dest]) => ({ type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] },
-      properties: { sog, cog, cls, name, mmsi, ts, dest, col: SHIP_COL[cls] || "#c9ced4", moving: (sog || 0) >= 1 } })) });
+    map.getSource("ships").setData({ type: "FeatureCollection", features: d.points.map(([lon, lat, sog, cog, cls, name, mmsi, ts, dest, hdg, flag, marks, imo, dr, len]) => {
+      const rot = hdg ?? cog, moving = (sog || 0) >= 1;
+      return { type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] },
+        properties: { sog, cog, hdg, cls, grp: shipGrp(cls), name, mmsi, ts, dest, flag: flag || "", marks: marks || "", imo: imo || "", dr, len,
+          col: SHIP_COL[cls] || "#c9ced4", moving, arrow: cls === "tanker" && moving && rot != null, rot: rot ?? 0 } };
+    }) });
+    map.getSource("shiptrk").setData({ type: "FeatureCollection", features: Object.entries(d.tracks || {}).map(([mmsi, pts]) => ({ type: "Feature",
+      geometry: { type: "LineString", coordinates: pts }, properties: { mmsi: +mmsi, grp: "tanker" } })) });
+    const boxes = Object.entries(d.areas || {}).filter(([, a]) => a.no_live_coverage && a.bbox);
+    map.getSource("aisbox").setData({ type: "FeatureCollection", features: boxes.flatMap(([k, a]) => {
+      const [w, s, e, n] = a.bbox;
+      return [{ type: "Feature", geometry: { type: "Polygon", coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] }, properties: { key: k } },
+        { type: "Feature", geometry: { type: "Point", coordinates: [(w + e) / 2, (s + n) / 2] },
+          properties: { note: `No live AIS receivers: ${a.label}. See the chokepoint and GFW counts.` } }];
+    }) });
+  }
+  function applyShipFilter() {
+    const on = [...(S.shipGrps || new Set(SHIP_GRPS.map(([g]) => g)))], grp = ["in", ["get", "grp"], ["literal", on]];
+    if (!map.getLayer("ship-pt")) return;
+    map.setFilter("ship-pt", ["all", ["!", ["get", "arrow"]], grp]);
+    map.setFilter("ship-arrow", ["all", ["get", "arrow"], grp]);
+    map.setFilter("ship-listed", ["all", SG_FILTER, grp]);
+    map.setFilter("ship-trk", grp);
+  }
+  function setPw(d) {
+    S.feeds.portwatch = d;
+    map.getSource("pw").setData({ type: "FeatureCollection", features: (d.chokepoints || []).filter((c) => c.lon != null && c.lat != null).map((c) => {
+      const t7 = (c.avg7 || {}).tanker, chg = (c.change_vs_year_pct || {}).tanker;
+      return { type: "Feature", geometry: { type: "Point", coordinates: [c.lon, c.lat] },
+        properties: { id: c.id, name: c.name, t7: Math.max(0, t7 || 0), lbl: `${c.name}\n${t7 != null ? nf(t7) : "–"} tankers/day`, ...(chg != null ? { chg } : {}) } };
+    }) });
+  }
+  function shipCard(mmsi) {
+    const d = S.feeds.ships || {}, m = +mmsi;
+    return (d.listed || []).find((x) => x.mmsi === m) || (d.tankers || []).find((x) => x.mmsi === m) || null;
+  }
+  function draughtHtml(dr, was) {
+    if (dr == null) return "";
+    let h = `draught ${nf(dr)} m`;
+    if (was && Math.abs(was[0] - dr) >= 0.2) h += `, was ${nf(was[0])} m on ${esc(fmtD(Date.parse(was[1])))} <span class="muted">(${dr > was[0] ? "deeper: likely loaded" : "shallower: likely unloaded"}; crews enter draught by hand, so treat it as a hint)</span>`;
+    return h;
+  }
+  function shipPopup(p, lngLat) {
+    const c = shipCard(p.mmsi) || {}, flag = p.flag || c.flag, trk = ((S.feeds.ships || {}).tracks || {})[p.mmsi];
+    const lists = c.lists ? `<div class="small">${markBadges(c.marks)}<br>Listed by: ${c.lists.map(esc).join(", ")}${c.list_name && c.list_name !== (p.name || c.name) ? ` · listed as <b>${esc(c.list_name)}</b>` : ""} · matched on ${esc(c.match)}${c.url ? ` · <a href="${esc(c.url)}" target="_blank" rel="noopener">OpenSanctions ↗</a>` : ""}</div>` : (p.marks ? `<div class="small">${markBadges(p.marks)}</div>` : "");
+    const dims = [p.len ? `${nf(p.len)} m long` : "", draughtHtml(p.dr ?? c.dr, c.dr_was)].filter(Boolean).join(" · ");
+    return showPopup(lngLat, `<div class="pop"><h5>${esc(p.name || "Unnamed vessel")} <span class="muted">${esc(p.cls === "unknown" || !p.cls ? "type unknown" : p.cls)}</span></h5>` +
+      `<div class="meta">${flag ? `Flag ${esc(regionName(flag))} (declared) · ` : ""}MMSI ${esc(p.mmsi)}${p.imo ? ` · IMO ${esc(p.imo)}` : ""} · heard ${esc((p.ts || "").slice(11, 16))}Z</div>` +
+      `${p.sog != null ? nf(p.sog) + " kt" : "speed –"} · course ${p.cog != null ? Math.round(p.cog) + "°" : "–"}${p.dest ? " · to " + esc(p.dest) : ""}${c.eta ? ` · ETA ${esc(c.eta)} UTC` : ""}` +
+      (dims ? `<div class="small">${dims}</div>` : "") + lists +
+      (trk ? `<div class="muted small">Track: ${trk.length} positions over the last 3 hours (faint line).</div>` : "") +
+      `<div><a href="https://www.marinetraffic.com/en/ais/details/ships/mmsi:${esc(p.mmsi)}" target="_blank" rel="noopener">MarineTraffic ↗</a></div>` +
+      `<div class="muted small">AISStream, volunteer receivers. Positions are self-reported and can be spoofed; the flag comes from the MMSI.${c.lists || p.marks ? " A list entry is about the ship's identifiers, not proof of what it is doing now. " + OS_ATTR + "." : ""}</div></div>`);
+  }
+  function pwSpark(sp, w = 300, h = 44) {
+    if (!sp || sp.length < 2) return "";
+    const mx = Math.max(1, ...sp.map((r) => r[2] || 0)), x = (i) => (i * w / (sp.length - 1)).toFixed(1), y = (v) => (h - 2 - (v || 0) * (h - 4) / mx).toFixed(1);
+    const line = (j, col, wd) => `<polyline fill="none" stroke="${col}" stroke-width="${wd}" points="${sp.map((r, i) => x(i) + "," + y(r[j])).join(" ")}"/>`;
+    return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Daily ships (grey) and tankers (gold), last ${sp.length} days">${line(2, "#6b7480", 1.2)}${line(1, SHIP_COL.tanker, 1.8)}</svg>` +
+      `<div class="sparkax"><span>${esc(fmtD(Date.parse(sp[0][0])))}</span><span>tankers (gold) and all ships (grey) a day</span><span>${esc(fmtD(Date.parse(sp[sp.length - 1][0])))}</span></div>`;
+  }
+  const pct = (x) => (x == null ? "–" : `${x > 0 ? "+" : ""}${x}%`);
+  function pwPopup(id, lngLat) {
+    const c = ((S.feeds.portwatch || {}).chokepoints || []).find((x) => x.id === id);
+    if (!c) return;
+    const l = c.last || {}, a = c.avg7 || {}, y = c.year_ago7 || {}, ch = c.change_vs_year_pct || {};
+    return showPopup(lngLat || [c.lon, c.lat], `<div class="pop"><h5>${esc(c.name)} <span class="muted">transits</span></h5>` +
+      `<div class="meta">Ships through the chokepoint each day, through ${esc(c.last_day)} (IMF PortWatch, about 3 days behind)</div>` +
+      `<div class="small">Tankers: <b>${nf(a.tanker)}</b>/day last 7 days, <b>${nf(y.tanker)}</b> a year ago <b style="color:${gfwCol(ch.tanker)}">${pct(ch.tanker)}</b><br>` +
+      `All ships: <b>${nf(a.total)}</b>/day, ${nf(y.total)} a year ago <span style="color:${gfwCol(ch.total)}">${pct(ch.total)}</span><br>` +
+      `Last day: ${nf(l.tanker)} tankers${l.tanker_dwt ? ` (about ${nf(Math.round(l.tanker_dwt))} t of cargo, IMF estimate)` : ""}, ${nf(l.container)} container, ${nf(l.dry_bulk)} dry bulk, ${nf(l.general_cargo)} general cargo, ${nf(l.roro)} ro-ro; ${nf(l.total)} in all.</div>` +
+      pwSpark(c.spark) + `<div class="muted small">Counted from satellite AIS, so ships with AIS off are missed. ${PW_ATTR}</div></div>`);
   }
   function setGfw(d) {
     S.feeds.gfw = d;
@@ -801,12 +918,22 @@
     $("layers").innerHTML = LAYERS.map(([k, label, feed, on]) =>
       `<label><input type="checkbox" data-layer="${k}" ${on ? "checked" : ""}><span class="dot" id="dot-${k}"></span>${label}<span class="n" id="n-${k}"></span></label>` +
       (k === "mil" ? `<div class="aclegend" id="aclegend"></div>` : "") +
+      (k === "ships" ? `<div class="aclegend" id="shipfilter">${SHIP_GRPS.map(([g, t]) => `<button class="chip" data-grp="${g}" title="Show or hide ${t.toLowerCase()}"><i style="background:${SHIP_COL[g] || SHIP_COL.other}"></i>${t}<span class="n" id="sn-${g}"></span></button>`).join("")}</div>` +
+        `<div class="aclegend">${[MARK.S, MARK.G].map(([t, c]) => `<span><i class="lsw ring" style="border-color:${c}"></i>${t.replace(" (GUR list)", "")}</span>`).join("")}</div>` : "") +
       (k === "alerts" ? `<div class="aclegend">${[["red", "missile"], ["yellow", "drone / air"], ["nominal", "standing"], ["launch", "launch area"]]
         .map(([c, t]) => `<span><i class="lsw" style="background:${AR_COL[c]}"></i>${t}</span>`).join("")}</div>` : "") +
       (k === "embassy" ? `<div class="aclegend">${[[EM_KIND.shelter[1], "shelter / departure"], [EM_KIND.security[1], "security / protest"], [EM_KIND.weather[1], "weather / health"], [EM_OLD, "older than 3 days"]]
         .map(([c, t]) => `<span><i class="lsw ring" style="border-color:${c}"></i>${t}</span>`).join("")}</div>` : "") +
       (k === "israel" ? `<div class="aclegend">${[["siren", "siren"], ["shelter", "shelter"], ["early", "early warning"], ["ended", "all clear"], ["recent", "24 h"]]
         .map(([c, t]) => `<span><i class="lsw dot" style="background:${IL_COL[c]}"></i>${t}</span>`).join("")}</div>` : "")).join("");
+    $("shipfilter").onclick = (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      e.preventDefault();
+      S.shipGrps = S.shipGrps || new Set(SHIP_GRPS.map(([g]) => g));
+      S.shipGrps.has(b.dataset.grp) ? S.shipGrps.delete(b.dataset.grp) : S.shipGrps.add(b.dataset.grp);
+      b.classList.toggle("off", !S.shipGrps.has(b.dataset.grp));
+      applyShipFilter();
+    };
     $("layers").onchange = (e) => {
       const k = e.target.dataset.layer; if (!k) return;
       GROUPS[k].forEach((l) => map.getLayer(l) && map.setLayoutProperty(l, "visibility", e.target.checked ? "visible" : "none"));
@@ -833,15 +960,24 @@
       events: S.summary.events_total, overlays: S.events ? S.events.features.filter((f) => f.properties.kind === "overlay").length : null,
       front: (S.feeds.front || {}).count, thermal: (S.feeds.firms || {}).count, ukmto: (S.feeds.ukmto || {}).located,
       mil: (S.feeds.mil || {}).count, gdelt: (S.feeds.gdelt || {}).count, czib: S.summary.airspace_czib_active, cables: null,
-      ships: (S.feeds.ships || {}).count, outages: (S.feeds.outages || {}).count, gfw: (S.feeds.gfw || {}).count,
+      ships: (S.feeds.ships || {}).count, choke: (S.feeds.portwatch || {}).count, outages: (S.feeds.outages || {}).count, gfw: (S.feeds.gfw || {}).count,
       advisories: S.summary.travel_advisories ? (S.summary.travel_advisories.level4 || 0) + (S.summary.travel_advisories.level3 || 0) : null,
       alerts: S.alerts ? regList().filter((r) => r.kind === "alert").length : null, israel: S.alerts ? ((S.alerts.israel || {}).cities || []).length : null,
       embassy: S.alerts && S.alerts.embassy ? (S.alerts.embassy.items || []).length : null };
+    const sg = {};
+    ((S.feeds.ships || {}).points || []).forEach((p) => { const g = shipGrp(p[4]); sg[g] = (sg[g] || 0) + 1; });
+    SHIP_GRPS.forEach(([g]) => { const el = $("sn-" + g); if (el) el.textContent = sg[g] ? " " + nf(sg[g]) : ""; });
     LAYERS.forEach(([k, , feed]) => {
       const d = $("dot-" + k), e = $("n-" + k);
       if (d) d.className = "dot " + (st[feed] ? (st[feed].ok ? "ok" : "bad") : "");
       if (e) e.textContent = n[k] != null ? nf(n[k]) : "";
     });
+  }
+  function hormuzKpi() {
+    const h = ((S.feeds.portwatch || {}).chokepoints || []).find((c) => c.id === "chokepoint6");
+    if (!h || !h.avg7) return [];
+    const ch = (h.change_vs_year_pct || {}).tanker;
+    return [[`${nf(h.avg7.tanker)}${ch != null ? ` (${pct(ch)})` : ""}`, "Hormuz tankers/day", ch != null && ch <= -50]];
   }
   function renderKpis() {
     const s = S.summary, pla = s.taiwan_pla || {};
@@ -855,6 +991,7 @@
       [nf(s.thermal_corroborated), "Thermal-corroborated"],
       [nf((S.feeds.mil || {}).count ?? s.mil_aircraft), "Mil aircraft (ADS-B)"],
       [nf(s.ukmto_incidents_7d), "UKMTO incidents, 7d", s.ukmto_incidents_7d > 3],
+      ...hormuzKpi(),
       [s.ru_losses_personnel_today != null ? "+" + nf(s.ru_losses_personnel_today) : "–", "RU losses (UA GS)"],
       [pla.aircraft != null ? `${pla.aircraft} / ${pla.plan_ships}` : "–", "PLA aircraft / ships"],
     ];
@@ -982,7 +1119,18 @@
       h += `<li>Internet: ${w.length ? w.map((c) => `<b>${esc(c.country)}</b>${c.ongoing ? " (ongoing)" : ""}`).join(", ") : "no watched country"} with outages in ${esc(io.window_h)} h; ${nf(r.length)} regional outages in watched countries${r.length ? ` (latest ${esc(r[0].region)}, ${esc(r[0].country)})` : ""}. IODA.</li>`;
     }
     if (ta) h += `<li>US travel advisories: <b>${nf(ta.level4)}</b> countries at Level 4, ${nf(ta.level3)} at Level 3${(ta.level_changes || []).length ? `; changes: ${ta.level_changes.slice(0, 3).map((c) => `${esc(c.country)} ${esc(c.from)}→${esc(c.to)}`).join(", ")}` : `; no level changes since ${esc((ta.watching_since || "").slice(0, 10))}`}.</li>`;
-    if (sh) h += `<li>Ships heard in the last hour (AIS): ${Object.entries(sh).filter(([, v]) => v.ships_1h).map(([k, v]) => `${esc(k.replace("_", " "))} ${nf(v.ships_1h)}`).join(", ") || "none"}. No volunteer AIS coverage in the Gulf or Red Sea.</li>`;
+    if (sh) h += `<li>Ships heard in the last hour (AIS): ${Object.entries(sh).filter(([, v]) => v.ships_1h).map(([k, v]) => `${esc(AREA_NAME(k))} ${nf(v.ships_1h)}${v.tankers != null ? ` (${nf(v.tankers)} tanker${v.tankers === 1 ? "" : "s"})` : ""}`).join(", ") || "none"}.${s.ship_types_known_pct != null ? ` Ship type known for ${nf(s.ship_types_known_pct)}%.` : ""} No volunteer AIS coverage in the Gulf or Red Sea.</li>`;
+    const pwd = S.feeds.portwatch;
+    if (pwd && (pwd.chokepoints || []).length) {
+      const one = (c) => `${esc(c.name)} <b>${nf((c.avg7 || {}).tanker)}</b> tankers/day${(c.change_vs_year_pct || {}).tanker != null ? ` (${pct(c.change_vs_year_pct.tanker)} vs a year ago)` : ""}`;
+      const pick = pwd.chokepoints.filter((c) => c.pinned).concat(pwd.chokepoints.filter((c) => !c.pinned && /suez|malacca|bosporus|panama|gibraltar/i.test(c.name)));
+      h += `<li>Chokepoint transits, 7-day mean through ${esc(pwd.data_through)}: ${pick.map(one).join(", ")}. ${PW_ATTR}.</li>`;
+    }
+    const ls = ((S.feeds.ships || {}).listed || []).filter((x) => isSG(x.marks));
+    if (ls.length) {
+      const by = {}; ls.forEach((x) => [...x.marks].forEach((m) => (by[m] = (by[m] || 0) + 1)));
+      h += `<li>Sanctioned or shadow-fleet ships heard on AIS in the last hour: <b>${nf(ls.length)}</b> (${[["S", "sanctioned"], ["G", "on Ukraine's GUR shadow-fleet list"]].filter(([m]) => by[m]).map(([m, t]) => `${t} ${nf(by[m])}`).join(", ")}). ${OS_ATTR}.</li>`;
+    }
     if (gf && gf.areas) {
       const one = ([k, a]) => `${esc(a.label)} <b>${nf(a.avg_7d)}</b>/day${a.change_vs_last_year_pct != null ? ` (${a.change_vs_last_year_pct > 0 ? "+" : ""}${a.change_vs_last_year_pct}% vs a year ago)` : ""}`;
       const ar = Object.entries(gf.areas);
@@ -994,9 +1142,26 @@
     const d = S.feeds.ukmto || { items: [] }, g = S.feeds.gfw;
     const gfwCards = g && g.areas ? `<div class="sub" style="margin:0 0 6px">Ship traffic, non-fishing ships a day (Global Fishing Watch, through ${esc(g.data_through)})</div>` +
       Object.entries(g.areas).map(([k, a]) => `<div class="card gfwcard" data-area="${esc(k)}" style="cursor:pointer">${gfwHtml(a, false)}</div>`).join("") : "";
-    $("tab-sea").innerHTML = gfwCards + `<div class="muted small" style="margin-bottom:8px">UKMTO notices scraped via Firecrawl (site blocks plain clients). Positions from stated range/bearing where given, else area centroid.</div>` +
+    $("tab-sea").innerHTML = pwTable() + listedCard() + tankerCards() + gfwCards + `<div class="muted small" style="margin-bottom:8px">UKMTO notices scraped via Firecrawl (site blocks plain clients). Positions from stated range/bearing where given, else area centroid.</div>` +
       d.items.map((i) => `<div class="card" style="cursor:${i.coord ? "pointer" : "default"}" data-c="${i.coord ? i.coord.join(",") : ""}"><h4><span class="sw" style="background:${UKMTO_COL[i.type] || "#38bdf8"}"></span>${esc(i.type)} #${i.num}<span class="muted small" style="margin-left:auto">${esc(i.date)}</span></h4><div class="small">${esc(i.text)}</div><div class="row" style="margin:6px 0 0">${esc(i.where || "unlocated")} · <a href="${esc(i.url)}" target="_blank" rel="noopener">notice ↗</a></div></div>`).join("");
     $("tab-sea").onclick = (e) => {
+      if (e.target.tagName === "A") return;
+      const pr = e.target.closest("[data-pw]");
+      if (pr) {
+        const c = ((S.feeds.portwatch || {}).chokepoints || []).find((x) => x.id === pr.dataset.pw);
+        if (c) { map.flyTo({ center: [c.lon, c.lat], zoom: 6.5 }); pwPopup(c.id, [c.lon, c.lat]); }
+        return;
+      }
+      const sr = e.target.closest("[data-ship]");
+      if (sr) {
+        const c = shipCard(sr.dataset.ship), f = c && ((S.feeds.ships || {}).points || []).find((q) => q[6] === c.mmsi);
+        if (c) {
+          map.flyTo({ center: [c.lon, c.lat], zoom: 9 });
+          const [lon, lat, sog, cog, cls, name, mmsi, ts, dest, hdg, flag, marks, imo, dr, len] = f || [c.lon, c.lat, c.sog, c.cog, c.cls, c.name, c.mmsi, c.ts, c.dest, c.hdg, c.flag, c.marks, c.imo, c.dr, c.len];
+          shipPopup({ sog, cog, cls, name, mmsi, ts, dest, hdg, flag, marks, imo, dr, len }, [lon, lat]);
+        }
+        return;
+      }
       const ga = e.target.closest(".gfwcard");
       if (ga && e.target.tagName !== "A") {
         // Zoom to the area and open its popup here: other layers (e.g. the Hormuz minefield zone) can cover the box on the map.
@@ -1007,13 +1172,54 @@
       }
       const c = e.target.closest(".card"); if (c && c.dataset.c && e.target.tagName !== "A") { const [lo, la] = c.dataset.c.split(",").map(Number); map.flyTo({ center: [lo, la], zoom: 8 }); } };
   }
+  function pwTable() {
+    const d = S.feeds.portwatch;
+    if (!d || !(d.chokepoints || []).length) return "";
+    const row = (c) => {
+      const a = c.avg7 || {}, y = c.year_ago7 || {}, ch = (c.change_vs_year_pct || {}).tanker;
+      return `<tr data-pw="${esc(c.id)}" style="cursor:pointer"><td>${c.pinned ? "<b>" + esc(c.name) + "</b>" : esc(c.name)}<div class="muted small">all ships ${nf(a.total)}/day</div></td><td class="num"><b>${nf(a.tanker)}</b></td><td class="num muted">${nf(y.tanker)}</td><td class="num" style="color:${gfwCol(ch)}">${pct(ch)}</td></tr>`;
+    };
+    const all = d.chokepoints, top = all.slice(0, 10), rest = all.slice(10);
+    return `<div class="card"><h4>Chokepoint transits <span class="muted small" style="margin-left:auto">through ${esc(d.data_through)}</span></h4>
+      <table class="src pwt"><tr><th>Chokepoint</th><th class="num" title="Tankers a day, mean of the last 7 days">Tankers</th><th class="num" title="Same dates a year earlier">Yr ago</th><th class="num">Δ</th></tr>${top.map(row).join("")}</table>
+      ${rest.length ? `<details><summary class="muted small">${nf(rest.length)} more chokepoints</summary><table class="src pwt">${rest.map(row).join("")}</table></details>` : ""}
+      <div class="muted small">7-day means of daily transits, against the same dates a year earlier (no percentage under 3 ships a day). About 3 days behind; ships with AIS off are not counted. ${PW_ATTR}</div></div>`;
+  }
+  function shipRow(c) {
+    const was = c.dr_was && c.dr != null && Math.abs(c.dr_was[0] - c.dr) >= 0.2 ? (c.dr > c.dr_was[0] ? " ↑" : " ↓") : "";
+    return `<li data-ship="${c.mmsi}" style="cursor:pointer">${c.marks ? markBadges(c.marks) + " " : ""}<b>${esc(c.name || "unnamed")}</b>${c.flag ? ` <span class="muted">${esc(c.flag)}</span>` : ""}` +
+      ` · ${c.sog != null ? nf(c.sog) + " kt" : "–"}${c.dest ? " · to " + esc(c.dest) : ""}${c.dr != null ? ` · ${nf(c.dr)} m${was}` : ""}</li>`;
+  }
+  function listedCard() {
+    const all = (S.feeds.ships || {}).listed || [], ls = all.filter((c) => isSG(c.marks)), dd = all.filter((c) => !isSG(c.marks));
+    if (!all.length) return "";
+    const row = (c) => shipRow(c).replace("</li>", `<div class="muted small">${esc(AREA_NAME(c.area))} · ${esc((c.lists || []).join(", "))} · matched on ${esc(c.match)}</div></li>`);
+    return `<div class="card"><h4>Sanctioned and shadow-fleet ships heard <span class="muted small" style="margin-left:auto">last hour, AIS</span></h4>` +
+      (ls.length ? `<ul class="shiplist">${ls.slice(0, 25).map(row).join("")}${ls.length > 25 ? `<li class="muted">and ${nf(ls.length - 25)} more</li>` : ""}</ul>` : `<div class="muted small">None heard in the last hour.</div>`) +
+      (dd.length ? `<details><summary class="muted small">${nf(dd.length)} more with a past port-state detention only</summary><ul class="shiplist">${dd.slice(0, 40).map(row).join("")}</ul></details>` : "") +
+      `<div class="muted small">IMO or MMSI on a sanctions list or Ukraine's GUR shadow-fleet list (detentions are usually safety defects). A list entry is about the ship's identifiers, not proof of what it is doing now; MMSIs get reused. ${OS_ATTR}.</div></div>`;
+  }
+  function tankerCards() {
+    const d = S.feeds.ships;
+    if (!d || !d.tankers) return "";
+    const by = {};
+    d.tankers.forEach((t) => (by[t.area] = by[t.area] || []).push(t));
+    const areas = Object.entries(d.areas || {});
+    const head = `<div class="sub" style="margin:0 0 6px">Tankers heard in the last hour (AIS)${d.typed_pct != null ? ` · ship type known for ${nf(d.typed_pct)}%` : ""}</div>`;
+    return head + areas.map(([k, a]) => {
+      const ts = by[k] || [];
+      if (a.no_live_coverage && !ts.length) return `<div class="card"><h4>${esc(a.label)}<span class="muted small" style="margin-left:auto">no live receivers</span></h4><div class="muted small">Volunteer AIS doesn't reach here. Use the chokepoint transits above and the GFW counts below.</div></div>`;
+      if (!ts.length) return "";
+      return `<div class="card"><h4>${esc(a.label)}<span class="muted small" style="margin-left:auto">${nf(ts.length)} tanker${ts.length === 1 ? "" : "s"} · ${nf(a.ships_1h)} ships</span></h4><ul class="shiplist">${ts.slice(0, 12).map(shipRow).join("")}${ts.length > 12 ? `<li class="muted">and ${nf(ts.length - 12)} more (see the map)</li>` : ""}</ul></div>`;
+    }).join("") + `<div class="muted small" style="margin:-4px 0 10px">Draught ↑ deeper than last time (likely loaded), ↓ shallower (likely unloaded); crews enter draught by hand. Flags are the declared flag from the MMSI.</div>`;
+  }
   function renderSources() {
     api("status").then((st) => {
       S.status = st.feeds;
-      const label = { mymaps: "Global War News Map (My Maps KML)", mil: "Military ADS-B (adsb.lol → adsb.fi), types from hexdb.io", front: "DeepStateMap front line", losses: "russianwarship.rip (UA General Staff)", firms: "NASA FIRMS NOAA-20 + NOAA-21 VIIRS", ukmto: "UKMTO via Firecrawl", gdelt: "GDELT 2.0 event export", tzeva: "Tzeva Adom history + Home Front Command messages", tzevalive: "Tzeva Adom live sirens (Israel)", airalerts: "alerts.in.ua SITREP (Ukraine, Russia, Poland)", embassy: "US embassy alerts (38 posts' own RSS)", pla: "Taiwan MND PLA report", czib: "EASA CZIB airspace", official: "CENTCOM + War Dept + UK MoD", cables: "TeleGeography cables", outages: "IODA internet outages (Georgia Tech)", advisories: "US State Dept travel advisories", ships: "AISStream ship positions", gfw: "Global Fishing Watch ship traffic" };
+      const label = { mymaps: "Global War News Map (My Maps KML)", mil: "Military ADS-B (adsb.lol → adsb.fi), types from hexdb.io", front: "DeepStateMap front line", losses: "russianwarship.rip (UA General Staff)", firms: "NASA FIRMS NOAA-20 + NOAA-21 VIIRS", ukmto: "UKMTO via Firecrawl", gdelt: "GDELT 2.0 event export", tzeva: "Tzeva Adom history + Home Front Command messages", tzevalive: "Tzeva Adom live sirens (Israel)", airalerts: "alerts.in.ua SITREP (Ukraine, Russia, Poland)", embassy: "US embassy alerts (38 posts' own RSS)", pla: "Taiwan MND PLA report", czib: "EASA CZIB airspace", official: "CENTCOM + War Dept + UK MoD", cables: "TeleGeography cables", outages: "IODA internet outages (Georgia Tech)", advisories: "US State Dept travel advisories", ships: "AISStream ship positions", gfw: "Global Fishing Watch ship traffic", portwatch: "IMF PortWatch chokepoint transits", vessellists: "OpenSanctions vessel lists (sanctions, shadow fleet, detentions)" };
       $("tab-sources").innerHTML = `<table class="src"><tr><th>Feed</th><th>Status</th><th>Age</th></tr>${Object.entries(st.feeds).map(([k, v]) => `<tr><td>${esc(label[k] || k)}</td><td style="color:${v.ok ? "var(--ok)" : "var(--bad)"}">${v.ok ? "OK" : "FAIL"}${v.error ? `<div class="muted small">${esc(v.error)}</div>` : ""}</td><td class="muted">${v.age_s != null ? (v.age_s < 120 ? v.age_s + "s" : Math.round(v.age_s / 60) + "m") : "–"}</td></tr>`).join("")}</table>
         <div class="card" style="margin-top:10px"><h4>Official statements</h4><ul id="offl"></ul></div>
-        <div class="muted small">Ground Truth ${esc(st.version)} · personal, non-commercial use. Content belongs to its sources; links go back to originals. Ship traffic: ${GFW_ATTR} (CC BY-NC 4.0). Aircraft types from <a href="https://hexdb.io" target="_blank" rel="noopener">hexdb.io</a>; aircraft photos © their photographers via <a href="https://www.planespotters.net" target="_blank" rel="noopener">Planespotters.net</a>. Alerts: <a href="https://www.tzevaadom.co.il/en/" target="_blank" rel="noopener">Tzeva Adom</a> and <a href="https://alerts.in.ua/en" target="_blank" rel="noopener">alerts.in.ua</a>; region shapes from Natural Earth. US embassy alerts: the posts' own feeds (US government, public domain).</div>`;
+        <div class="muted small">Ground Truth ${esc(st.version)} · personal, non-commercial use. Content belongs to its sources; links go back to originals. Ship traffic: ${GFW_ATTR} (CC BY-NC 4.0). Aircraft types from <a href="https://hexdb.io" target="_blank" rel="noopener">hexdb.io</a>; aircraft photos © their photographers via <a href="https://www.planespotters.net" target="_blank" rel="noopener">Planespotters.net</a>. Alerts: <a href="https://www.tzevaadom.co.il/en/" target="_blank" rel="noopener">Tzeva Adom</a> and <a href="https://alerts.in.ua/en" target="_blank" rel="noopener">alerts.in.ua</a>; region shapes from Natural Earth. US embassy alerts: the posts' own feeds (US government, public domain). Chokepoint transits: ${PW_ATTR}. ${OS_ATTR}. Flags from the ITU maritime identification digits.</div>`;
       api("feed/official").then((o) => { $("offl").innerHTML = ((o.data || {}).items || []).slice(0, 10).map((i) => `<li><span class="badge">${esc(i.source)}</span> <a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a></li>`).join(""); });
     });
   }

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.9.0 (2026-11-19): tankers and commercial shipping
+- AIS sampler 1.1: compressed websocket (permessage-deflate), a back-off after HTTP 429, a 30-day vessel registry learnt from static reports (type, IMO, size, destination, ETA, draught), and tanker tracks. Four more areas: Singapore/Malacca, Gibraltar, the Dover Strait and the US Gulf coast. The Gulf and Red Sea boxes are marked "no live receiver coverage".
+- Flag state from the MMSI (ITU Maritime Identification Digits).
+- IMF PortWatch daily chokepoint transits: 28 chokepoints, tankers per day against the same week a year ago, a 30-day sparkline. About 3 days behind.
+- OpenSanctions maritime list marks: sanctioned ships and ships on Ukraine's GUR shadow-fleet list get rings; port-state detentions show in popups and cards.
+- Page: tanker icons with headings, tracks, ship filter chips, a chokepoint layer and table, a "Hormuz tankers/day" KPI and a listed-ship card.
+- PortWatch and OpenSanctions data are non-commercial: their summary keys are in `server.NON_COMMERCIAL_KEYS`, and the page credits them wherever they appear.
+
+## 0.8.0 (2026-11-18): US embassy alerts
+- Alert RSS from 38 US embassies and consulates, classified (departure or closure, shelter, demonstration, weather, health, advisory, security), merged across posts and kept 7 days. Map rings, popups, an Alerts card, and a banner for shelter or departure alerts.
+
+## 0.7.0 (2026-11-18): air-raid and missile alerts
+- Israel sirens (Tzeva Adom) and Ukraine, Russia and Poland air-raid alerts (alerts.in.ua), with region shapes, an Alerts tab and a banner. New endpoint `/api/alerts`.
+
 ## 0.6.0 (2026-11-16): military aircraft identity
 - Aircraft types and operators from hexdb.io, cached per airframe. The registry name beats the transponder designator (a KC-46A sends "B762").
 - Role-based silhouette icons: tanker, ISR, fighter, transport, helicopter, tiltrotor, drone, jet, light. Tankers blue, ISR and drones amber, bombers violet, emergencies red.

@@ -43,8 +43,12 @@ Firecrawl use is capped per source per day (`FIRECRAWL_DAILY` in `gt/feeds.py`),
 | `server.py` | One-port HTTP server, background scheduler, analysis (corroboration, brief, summary) |
 | `gt/mymaps.py` | KML fetch, parse, classify, timestamp, archive (`data/snapshots`, `data/groundtruth.sqlite`) |
 | `gt/feeds.py` | Live feeds and refresh intervals (`REGISTRY`) |
-| `gt/ais.py` | AISStream ship sampler: a stdlib websocket client, 60 s sample every 5 min, ships kept 3 h |
+| `gt/ais.py` | AISStream ship sampler: a stdlib websocket client with permessage-deflate, 60 s sample every 5 min, ships kept 3 h, a 30-day registry of static data (type, IMO, size, destination, draught), tanker tracks, and a back-off after HTTP 429. In practice AISStream accepts one connection at a time |
 | `gt/gfw.py` | Global Fishing Watch ship traffic: daily non-fishing ship counts for 4 chokepoints and 6 seas over a year, the same week last year, ship lists at chokepoints, AIS-off events. Every 6 h, about 4 days behind |
+| `gt/mid.py` | Flag state from an MMSI (ITU Maritime Identification Digits table) |
+| `gt/portwatch.py` | IMF PortWatch daily chokepoint transits: 28 chokepoints, tankers and all ships per day, 7-day average against the same week a year ago, 30-day sparkline. Every 6 h, about 3 days behind |
+| `gt/sanctions.py` | OpenSanctions maritime list, daily: sanctioned (S), Ukraine GUR shadow-fleet list (G) and port-state detention (D) marks, matched by IMO, then MMSI |
+| `gt/alerts.py`, `gt/embassy.py` | Air-raid and siren alerts (Tzeva Adom, alerts.in.ua) and US embassy alert RSS, served together at `/api/alerts` |
 | `gt/aircraft.py` | Military aircraft identity: registry type and operator from hexdb.io (cached per airframe), and a role (tanker, ISR, fighter, transport, helicopter, ...) for the map icons |
 | `gt/geo.py` | Offline country, sea and theatre lookup (Natural Earth 1:50m in `ref/`) |
 | `gt/analysis.py` | Analyst results store (`$GT_DATA/analysis/`): per-event notes and whole-picture history |
@@ -52,8 +56,8 @@ Firecrawl use is capped per source per day (`FIRECRAWL_DAILY` in `gt/feeds.py`),
 | `analyst/analyst.py` | The analyst runner: `cycle`, `events`, `picture`, `status`, `--dry-run`. Calls `claude -p` with no tools, no MCP and an empty working directory, and posts results to the server. Run `cycle` every 30 minutes from cron or launchd. Point it at your server with `base_url` in `analyst/config.json` or `$GT_BASE_URL` |
 | `analyst/claude-token.sh` | Saves a long-lived Claude token for the runner, hidden |
 | `deploy/image/` | Runtime container: Python plus a supervisor that runs the bind-mounted app and restarts it when `VERSION` changes |
-| `tests/` | Offline tests (no network): `python3 -I tests/test_060.py`, `test_050.py`, `test_040.py`, `test_centcom.py` |
-| `tools/local_test.py` | Runs the app on a throwaway copy of `data/` with Firecrawl off, on port 8791 |
+| `tests/` | Offline tests (no network): run each `tests/test_*.py` with `python3 -I`, for example `python3 -I tests/test_090.py` |
+| `tools/local_test.py` | Runs the app on a throwaway copy of `data/` with Firecrawl off, on port 8791. Set `GT_PROD_STATUS` to your production instance's `/api/status` URL to make its AIS samples wait for that instance's gap |
 
 ## API
 
@@ -63,7 +67,8 @@ Firecrawl use is capped per source per day (`FIRECRAWL_DAILY` in `gt/feeds.py`),
 | `/api/summary` | Compact KPIs, built for dashboard REST sensors |
 | `/api/brief` | Rule-based per-theatre brief |
 | `/api/status` | Health of every feed |
-| `/api/feed/<name>` | One feed: mil, front, losses, firms, ukmto, gdelt, tzeva, pla, czib, official, outages, advisories, ships, gfw, cables |
+| `/api/feed/<name>` | One feed: mil, front, losses, firms, ukmto, gdelt, tzeva, tzevalive, airalerts, embassy, pla, czib, official, outages, advisories, ships, gfw, portwatch, vessellists, cables |
+| `/api/alerts` | Live air-raid, siren and US embassy alerts (ETag; 304 when unchanged) |
 | `/api/outages_geo`, `/api/advisories_geo` | Country shapes for the internet-outage and travel-advisory (Level 3–4) map layers |
 | `/api/xpost?id=` | Text and media of one X post, fetched on demand and cached |
 | `/api/analysis` | Analyst overview: latest picture, events analysed, recent runs |
@@ -74,13 +79,16 @@ Firecrawl use is capped per source per day (`FIRECRAWL_DAILY` in `gt/feeds.py`),
 ## Data terms
 
 - **Global Fishing Watch data is CC BY-NC 4.0, non-commercial only.** The page shows "Powered by Global Fishing Watch" linked to globalfishingwatch.org wherever the data appears, and the token stays server-side. `server.NON_COMMERCIAL_KEYS` lists the summary keys to strip before any commercial use, and analyst pictures written with prompt `pic3` or later contain GFW-derived reasoning.
+- **IMF PortWatch chokepoint data** is credited "Sources: UN Global Platform; IMF PortWatch (portwatch.imf.org)" wherever it appears, with the numbers unaltered. Ground Truth treats it as non-commercial.
+- **OpenSanctions maritime data is CC BY-NC 4.0, non-commercial only**, credited wherever it appears. A mark is a list match by IMO number or, failing that, MMSI. An MMSI can be reused by another ship, so MMSI matches are labelled as such. `server.NON_COMMERCIAL_KEYS` also lists the PortWatch and OpenSanctions summary keys.
+- Flag states come from the ITU's Maritime Identification Digits table.
 - **Aircraft photos come from Planespotters.net** under its photo API terms: the browser asks the API directly, the image loads straight from their CDN with its URL unchanged, the photographer is credited next to it, and the thumbnail is a plain link to the photo page. Never store, proxy or re-host the images, and never use them or their metadata to build ML datasets.
 - **Aircraft types and operators come from hexdb.io** (free, keyless), looked up once per airframe and cached.
 - Country shapes are Natural Earth (public domain). The bundled MapLibre GL JS keeps its own BSD licence header.
 
 ## Licence
 
-Ground Truth's own code is released under the [MIT License](LICENSE). Bundled third-party files keep their own terms: MapLibre GL JS in `web/vendor/` is BSD-3-Clause (`web/vendor/maplibre-LICENSE.txt`) and the Natural Earth shapes in `ref/` are public domain. The MIT License covers the code only, not the data it fetches: each feed's data stays under its provider's terms (see Data terms above).
+Ground Truth's own code is released under the [MIT License](LICENSE). Bundled third-party files keep their own terms: MapLibre GL JS in `web/vendor/` is BSD-3-Clause (`web/vendor/maplibre-LICENSE.txt`) and the Natural Earth shapes in `ref/` are public domain. The MIT License covers the code only, not the data it fetches: each feed's data stays under its provider's terms (see Data terms above). The same goes for test fixtures taken from real responses, for example: `tests/fixtures/sanctions/` holds a few OpenSanctions rows (CC BY-NC 4.0), `tests/fixtures/gfw_kerch.json` Global Fishing Watch data (CC BY-NC 4.0), `tests/fixtures/portwatch/` trimmed IMF PortWatch responses, and `tests/fixtures/embassy/` US government alert texts (public domain).
 
 ## Caveats
 
@@ -88,7 +96,8 @@ Ground Truth's own code is released under the [MIT License](LICENSE). Bundled th
 - Categories are keyword-assigned.
 - Analyst notes are model output from unverified posts. They're labelled with model, prompt version and time, and the page shows them escaped, as text only.
 - Thermal hits include gas flares and industrial heat.
-- AIS coverage comes from volunteer receivers: dense in Europe, none in the Gulf or Red Sea. Zero ships there means no data.
+- AIS coverage comes from volunteer receivers: dense in Europe, none in the Gulf or Red Sea (those boxes are marked "no live receiver coverage"). Zero ships there means no data. A ship sends its type only every few minutes, so a new ship can show as type unknown until the registry learns it.
+- PortWatch transits are IMF estimates from AIS, about 3 days behind.
 - GFW counts are about 4 days behind and only include ships transmitting AIS. A fall can mean fewer ships or more ships running dark. Chokepoint boxes also count ships at anchor inside them. AIS-off events come from a GFW prototype model and only count gaps that start at least 50 nm from shore.
 - IODA outages are automatic detections. A Google-traffic dip alone is weak evidence.
 - Scraped content stays private to the instance. Links go back to the originals.

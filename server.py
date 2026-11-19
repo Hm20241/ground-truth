@@ -65,7 +65,8 @@ def _run(name, fn):
     with LOCK:
         STATE[name] = rec
         RUNNING.discard(name)
-    if name in ("mymaps", "firms", "ukmto", "czib", "mil", "losses", "pla", "outages", "advisories", "ships", "gfw"):  # alerts: live in /api/alerts
+    if name in ("mymaps", "firms", "ukmto", "czib", "mil", "losses", "pla", "outages", "advisories", "ships", "gfw",
+                "portwatch", "vessellists"):  # alerts: live in /api/alerts
         derive()
 
 
@@ -185,9 +186,12 @@ def derive():
         "firms_by_satellite": d("firms").get("by_satellite"),
         "internet_outages": _outage_summary(d("outages")),
         "travel_advisories": _advisory_summary(d("advisories")),
-        "ships_last_hour_by_area": {k: {x: v.get(x) for x in ("ships_1h", "underway", "tankers")}
+        "ships_last_hour_by_area": {k: {x: v.get(x) for x in ("ships_1h", "underway", "tankers", "cargo")}
                                     for k, v in (d("ships").get("areas") or {}).items()} or None,
+        "ship_types_known_pct": d("ships").get("typed_pct"),
         "ship_traffic_gfw": _gfw_summary(d("gfw")),
+        "chokepoint_transits_portwatch": feeds.portwatch.summary(d("portwatch")),
+        "listed_ships_heard": _listed_summary(d("ships"), d("vessellists")),
         "feeds_ok": sum(1 for v in STATE.values() if v.get("ok")), "feeds_total": len(STATE),
     }
     DERIVED.update(events=fc, stats=st, summary=summary, czib_geo=_czib_geo(),
@@ -211,7 +215,27 @@ def _outage_summary(o):
 
 # Summary keys under a NON-COMMERCIAL licence (Global Fishing Watch, CC BY-NC 4.0). Strip these, and anything the
 # analyst derives from them, before any trading use of /api/summary or the analysis history.
-NON_COMMERCIAL_KEYS = ("ship_traffic_gfw",)
+NON_COMMERCIAL_KEYS = ("ship_traffic_gfw", "chokepoint_transits_portwatch", "listed_ships_heard")  # 0.9.0: IMF PortWatch,
+# OpenSanctions (CC BY-NC 4.0)
+
+
+def _listed_summary(sh, vl, limit=12):
+    """Ships heard on AIS in the last hour whose IMO or MMSI is on a sanctions, shadow-fleet or detention list
+    (OpenSanctions, NON-COMMERCIAL). Marks: S sanctioned, G Ukraine GUR shadow-fleet list, D port-state detention."""
+    if not sh or not vl:
+        return None
+    rows = sh.get("listed") or []
+    by_area, by_mark = {}, {}
+    for r in rows:
+        for m in r.get("marks") or "":
+            by_mark[m] = by_mark.get(m, 0) + 1
+        if set(r.get("marks") or "") & set("SG"):
+            by_area[r["area"]] = by_area.get(r["area"], 0) + 1
+    rows = [r for r in rows if set(r.get("marks") or "") & set("SG")] + [r for r in rows if not set(r.get("marks") or "") & set("SG")]
+    return {"heard_1h": len(rows), "by_mark": by_mark, "sanctioned_or_shadow_by_area": by_area, "list_version": vl.get("version"), "licence": vl.get("licence"),
+            "ships": [{k: r.get(k) for k in ("name", "cls", "flag", "area", "marks", "lists", "sog", "dest", "match")}
+                      for r in rows[:limit]],
+            "note": "A list entry about the ship's identifiers, not proof of what it is doing now; MMSIs get reused."}
 
 
 NOTABLE_ROLES = ("tanker", "isr", "drone", "bomber")

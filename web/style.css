@@ -182,3 +182,17 @@ td.st-not-observed { color: var(--muted); }
 
 /* 0.8.0: US embassy alerts (ring swatch in the rail legend) */
 .lsw.ring { background: transparent; border: 2px solid; border-radius: 50%; width: 9px; height: 9px; box-sizing: border-box; }
+/* 0.9.0 shipping */
+table.pwt td.num, table.pwt th.num { text-align: right; font-family: var(--mono); white-space: nowrap; }
+table.pwt tr[data-pw]:hover td { background: var(--line); }
+.card details summary { cursor: pointer; margin: 6px 0 2px; }
+ul.shiplist { list-style: none; padding-left: 0; }
+ul.shiplist li { padding: 3px 0; border-bottom: 1px solid var(--line); font-size: 11.5px; }
+ul.shiplist li:last-child { border-bottom: 0; }
+ul.shiplist li[data-ship]:hover { color: var(--accent); }
+.badge.mk { font-size: 9.5px; }
+#shipfilter .chip { padding: 1px 7px; }
+#shipfilter .chip .n { color: var(--muted); font-family: var(--mono); }
+table.pwt { table-layout: auto; }
+table.pwt td:first-child { width: 100%; }
+table.pwt td.num, table.pwt th.num { padding-left: 6px; }

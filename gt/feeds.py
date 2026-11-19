@@ -12,6 +12,8 @@ That feed is CC BY-NC 4.0: never pass it to the trading agent.
 airframe, and a role (tanker, ISR, fighter, ...) for the map icons. Photos are fetched by the browser.
 0.7.0 adds live regional air-raid and missile alerts (gt/alerts.py, keyless): Israel every 5 s (Tzeva Adom),
 Ukraine, Russian regions and Poland every 60 s (alerts.in.ua SITREP, ubilling.net.ua fallback).
+0.8.0 adds US embassy and consulate alerts (gt/embassy.py, keyless): 38 posts' own alert RSS, conditional
+requests, Middle East and Europe posts every 5 min, the rest every 15 min.
 """
 import email.utils
 import csv
@@ -27,7 +29,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 import zipfile
 
-from . import aircraft, alerts, geo
+from . import aircraft, alerts, embassy, geo
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # GT_DATA moves all state out of the code folder (the container mounts code read-only at /app, data at /data).
@@ -690,6 +692,7 @@ REGISTRY = {
     "tzeva": (alerts.israel_feed, 20),       # Tzofar history + HFC messages (ETag: 304 when unchanged)
     "tzevalive": (alerts.israel_live, 5),    # Tzofar live notifications (Cloudflare-cached 5 s)
     "airalerts": (alerts.regions, 60),       # alerts.in.ua SITREP (If-Modified-Since)
+    "embassy": (embassy.poll, 60),           # US embassy alert RSS: only the posts that are due (If-Modified-Since)
     "pla": (taiwan_pla, 3 * 3600),
     "czib": (easa_czib, 12 * 3600),
     "official": (official, 1800),

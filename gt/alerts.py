@@ -1,4 +1,6 @@
-"""Live regional air-raid and missile alerts. v1.0 (Ground Truth 0.7.0), 2026-11-18.
+"""Live regional air-raid and missile alerts. v1.1 (Ground Truth 0.8.0), 2026-11-18.
+
+1.1: /api/alerts also carries the US embassy alerts block (gt/embassy.py) and its analyst summary.
 
 Every source is free and keyless (no paid API, no xAI/Grok):
 
@@ -591,12 +593,15 @@ def view(state):
               live_at=g("tzevalive").get("at"))
     reg = dict(g("airalerts").get("data") or {"regions": []})
     reg.update(ok=bool(g("airalerts").get("ok")), at=g("airalerts").get("at"))
+    from gt import embassy  # imported here, not at the top: gt.embassy imports this module
+    emb = embassy.view(g("embassy").get("data"))
+    emb.update(ok=bool(g("embassy").get("ok")), at=g("embassy").get("at"))
     return {"generated": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "israel": il, "regions": reg,
-            "summary": summary(state, il, reg)}
+            "embassy": emb, "summary": summary(state, il, reg)}
 
 
 def summary(state, il=None, reg=None, now=None):
-    """Compact view for /api/summary and the analyst (under 2 KB)."""
+    """Compact view for /api/summary and the analyst (under 3 KB)."""
     try:
         if il is None or reg is None:
             v = view(state)
@@ -619,6 +624,12 @@ def summary(state, il=None, reg=None, now=None):
             "launch_areas_tracked": [r["en"] for r in reg.get("regions") or [] if r["kind"] == "launch" or "launch" in r.get("also", [])],
             "threats_tracked": sorted({t["what"] for t in reg.get("threats") or []}),
             "as_of": reg.get("as_of"), "source": reg.get("source"),
+            "us_embassies": _embassy_summary(state, now),
         }
     except Exception as e:  # never break /api/summary
         return {"error": type(e).__name__}
+
+
+def _embassy_summary(state, now):
+    from gt import embassy
+    return embassy.summary((state.get("embassy") or {}).get("data"), now)

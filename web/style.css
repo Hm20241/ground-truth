@@ -179,3 +179,6 @@ td.st-not-observed { color: var(--muted); }
 .lsw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; } .lsw.dot { border-radius: 50%; }
 @media (max-width: 900px) { .alertbar { left: 10px; transform: none; max-width: calc(100% - 64px); } }
 .alertbar .sep { margin: 0 6px; color: var(--muted); }
+
+/* 0.8.0: US embassy alerts (ring swatch in the rail legend) */
+.lsw.ring { background: transparent; border: 2px solid; border-radius: 50%; width: 9px; height: 9px; box-sizing: border-box; }

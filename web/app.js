@@ -1,5 +1,6 @@
-/* Ground Truth v0.7 - watch floor client. All API paths are relative so the app runs behind a prefix.
-   0.7.0: air-raid and missile alerts (Israel: Tzeva Adom; Ukraine, Russia, Poland: alerts.in.ua), Alerts tab, siren banner. */
+/* Ground Truth v0.8 - watch floor client. All API paths are relative so the app runs behind a prefix.
+   0.7.0: air-raid and missile alerts (Israel: Tzeva Adom; Ukraine, Russia, Poland: alerts.in.ua), Alerts tab, siren banner.
+   0.8.0: US embassy alerts (38 posts' own feeds): map rings, popups, an Alerts-tab card, banner rows for shelter/departure. */
 (() => {
   "use strict";
   const THEATRES = {
@@ -59,6 +60,7 @@
     ["front", "DeepState front line", "front", true],
     ["alerts", "Air-raid alerts: UA, RU, PL (live)", "airalerts", true],
     ["israel", "Israel sirens (Tzeva Adom, live)", "tzevalive", true],
+    ["embassy", "US embassy alerts (7 days)", "embassy", true],
     ["thermal", "NASA thermal anomalies (24h)", "firms", true],
     ["ukmto", "UKMTO maritime incidents", "ukmto", true],
     ["mil", "Military aircraft (ADS-B)", "mil", true],
@@ -75,9 +77,10 @@
     thermal: ["th-pt"], ukmto: ["uk-pt"], mil: ["mil-pt", "mil-label"], gdelt: ["gd-pt"], czib: ["cz-fill", "cz-line"], cables: ["cab-line"],
     ships: ["ship-pt"], outages: ["out-fill", "out-line"], advisories: ["adv-fill", "adv-line"], gfw: ["gfw-fill", "gfw-line", "gfw-gap"],
     alerts: ["ar-fill", "ar-line", "ar-dash"], israel: ["il-fill", "il-line", "il-halo", "il-pt", "il-label"],
+    embassy: ["em-pt", "em-label"],
   };
   // Click priority, top first; the same list sets the pointer cursor. Region fills are huge, so they come late.
-  const CLICK_ORDER = ["ev-pt", "il-pt", "uk-pt", "mil-pt", "ship-pt", "gfw-gap", "th-pt", "gd-pt", "ov-line", "ov-border", "ov-lane", "il-fill",
+  const CLICK_ORDER = ["ev-pt", "il-pt", "em-pt", "uk-pt", "mil-pt", "ship-pt", "gfw-gap", "th-pt", "gd-pt", "ov-line", "ov-border", "ov-lane", "il-fill",
     "ov-fill", "cz-fill", "ar-fill", "front-fill", "out-fill", "gfw-fill", "adv-fill"];
   const SHIP_COL = { tanker: "#f2b33d", cargo: "#38bdf8", military: "#f05252", passenger: "#a3e635", fishing: "#2dd4bf", tug: "#9aa4ae", service: "#9aa4ae", other: "#c9ced4", unknown: "#c9ced4" };
   // Global Fishing Watch data is CC BY-NC 4.0: this attribution must appear wherever it is shown.
@@ -153,7 +156,7 @@
 
   map.on("load", () => {
     addAircraftImages();
-    ["cables", "advisories", "outages", "gfw", "czib", "front", "alertreg", "ilarea", "overlays", "gdelt", "thermal", "gfwgap", "ships", "ukmto", "events", "mil", "ilpt"].forEach((id) => map.addSource(id, { type: "geojson", data: empty }));
+    ["cables", "advisories", "outages", "gfw", "czib", "front", "alertreg", "ilarea", "overlays", "gdelt", "thermal", "gfwgap", "ships", "ukmto", "events", "mil", "embpt", "ilpt"].forEach((id) => map.addSource(id, { type: "geojson", data: empty }));
     map.addLayer({ id: "cab-line", type: "line", source: "cables", layout: { visibility: "none" }, paint: { "line-color": "#22d3ee", "line-opacity": 0.28, "line-width": 0.8 } });
     map.addLayer({ id: "adv-fill", type: "fill", source: "advisories", layout: { visibility: "none" }, paint: { "fill-color": ["match", ["get", "level"], 4, "#f05252", "#f2853d"], "fill-opacity": ["match", ["get", "level"], 4, 0.12, 0.07] } });
     map.addLayer({ id: "adv-line", type: "line", source: "advisories", layout: { visibility: "none" }, paint: { "line-color": ["match", ["get", "level"], 4, "#f05252", "#f2853d"], "line-opacity": 0.5, "line-width": 0.8, "line-dasharray": [3, 3] } });
@@ -212,6 +215,13 @@
     map.addLayer({ id: "mil-label", type: "symbol", source: "mil", minzoom: 5, layout: {
       "text-field": ["coalesce", ["get", "flight"], ["get", "type"]], "text-size": 10, "text-offset": [0, 1.2], "text-anchor": "top", "text-font": ["Open Sans Regular"] },
       paint: { "text-color": "#aeb6bf", "text-halo-color": "#0d0f11", "text-halo-width": 1.2 } });
+    // 0.8.0 US embassy alerts: rings (not dots), so they never read as sirens
+    map.addLayer({ id: "em-pt", type: "circle", source: "embpt", layout: { "circle-sort-key": ["get", "rank"] }, paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 4, 6, 6.5, 10, 8.5], "circle-color": "#0d0f11", "circle-opacity": ["get", "op"],
+      "circle-stroke-color": ["get", "col"], "circle-stroke-width": 2.2, "circle-stroke-opacity": ["get", "op"] } });
+    map.addLayer({ id: "em-label", type: "symbol", source: "embpt", minzoom: 4.5, layout: {
+      "text-field": ["get", "city"], "text-size": 10.5, "text-offset": [0, 1.1], "text-anchor": "top", "text-optional": true, "text-font": ["Open Sans Regular"] },
+      paint: { "text-color": "#cfd5db", "text-halo-color": "#0d0f11", "text-halo-width": 1.3 } });
     // Israel sirens on top of everything: they are the most time-critical marks on the map
     map.addLayer({ id: "il-halo", type: "circle", source: "ilpt", filter: ["==", ["get", "st"], "siren"], paint: {
       "circle-radius": 12, "circle-color": IL_COL.siren, "circle-opacity": 0.3, "circle-blur": 0.35 } });
@@ -266,6 +276,7 @@
     if (id === "ev-pt") return eventPopup(S.events.features.find((x) => x.properties.id === p.id), lngLat);
     if (id === "il-pt" || id === "il-fill") return ilPopup(p.key, lngLat);
     if (id === "ar-fill") return regionPopup(p.id, lngLat);
+    if (id === "em-pt") return emPopup(p.c, lngLat);
     if (id === "uk-pt") {
       return showPopup(lngLat, `<div class="pop"><h5>UKMTO ${esc(p.type)} #${p.num}</h5><div class="meta">${esc(p.date)} · ${esc(p.where || "")} · position ${p.geo_method === "offset" ? "from stated range/bearing" : "approximate (area)"}</div>${esc(p.text)}<div><a href="${esc(p.url)}" target="_blank" rel="noopener">UKMTO notice ↗</a></div></div>`);
     }
@@ -459,7 +470,7 @@
   function loadAlerts() {
     apiRev("alerts").then((a) => {
       S.alerts = a;
-      renderRegions(); renderIsrael(true); renderKpis(); renderLayerCounts();
+      renderRegions(); renderIsrael(true); renderEmbassy(); renderKpis(); renderLayerCounts();
       if (!$("tab-alerts").classList.contains("hidden")) renderAlerts();
     }).catch(() => {});
   }
@@ -555,6 +566,61 @@
     const r = regList().find((x) => x.id === id);
     return r && showPopup(lngLat, `<div class="pop">${regionHtml(r)}${noteHtml()}</div>`);
   }
+  // ---------- 0.8.0: US embassy alerts ----------
+  // The posts' own RSS (Security, Demonstration, Weather ... Alerts), read by the server every 5 or 15 min.
+  const EM_KIND = { departure: ["Departure / closure", "#f05252"], shelter: ["Shelter / air defence", "#f05252"],
+    security: ["Security", "#f2b33d"], demonstration: ["Demonstration", "#f2b33d"], weather: ["Weather / disaster", "#38bdf8"],
+    health: ["Health", "#38bdf8"], advisory: ["Travel advisory", "#a98bff"], worldwide: ["Worldwide caution", "#a98bff"],
+    routine: ["Message", "#9aa4ae"] };
+  const EM_OLD = "#8a929b", EM_URGENT = new Set(["departure", "shelter"]);
+  const emCol = (kind) => (EM_KIND[kind] || EM_KIND.routine)[1];
+  const emK = (kind) => (EM_KIND[kind] || EM_KIND.routine)[0];
+  const emData = () => (S.alerts || {}).embassy || {};
+  const emPost = (c) => (emData().posts || []).find((p) => p.c === c);
+  const emPlace = (p) => (p ? (p.city && p.city !== p.n ? `${p.city}, ${p.n}` : p.n) : "");
+  const emItemsFor = (c) => (emData().items || []).filter((i) => i.c === c || (i.posts || []).includes(c));
+  const emWhere = (i) => { const ps = (i.posts && i.posts.length ? i.posts : [i.c]).map(emPost).filter(Boolean);
+    return ps.length <= 1 ? emPlace(ps[0]) : ps.slice(0, 3).map((p) => p.city || p.n).join(", ") + (ps.length > 3 ? ` +${ps.length - 3}` : ""); };
+  let emSig = "";
+  function renderEmbassy() {
+    if (!map.getSource("embpt")) return;
+    const now = Date.now() / 1000, rows = [];
+    (emData().posts || []).forEach((p) => {
+      const it = emItemsFor(p.c); if (!it.length || p.lat == null) return;
+      const top = it[0], age = now - top.t, urgent = it.find((i) => EM_URGENT.has(i.kind) && now - i.t <= 86400);
+      const k = urgent ? urgent.kind : top.kind, old = age > 3 * 86400;
+      rows.push({ c: p.c, lon: p.lon, lat: p.lat, city: p.city || p.n, col: old && !urgent ? EM_OLD : emCol(k), op: age > 86400 && !urgent ? 0.7 : 1,
+        rank: urgent ? 3 : old ? 1 : 2 });
+    });
+    const sig = rows.map((r) => r.c + r.col + r.op).join(",");
+    if (sig === emSig) return;
+    emSig = sig;
+    map.getSource("embpt").setData({ type: "FeatureCollection", features: rows.map((r) => ({ type: "Feature", geometry: { type: "Point", coordinates: [r.lon, r.lat] }, properties: r })) });
+  }
+  function emItemHtml(i, full) {
+    const u = httpsUrl(i.url);
+    return `<div class="post"><span class="badge" style="border-color:${emCol(i.kind)};color:${emCol(i.kind)}">${esc(emK(i.kind))}</span> ` +
+      `${u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(i.title)}</a>` : esc(i.title)}` +
+      `<div class="muted small">${fmtD(i.t * 1000)} ${fmtT(i.t * 1000)} · ${agoS(Date.now() / 1000 - i.t)}${(i.posts || []).length > 1 ? " · " + esc(emWhere(i)) : ""}</div>` +
+      (full && i.loc ? `<div class="small"><b>Location:</b> ${esc(i.loc)}</div>` : "") + (full && i.event ? `<div class="small">${esc(i.event)}</div>` : "") + `</div>`;
+  }
+  function emPopup(c, lngLat) {
+    const p = emPost(c), it = emItemsFor(c); if (!p) return;
+    return showPopup(lngLat || [p.lon, p.lat], `<div class="pop"><h5>U.S. Embassy · ${esc(emPlace(p))}</h5>
+      <div class="meta">The post's own alert feed${p.ok === false ? ` · <b style="color:var(--bad)">feed failing</b>` : ""}</div>
+      ${it.slice(0, 5).map((i, n) => emItemHtml(i, n < 2)).join("") || `<div class="muted small">No alerts in the last 7 days.</div>`}
+      <div class="muted small">Copies of US State Department messages (public domain). Not a safety tool: enrol in STEP and follow the embassy directly.</div></div>`);
+  }
+  function emCard() {
+    const E = emData(), it = E.items || [], c = E.counts || {}, now = Date.now() / 1000;
+    const rows = it.slice(0, 25).map((i) => `<li data-em="${esc(i.c)}"><span class="sw" style="background:${now - i.t > 3 * 86400 && !EM_URGENT.has(i.kind) ? EM_OLD : emCol(i.kind)}"></span>` +
+      `<span class="nm">${esc(i.title)}<small>${esc(emWhere(i))} · ${esc(emK(i.kind))}${i.event ? " · " + esc(i.event.slice(0, 160)) : ""}</small></span>` +
+      `<span class="tm">${fmtD(i.t * 1000)}<br>${fmtT(i.t * 1000)}</span></li>`).join("");
+    const failing = (E.posts || []).filter((p) => p.ok === false).length;
+    return `<div class="card"><h4><span class="sw" style="background:${c["24h"] ? EM_KIND.security[1] : "var(--dim)"}"></span>US embassy alerts<span class="lvl muted small">${nf(c["24h"] || 0)} in 24 h · ${nf(c["72h"] || 0)} in 3 days</span></h4>
+      ${rows ? `<ul class="al-list">${rows}</ul>` : `<div class="muted small">${E.at ? "No embassy alerts in the last 7 days." : "Waiting for the first sweep of the embassy feeds."}</div>`}
+      <div class="muted small" style="margin-top:6px">${nf((E.posts || []).length)} posts watched${failing ? `, <b style="color:var(--bad)">${nf(failing)} failing</b>` : ""}. Middle East and Europe every 5 min, others every 15 min.</div></div>`;
+  }
   function bboxOf(g) {
     let w = 180, s = 90, e = -180, n = -90;
     const walk = (a) => { if (typeof a[0] === "number") { w = Math.min(w, a[0]); e = Math.max(e, a[0]); s = Math.min(s, a[1]); n = Math.max(n, a[1]); } else a.forEach(walk); };
@@ -581,6 +647,8 @@
     else if (IL.shelter.length) rows.push(["amber", "il", `<b>ISRAEL</b>${sep}shelter window after sirens at ${fmtT(IL.shelter[0].c.t * 1000)}${sep}${esc(names(IL.shelter))}`]);
     const pl = regList().filter((r) => r.c === "PL" && r.kind === "alert");
     if (pl.length) rows.push(["warn", "pl", `<b>POLAND</b>${sep}${esc([...new Set(pl.flatMap((r) => r.types || []))].join(", ") || "air-attack threat")}${sep}${esc(pl.map((r) => r.en).join(", "))}`]);
+    const emU = (emData().items || []).filter((i) => EM_URGENT.has(i.kind) && Date.now() / 1000 - i.t <= 86400);
+    if (emU.length) rows.push(["warn", "em:" + emU[0].c, `<b>US EMBASSY</b>${sep}${esc(emK(emU[0].kind))}${sep}${esc(emWhere(emU[0]))}${sep}${esc(emU[0].title.slice(0, 90))}${emU.length > 1 ? `${sep}+${emU.length - 1} more` : ""}`]);
     const h = rows.map(([c, k, t]) => `<button class="${c}" data-k="${k}"><i></i><span>${t}${PUBLIC ? `${sep}<span class="muted small">public copy, up to 10 min old</span>` : ""}</span></button>`).join("");
     if (h === bannerHtml) return;
     bannerHtml = h; el.innerHTML = h; el.classList.toggle("hidden", !rows.length);
@@ -589,6 +657,7 @@
     const b = e.target.closest("button"); if (!b) return;
     openTab("alerts");
     if (b.dataset.k === "il") fitPts([...IL.siren, ...IL.early, ...IL.shelter].map((i) => [i.lon, i.lat]), 9);
+    else if (b.dataset.k.startsWith("em:")) { const p = emPost(b.dataset.k.slice(3)); if (p) { map.flyTo({ center: [p.lon, p.lat], zoom: Math.max(map.getZoom(), 5), speed: 1.6 }); emPopup(p.c); } }
     else {
       const bs = regList().filter((r) => r.c === "PL" && r.kind === "alert" && REG.has(r.id)).map((r) => bboxOf(REG.get(r.id).geometry));
       fitPts(bs.flat(), 7);
@@ -643,15 +712,16 @@
       return `<li class="nc"><span class="nm">${esc(m.who || "Statement")}${u ? ` <a href="${esc(u)}" target="_blank" rel="noopener">↗</a>` : ""}<small>${esc(m.text)}</small></span><span class="tm">${m.at ? fmtT(isoMs(m.at)) : ""}</span></li>`; }).join("");
     const ended = (R.ended || []).slice(0, 10).map((x) => `<li class="nc"><span class="nm">${esc(x.text)}<small>${esc(x.dur || "")}</small></span><span class="tm">${x.from ? fmtT(isoMs(x.from)) : ""}–${x.to ? fmtT(isoMs(x.to)) : ""}</span></li>`).join("");
     const list = (title, rows) => (rows ? `<div class="card"><h4>${title}</h4><ul class="al-list">${rows}</ul></div>` : "");
-    el.innerHTML = head + ilCard + regCard("Ukraine", ua, nomLine) + regCard("Russia", ru, launchList) + (pl.length ? regCard("Poland", pl) : "") +
+    el.innerHTML = head + ilCard + regCard("Ukraine", ua, nomLine) + regCard("Russia", ru, launchList) + (pl.length ? regCard("Poland", pl) : "") + emCard() +
       list("Threats tracked (alerts.in.ua)", thr) + list("Official statements", om) + list("Alerts ended", ended) +
       (R.bluf ? `<div class="card"><h4>alerts.in.ua summary</h4><div class="small">${esc(R.bluf)}</div></div>` : "") +
-      `<div class="muted small" style="margin:2px 2px 12px">Israel: <a href="https://www.tzevaadom.co.il/en/" target="_blank" rel="noopener">Tzeva Adom</a> relays Home Front Command alerts. Ukraine, Russia, Poland: the <a href="https://alerts.in.ua/en" target="_blank" rel="noopener">alerts.in.ua</a> situation report, Kyiv times shown in UTC. Region shapes: Natural Earth. Both sources are free and keyless. ${esc(NOT_SAFETY)}</div>`;
+      `<div class="muted small" style="margin:2px 2px 12px">Israel: <a href="https://www.tzevaadom.co.il/en/" target="_blank" rel="noopener">Tzeva Adom</a> relays Home Front Command alerts. Ukraine, Russia, Poland: the <a href="https://alerts.in.ua/en" target="_blank" rel="noopener">alerts.in.ua</a> situation report, Kyiv times shown in UTC. Region shapes: Natural Earth. US embassy alerts: each post's own feed (public domain). All sources are free and keyless. ${esc(NOT_SAFETY)}</div>`;
   }
   $("tab-alerts").onclick = (e) => {
     if (e.target.closest("a")) return;
     const li = e.target.closest("li"); if (!li) return;
     if (li.dataset.r) showRegion(li.dataset.r);
+    else if (li.dataset.em) { const p = emPost(li.dataset.em); if (!p) return; map.flyTo({ center: [p.lon, p.lat], zoom: Math.max(map.getZoom(), 5), speed: 1.6 }); emPopup(p.c); }
     else if (li.dataset.il) { const i = IL.byKey[li.dataset.il]; if (i) { map.flyTo({ center: [i.lon, i.lat], zoom: Math.max(map.getZoom(), 9.5), speed: 1.6 }); ilPopup(i.key, [i.lon, i.lat]); } }
     else if (li.dataset.c) { const [lo, la] = li.dataset.c.split(",").map(Number); map.flyTo({ center: [lo, la], zoom: Math.max(map.getZoom(), 8.5), speed: 1.6 }); }
     else return;
@@ -733,6 +803,8 @@
       (k === "mil" ? `<div class="aclegend" id="aclegend"></div>` : "") +
       (k === "alerts" ? `<div class="aclegend">${[["red", "missile"], ["yellow", "drone / air"], ["nominal", "standing"], ["launch", "launch area"]]
         .map(([c, t]) => `<span><i class="lsw" style="background:${AR_COL[c]}"></i>${t}</span>`).join("")}</div>` : "") +
+      (k === "embassy" ? `<div class="aclegend">${[[EM_KIND.shelter[1], "shelter / departure"], [EM_KIND.security[1], "security / protest"], [EM_KIND.weather[1], "weather / health"], [EM_OLD, "older than 3 days"]]
+        .map(([c, t]) => `<span><i class="lsw ring" style="border-color:${c}"></i>${t}</span>`).join("")}</div>` : "") +
       (k === "israel" ? `<div class="aclegend">${[["siren", "siren"], ["shelter", "shelter"], ["early", "early warning"], ["ended", "all clear"], ["recent", "24 h"]]
         .map(([c, t]) => `<span><i class="lsw dot" style="background:${IL_COL[c]}"></i>${t}</span>`).join("")}</div>` : "")).join("");
     $("layers").onchange = (e) => {
@@ -763,7 +835,8 @@
       mil: (S.feeds.mil || {}).count, gdelt: (S.feeds.gdelt || {}).count, czib: S.summary.airspace_czib_active, cables: null,
       ships: (S.feeds.ships || {}).count, outages: (S.feeds.outages || {}).count, gfw: (S.feeds.gfw || {}).count,
       advisories: S.summary.travel_advisories ? (S.summary.travel_advisories.level4 || 0) + (S.summary.travel_advisories.level3 || 0) : null,
-      alerts: S.alerts ? regList().filter((r) => r.kind === "alert").length : null, israel: S.alerts ? ((S.alerts.israel || {}).cities || []).length : null };
+      alerts: S.alerts ? regList().filter((r) => r.kind === "alert").length : null, israel: S.alerts ? ((S.alerts.israel || {}).cities || []).length : null,
+      embassy: S.alerts && S.alerts.embassy ? (S.alerts.embassy.items || []).length : null };
     LAYERS.forEach(([k, , feed]) => {
       const d = $("dot-" + k), e = $("n-" + k);
       if (d) d.className = "dot " + (st[feed] ? (st[feed].ok ? "ok" : "bad") : "");
@@ -902,6 +975,8 @@
       const le = (ra.israel || {}).latest_event;
       h += `<li>Air-raid alerts${ra.as_of ? ` (alerts.in.ua, ${esc(ra.as_of.slice(11, 16))}Z)` : ""}: Ukraine <b>${nf(ra.ukraine.n)}</b> regions (${nf(ra.ukraine.red || 0)} red), Russia <b>${nf((ra.russia || {}).n)}</b>, Poland ${nf((ra.poland || {}).n)}. Israel: ${le ? `latest alert ${esc(le.label)}, ${nf(le.n)} areas at ${esc((ra.israel.latest_event_at || "").slice(11, 16))}Z` : "no alerts in 24 h"}.</li>`;
     }
+    const ue = ra && ra.us_embassies;
+    if (ue && ue.alerts_24h != null) h += `<li>US embassy alerts, 24 h: <b>${nf(ue.alerts_24h)}</b>${(ue.latest || []).length ? ` (latest: ${ue.latest.slice(0, 3).map((x) => `${esc(x.post)} ${esc(x.title)}`).join("; ")})` : ""}.</li>`;
     if (io) {
       const w = io.watched_countries || [], r = io.watched_regions || [];
       h += `<li>Internet: ${w.length ? w.map((c) => `<b>${esc(c.country)}</b>${c.ongoing ? " (ongoing)" : ""}`).join(", ") : "no watched country"} with outages in ${esc(io.window_h)} h; ${nf(r.length)} regional outages in watched countries${r.length ? ` (latest ${esc(r[0].region)}, ${esc(r[0].country)})` : ""}. IODA.</li>`;
@@ -935,10 +1010,10 @@
   function renderSources() {
     api("status").then((st) => {
       S.status = st.feeds;
-      const label = { mymaps: "Global War News Map (My Maps KML)", mil: "Military ADS-B (adsb.lol → adsb.fi), types from hexdb.io", front: "DeepStateMap front line", losses: "russianwarship.rip (UA General Staff)", firms: "NASA FIRMS NOAA-20 + NOAA-21 VIIRS", ukmto: "UKMTO via Firecrawl", gdelt: "GDELT 2.0 event export", tzeva: "Tzeva Adom history + Home Front Command messages", tzevalive: "Tzeva Adom live sirens (Israel)", airalerts: "alerts.in.ua SITREP (Ukraine, Russia, Poland)",pla: "Taiwan MND PLA report", czib: "EASA CZIB airspace", official: "CENTCOM + War Dept + UK MoD", cables: "TeleGeography cables", outages: "IODA internet outages (Georgia Tech)", advisories: "US State Dept travel advisories", ships: "AISStream ship positions", gfw: "Global Fishing Watch ship traffic" };
+      const label = { mymaps: "Global War News Map (My Maps KML)", mil: "Military ADS-B (adsb.lol → adsb.fi), types from hexdb.io", front: "DeepStateMap front line", losses: "russianwarship.rip (UA General Staff)", firms: "NASA FIRMS NOAA-20 + NOAA-21 VIIRS", ukmto: "UKMTO via Firecrawl", gdelt: "GDELT 2.0 event export", tzeva: "Tzeva Adom history + Home Front Command messages", tzevalive: "Tzeva Adom live sirens (Israel)", airalerts: "alerts.in.ua SITREP (Ukraine, Russia, Poland)", embassy: "US embassy alerts (38 posts' own RSS)", pla: "Taiwan MND PLA report", czib: "EASA CZIB airspace", official: "CENTCOM + War Dept + UK MoD", cables: "TeleGeography cables", outages: "IODA internet outages (Georgia Tech)", advisories: "US State Dept travel advisories", ships: "AISStream ship positions", gfw: "Global Fishing Watch ship traffic" };
       $("tab-sources").innerHTML = `<table class="src"><tr><th>Feed</th><th>Status</th><th>Age</th></tr>${Object.entries(st.feeds).map(([k, v]) => `<tr><td>${esc(label[k] || k)}</td><td style="color:${v.ok ? "var(--ok)" : "var(--bad)"}">${v.ok ? "OK" : "FAIL"}${v.error ? `<div class="muted small">${esc(v.error)}</div>` : ""}</td><td class="muted">${v.age_s != null ? (v.age_s < 120 ? v.age_s + "s" : Math.round(v.age_s / 60) + "m") : "–"}</td></tr>`).join("")}</table>
         <div class="card" style="margin-top:10px"><h4>Official statements</h4><ul id="offl"></ul></div>
-        <div class="muted small">Ground Truth ${esc(st.version)} · personal, non-commercial use. Content belongs to its sources; links go back to originals. Ship traffic: ${GFW_ATTR} (CC BY-NC 4.0). Aircraft types from <a href="https://hexdb.io" target="_blank" rel="noopener">hexdb.io</a>; aircraft photos © their photographers via <a href="https://www.planespotters.net" target="_blank" rel="noopener">Planespotters.net</a>. Alerts: <a href="https://www.tzevaadom.co.il/en/" target="_blank" rel="noopener">Tzeva Adom</a> and <a href="https://alerts.in.ua/en" target="_blank" rel="noopener">alerts.in.ua</a>; region shapes from Natural Earth.</div>`;
+        <div class="muted small">Ground Truth ${esc(st.version)} · personal, non-commercial use. Content belongs to its sources; links go back to originals. Ship traffic: ${GFW_ATTR} (CC BY-NC 4.0). Aircraft types from <a href="https://hexdb.io" target="_blank" rel="noopener">hexdb.io</a>; aircraft photos © their photographers via <a href="https://www.planespotters.net" target="_blank" rel="noopener">Planespotters.net</a>. Alerts: <a href="https://www.tzevaadom.co.il/en/" target="_blank" rel="noopener">Tzeva Adom</a> and <a href="https://alerts.in.ua/en" target="_blank" rel="noopener">alerts.in.ua</a>; region shapes from Natural Earth. US embassy alerts: the posts' own feeds (US government, public domain).</div>`;
       api("feed/official").then((o) => { $("offl").innerHTML = ((o.data || {}).items || []).slice(0, 10).map((i) => `<li><span class="badge">${esc(i.source)}</span> <a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a></li>`).join(""); });
     });
   }

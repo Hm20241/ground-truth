@@ -408,7 +408,8 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(dict(DERIVED["summary"] or {}, analyst=analysis.headline(), regional_alerts=alerts.summary(STATE)))
             if path == "/api/alerts":
                 v = alerts.view(STATE)
-                stable = dict(v, generated=None, israel=dict(v["israel"], at=None, live_at=None), regions=dict(v["regions"], at=None))
+                stable = dict(v, generated=None, israel=dict(v["israel"], at=None, live_at=None), regions=dict(v["regions"], at=None),
+                              embassy=dict(v["embassy"], at=None))
                 tag = hashlib.sha1(json.dumps(stable, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:20]
                 return self._json(v, cache="no-cache", etag=tag)  # the tag ignores fetch times, so quiet polls are 304s
             if path == "/api/analysis":

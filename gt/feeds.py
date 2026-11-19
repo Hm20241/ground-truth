@@ -10,6 +10,8 @@ chokepoints and seas the volunteer AIS network can't hear, about 4 days behind, 
 That feed is CC BY-NC 4.0: never pass it to the trading agent.
 0.6.0 identifies military aircraft (gt/aircraft.py): registry type and operator from hexdb.io, cached per
 airframe, and a role (tanker, ISR, fighter, ...) for the map icons. Photos are fetched by the browser.
+0.7.0 adds live regional air-raid and missile alerts (gt/alerts.py, keyless): Israel every 5 s (Tzeva Adom),
+Ukraine, Russian regions and Poland every 60 s (alerts.in.ua SITREP, ubilling.net.ua fallback).
 """
 import email.utils
 import csv
@@ -25,13 +27,13 @@ import urllib.request
 import xml.etree.ElementTree as ET
 import zipfile
 
-from . import aircraft, geo
+from . import aircraft, alerts, geo
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # GT_DATA moves all state out of the code folder (the container mounts code read-only at /app, data at /data).
 DATA_ROOT = os.environ.get("GT_DATA") or os.path.join(ROOT, "data")
 CACHE = os.path.join(DATA_ROOT, "cache")
-UA = "Mozilla/5.0 (GroundTruth/0.6 personal OSINT dashboard)"
+UA = "Mozilla/5.0 (GroundTruth/0.7 personal OSINT dashboard)"
 os.makedirs(CACHE, exist_ok=True)
 
 # Theatre boxes used to clip global feeds (lon_min, lat_min, lon_max, lat_max)
@@ -323,26 +325,9 @@ def gdelt(max_files=8):
             "note": "Machine-coded from news; noisy. Treat as a heat signal."}
 
 
-# ---------------- Israel rocket/UAV alerts (Tzeva Adom) ----------------
-
-def tzevaadom():
-    hdr = {"Origin": "https://www.tzevaadom.co.il", "Referer": "https://www.tzevaadom.co.il/"}
-    hist = get_json("https://api.tzevaadom.co.il/alerts-history", headers=hdr)
-    live = get_json("https://api.tzevaadom.co.il/notifications", headers=hdr)
-    now = time.time()
-    out, c24 = [], 0
-    for g in hist:
-        for a in g.get("alerts", []):
-            if a.get("isDrill"):
-                continue
-            if now - a.get("time", 0) < 86400:
-                c24 += len(a.get("cities", []))
-            out.append({"time": a.get("time"), "threat": {0: "rockets/missiles", 5: "hostile aircraft"}.get(a.get("threat"), "code %s" % a.get("threat")),
-                        "cities": a.get("cities", [])[:12], "n": len(a.get("cities", []))})
-    out.sort(key=lambda a: -(a["time"] or 0))
-    last = out[0]["time"] if out else None
-    return {"last_alert": dt.datetime.fromtimestamp(last, dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if last else None,
-            "active_now": len(live) if isinstance(live, list) else 0, "cities_alerted_24h": c24, "recent": out[:25]}
+# ---------------- regional air-raid / missile alerts ----------------
+# Israel (Tzeva Adom, mirroring Home Front Command), Ukraine, Russian regions and Poland (alerts.in.ua SITREP):
+# see gt/alerts.py. 0.6's tzevaadom() (history once a minute, borrowed Origin/Referer headers) is replaced.
 
 
 # ---------------- Taiwan MND daily PLA activity ----------------
@@ -702,7 +687,9 @@ REGISTRY = {
     "firms": (firms, 3 * 3600),
     "ukmto": (ukmto, 6 * 3600),
     "gdelt": (gdelt, 900),
-    "tzeva": (tzevaadom, 60),
+    "tzeva": (alerts.israel_feed, 20),       # Tzofar history + HFC messages (ETag: 304 when unchanged)
+    "tzevalive": (alerts.israel_live, 5),    # Tzofar live notifications (Cloudflare-cached 5 s)
+    "airalerts": (alerts.regions, 60),       # alerts.in.ua SITREP (If-Modified-Since)
     "pla": (taiwan_pla, 3 * 3600),
     "czib": (easa_czib, 12 * 3600),
     "official": (official, 1800),

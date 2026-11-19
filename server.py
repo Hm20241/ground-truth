@@ -6,6 +6,7 @@ Env: GT_HOST (default 127.0.0.1), GT_PORT (default 8790), GT_MAP_REFRESH (second
 All URLs the page uses are relative, so it also works behind a path prefix (e.g. Caddy /gt/).
 """
 import datetime as dt
+import hashlib
 import json
 import math
 import os
@@ -19,7 +20,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ROOT)
-from gt import analysis, feeds, geo, mymaps  # noqa: E402
+from gt import alerts, analysis, feeds, geo, mymaps  # noqa: E402
 
 VERSION = open(os.path.join(ROOT, "VERSION")).read().strip()
 WEB = os.path.join(ROOT, "web")
@@ -64,7 +65,7 @@ def _run(name, fn):
     with LOCK:
         STATE[name] = rec
         RUNNING.discard(name)
-    if name in ("mymaps", "firms", "ukmto", "czib", "mil", "losses", "pla", "tzeva", "outages", "advisories", "ships", "gfw"):
+    if name in ("mymaps", "firms", "ukmto", "czib", "mil", "losses", "pla", "outages", "advisories", "ships", "gfw"):  # alerts: live in /api/alerts
         derive()
 
 
@@ -178,7 +179,8 @@ def derive():
         "mil_aircraft_notable": _mil_notable(d("mil")), "ru_losses_personnel_today": (d("losses").get("increase") or {}).get("personnel_units"),
         "ru_losses_day": d("losses").get("day"), "ukmto_incidents_7d": sum(1 for i in ukm if i["date"] >= week_ago),
         "ukmto_latest": ukm[0] if ukm else None, "firms_hotspots_by_theatre": firms_by,
-        "taiwan_pla": d("pla"), "israel_alerts": {k: d("tzeva").get(k) for k in ("active_now", "cities_alerted_24h", "last_alert")},
+        "taiwan_pla": d("pla"), "israel_alerts": {"active_now": d("tzevalive").get("active_now"), "cities_alerted_24h": d("tzeva").get("cities_alerted_24h"),
+                                              "last_alert": d("tzeva").get("last_alert")},
         "airspace_czib_active": d("czib").get("active"),
         "firms_by_satellite": d("firms").get("by_satellite"),
         "internet_outages": _outage_summary(d("outages")),
@@ -371,11 +373,21 @@ class Handler(SimpleHTTPRequestHandler):
             return
         sys.stderr.write("%s %s\n" % (self.log_date_time_string(), fmt % args))
 
-    def _json(self, obj, code=200, cache="no-store"):
+    def _json(self, obj, code=200, cache="no-store", etag=None):
         body = json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode()
+        if etag:  # polled every few seconds: an unchanged answer is a 304 with no body
+            tag = '"%s"' % etag
+            if self.headers.get("If-None-Match") == tag:
+                self.send_response(304)
+                self.send_header("ETag", tag)
+                self.send_header("Cache-Control", cache)
+                self.end_headers()
+                return
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", cache)
+        if etag:
+            self.send_header("ETag", tag)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -393,7 +405,12 @@ class Handler(SimpleHTTPRequestHandler):
             if path == "/api/stats":
                 return self._json(DERIVED["stats"] or {})
             if path == "/api/summary":
-                return self._json(dict(DERIVED["summary"] or {}, analyst=analysis.headline()))
+                return self._json(dict(DERIVED["summary"] or {}, analyst=analysis.headline(), regional_alerts=alerts.summary(STATE)))
+            if path == "/api/alerts":
+                v = alerts.view(STATE)
+                stable = dict(v, generated=None, israel=dict(v["israel"], at=None, live_at=None), regions=dict(v["regions"], at=None))
+                tag = hashlib.sha1(json.dumps(stable, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:20]
+                return self._json(v, cache="no-cache", etag=tag)  # the tag ignores fetch times, so quiet polls are 304s
             if path == "/api/analysis":
                 return self._json(analysis.overview())
             if path == "/api/analysis/events":

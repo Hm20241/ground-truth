@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800&family=Overpass+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link href="vendor/maplibre-gl.css?v=5.6.0" rel="stylesheet">
-<link href="style.css?v=0.6.0" rel="stylesheet">
+<link href="style.css?v=0.7.0" rel="stylesheet">
 </head>
 <body>
 <div class="app">
@@ -40,6 +40,7 @@
 
   <main class="stage">
     <div id="map"></div>
+    <div class="alertbar hidden" id="alertbar" aria-live="polite"></div>
     <div class="timeline" id="timelineWrap">
       <div class="tl-head">
         <span>Events per hour, curated map, by theatre</span>
@@ -54,6 +55,7 @@
   <aside class="panel" id="panel">
     <nav class="tabs" id="tabs">
       <button data-tab="feed" class="on">Feed</button>
+      <button data-tab="alerts">Alerts</button>
       <button data-tab="brief">Brief</button>
       <button data-tab="sea">Maritime</button>
       <button data-tab="ai">Analyst</button>
@@ -64,6 +66,7 @@
       <div id="feedcount" class="muted small"></div>
       <ol id="feed" class="feed"></ol>
     </div>
+    <div class="tabbody hidden" id="tab-alerts"></div>
     <div class="tabbody hidden" id="tab-brief"></div>
     <div class="tabbody hidden" id="tab-sea"></div>
     <div class="tabbody hidden" id="tab-ai"></div>
@@ -71,6 +74,6 @@
   </aside>
 </div>
 <script src="vendor/maplibre-gl.js?v=5.6.0"></script>
-<script src="app.js?v=0.6.0"></script>
+<script src="app.js?v=0.7.0"></script>
 </body>
 </html>

@@ -1,0 +1,138 @@
+{
+"alertsHistory": [
+{
+"id": 7675,
+"description": null,
+"alerts": [
+{
+"time": 1794531367,
+"cities": [
+"נחל עוז"
+],
+"threat": 0,
+"isDrill": false
+}
+]
+},
+{
+"id": 7674,
+"description": null,
+"alerts": [
+{
+"time": 1794389135,
+"cities": [
+"בחלק מהאזורים בארץ"
+],
+"threat": 3,
+"isDrill": false
+},
+{
+"time": 1794389137,
+"cities": [
+"באר אורה",
+"אליפז ומכרות תמנע",
+"אילת",
+"אילות",
+"אזור תעשייה שחורת"
+],
+"threat": 3,
+"isDrill": false
+}
+]
+}
+],
+"instructions": [
+{
+"id": 2249,
+"time": 1794531609,
+"titleHe": "סיום אירוע",
+"titleAr": "لقد انتهى الحدث",
+"titleEn": "Incident Ended",
+"titleEs": "Incident Ended",
+"titleRu": "Инцидент завершен",
+"bodyHe": "האירוע הסתיים *בנחל עוז*",
+"bodyAr": "لقد انتهى الحدث في *ناحل عوز*",
+"bodyEn": "The incident has ended at *Nachal Oz*",
+"bodyEs": "El incidente terminó en *Najal Oz*",
+"bodyRu": "Инцидент завершен *в Нахаль Оз*",
+"forIos": true,
+"forAndroid": true,
+"display": true,
+"untilVersionIos": null,
+"untilVersionAndroid": null,
+"instruction": true,
+"areasIds": [
+13
+],
+"citiesIds": [
+234
+],
+"instructionType": 1,
+"pinUntil": null
+},
+{
+"id": 2248,
+"time": 1794392080,
+"titleHe": "מבזק פיקוד העורף",
+"titleAr": "عاجل من قيادة الجبهة الداخلية",
+"titleEn": "Home Front Command",
+"titleEs": "Actualización del Comando del Frente Interior",
+"titleRu": "Срочное сообщение Командования тыла",
+"bodyHe": "רעידת אדמה - הנחיות חזרה למבנים: בהמשך לרעידת האדמה, הינכם יכולים לחזור לבתים שלא נגרם להם נזק נראה לעין. במקרה שתתרחש רעידת אדמה נוספת, יש לפעול על פי ההנחיות ולהגיע למקום בטוח באופן מיידי. *באליפז ומכרות תמנע, באר אורה, אילות, אילת, אזור תעשייה שחורת*",
+"bodyAr": "רעידת אדמה - הנחיות חזרה למבנים: בהמשך לרעידת האדמה, הינכם יכולים לחזור לבתים שלא נגרם להם נזק נראה לעין. במקרה שתתרחש רעידת אדמה נוספת, יש לפעול על פי ההנחיות ולהגיע למקום בטוח באופן מיידי. في *إيليفازوتمنع, بئير أوره, ايالوت, أييلت, المنطقة الصناعية شحوروت*",
+"bodyEn": "רעידת אדמה - הנחיות חזרה למבנים: בהמשך לרעידת האדמה, הינכם יכולים לחזור לבתים שלא נגרם להם נזק נראה לעין. במקרה שתתרחש רעידת אדמה נוספת, יש לפעול על פי ההנחיות ולהגיע למקום בטוח באופן מיידי. at *Elipaz and Timna Mines, Be'er Ora, Eilot, Eilat, Shchoret Industrial Zone*",
+"bodyEs": "רעידת אדמה - הנחיות חזרה למבנים: בהמשך לרעידת האדמה, הינכם יכולים לחזור לבתים שלא נגרם להם נזק נראה לעין. במקרה שתתרחש רעידת אדמה נוספת, יש לפעול על פי ההנחיות ולהגיע למקום בטוח באופן מיידי. en *Elipaz y las Minas de Timna, Be'er Ora, Eilot, Eilat, Area Industrial Shjoret*",
+"bodyRu": "רעידת אדמה - הנחיות חזרה למבנים: בהמשך לרעידת האדמה, הינכם יכולים לחזור לבתים שלא נגרם להם נזק נראה לעין. במקרה שתתרחש רעידת אדמה נוספת, יש לפעול על פי ההנחיות ולהגיע למקום בטוח באופן מיידי. *в Элифаз и Копи Тимны, Беэр Ора, Эйлот, Эйлат, Промзона Шхорет*",
+"forIos": true,
+"forAndroid": true,
+"display": true,
+"untilVersionIos": null,
+"untilVersionAndroid": null,
+"instruction": true,
+"areasIds": [
+27,
+26
+],
+"citiesIds": [
+15,
+12,
+9,
+4,
+10
+],
+"instructionType": 2,
+"pinUntil": null
+},
+{
+"id": 2217,
+"time": 1781382800,
+"titleHe": "התרעה מקדימה קצרה ‐ לבנון",
+"titleAr": "الإنذار المبكر (قصير المدى)",
+"titleEn": "Early Warning ‐ Lebanon",
+"titleEs": "Early Warning (corto plazo)",
+"titleRu": "Раннее предупреждение (Ливан)",
+"bodyHe": "בעקבות זיהוי שיגורים, *בתוך זמן קצר* צפויות להתקבל התרעות *במטולה*",
+"bodyAr": "نظرًا لرصد إطلاق صواريخ، من المحتمل تفعيل الإنذارات *خلال وقت قصير* في *المطلة*",
+"bodyEn": "Due to the detection of missile launches, alerts may be activated *shortly* at *Metulla*",
+"bodyEs": "Debido a la detección de lanzamientos de misiles, es posible que se activen alertas *en breve* en *Metulla*",
+"bodyRu": "После обнаружения запусков, оповещения могут быть активированы *в ближайшее время* *в Метула*",
+"forIos": true,
+"forAndroid": true,
+"display": true,
+"untilVersionIos": null,
+"untilVersionAndroid": null,
+"instruction": true,
+"areasIds": [
+6
+],
+"citiesIds": [
+1669
+],
+"instructionType": 0,
+"pinUntil": 1781382981
+}
+],
+"systemMessages": [],
+"citiesVersion": 10,
+"polygonsVersion": 5
+}

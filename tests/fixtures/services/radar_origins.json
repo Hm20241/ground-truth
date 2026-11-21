@@ -1,0 +1,104 @@
+{
+ "success": true,
+ "errors": [],
+ "result": {
+  "trafficAnomalies": [
+   {
+    "visibleInDataSources": [
+     "HTTP_ORIGINS"
+    ],
+    "uuid": "e02a5ade-2ab9-4e52-8aed-31792bb446b3",
+    "type": "ORIGIN",
+    "status": "TP",
+    "startDate": "2026-11-03T03:30:00Z",
+    "endDate": "2026-11-03T05:00:00Z",
+    "locationDetails": null,
+    "asnDetails": null,
+    "originDetails": {
+     "origin": "oracle-eu-frankfurt-1",
+     "name": "Oracle Cloud eu-frankfurt-1"
+    },
+    "outageId": null
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP_ORIGINS"
+    ],
+    "uuid": "4dfd32a0-1ab7-4a19-9788-a7b8536930b6",
+    "type": "ORIGIN",
+    "status": "TP",
+    "startDate": "2026-11-02T19:45:00Z",
+    "endDate": "2026-11-03T01:45:00Z",
+    "locationDetails": null,
+    "asnDetails": null,
+    "originDetails": {
+     "origin": "microsoft-uaenorth",
+     "name": "Microsoft Azure uaenorth"
+    },
+    "outageId": null
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP",
+     "NET"
+    ],
+    "uuid": "f3d61a93-f09c-45cf-a759-0f605e7916ed",
+    "type": "LOCATION",
+    "status": "UNVERIFIED",
+    "startDate": "2026-11-20T23:00:00Z",
+    "endDate": null,
+    "locationDetails": {
+     "code": "GF",
+     "name": "French Guiana"
+    },
+    "asnDetails": null,
+    "originDetails": null,
+    "outageId": null
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP",
+     "NET"
+    ],
+    "uuid": "2e2937d1-127a-4581-a99f-8e0c39139b64",
+    "type": "AS",
+    "status": "VERIFIED",
+    "startDate": "2026-11-18T22:00:00Z",
+    "endDate": "2026-11-18T22:00:00Z",
+    "locationDetails": null,
+    "asnDetails": {
+     "asn": "15796",
+     "name": "SALT-CH",
+     "location": {
+      "code": "CH",
+      "name": "Switzerland"
+     }
+    },
+    "originDetails": null,
+    "outageId": "1752"
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP",
+     "NET"
+    ],
+    "uuid": "c595977b-aa94-4659-bb59-45d1884015f0",
+    "type": "AS",
+    "status": "TP",
+    "startDate": "2026-11-17T00:15:00Z",
+    "endDate": null,
+    "locationDetails": null,
+    "asnDetails": {
+     "asn": "10030",
+     "name": "CELCOMNET-AP",
+     "location": {
+      "code": "MY",
+      "name": "Malaysia"
+     }
+    },
+    "originDetails": null,
+    "outageId": null
+   }
+  ]
+ }
+}

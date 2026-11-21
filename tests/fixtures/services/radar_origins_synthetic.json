@@ -1,0 +1,144 @@
+{
+ "success": true,
+ "errors": [],
+ "result": {
+  "trafficAnomalies": [
+   {
+    "visibleInDataSources": [
+     "HTTP_ORIGINS"
+    ],
+    "uuid": "00000000-0000-4000-8000-000000000001",
+    "type": "ORIGIN",
+    "status": "TP",
+    "startDate": "2026-11-21T04:00:00Z",
+    "endDate": null,
+    "locationDetails": null,
+    "asnDetails": null,
+    "originDetails": {
+     "origin": "oracle-eu-frankfurt-1",
+     "name": "Oracle Cloud eu-frankfurt-1"
+    },
+    "outageId": null
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP_ORIGINS"
+    ],
+    "uuid": "00000000-0000-4000-8000-000000000002",
+    "type": "ORIGIN",
+    "status": "VERIFIED",
+    "startDate": "2026-11-20T23:00:00Z",
+    "endDate": "2026-11-21T00:00:00Z",
+    "locationDetails": null,
+    "asnDetails": null,
+    "originDetails": {
+     "origin": "microsoft-uaenorth",
+     "name": "Microsoft Azure uaenorth"
+    },
+    "outageId": null
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP_ORIGINS"
+    ],
+    "uuid": "00000000-0000-4000-8000-000000000003",
+    "type": "ORIGIN",
+    "status": "UNVERIFIED",
+    "startDate": "2026-11-21T03:00:00Z",
+    "endDate": null,
+    "locationDetails": null,
+    "asnDetails": null,
+    "originDetails": {
+     "origin": "amazon-us-west-2",
+     "name": "Amazon Web Services us-west-2"
+    },
+    "outageId": null
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP_ORIGINS"
+    ],
+    "uuid": "00000000-0000-4000-8000-000000000004",
+    "type": "ORIGIN",
+    "status": "TP",
+    "startDate": "2026-11-21T03:00:00Z",
+    "endDate": null,
+    "locationDetails": null,
+    "asnDetails": null,
+    "originDetails": {
+     "origin": "google-us-central1",
+     "name": "Google Cloud us-central1"
+    },
+    "outageId": 9105
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP_ORIGINS"
+    ],
+    "uuid": "00000000-0000-4000-8000-000000000005",
+    "type": "ORIGIN",
+    "status": "TP",
+    "startDate": "2026-11-21T02:00:00Z",
+    "endDate": null,
+    "locationDetails": null,
+    "asnDetails": null,
+    "originDetails": {
+     "origin": "hetzner-fsn1",
+     "name": "Hetzner fsn1"
+    },
+    "outageId": null
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP_ORIGINS"
+    ],
+    "uuid": "00000000-0000-4000-8000-000000000006",
+    "type": "ORIGIN",
+    "status": "TP",
+    "startDate": "2026-11-21T02:00:00Z",
+    "endDate": null,
+    "locationDetails": null,
+    "asnDetails": null,
+    "originDetails": {
+     "origin": "microsoft-centraluseuap",
+     "name": "Microsoft Azure centraluseuap"
+    },
+    "outageId": null
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP_ORIGINS"
+    ],
+    "uuid": "00000000-0000-4000-8000-000000000007",
+    "type": "ORIGIN",
+    "status": "TP",
+    "startDate": "2026-11-21T04:00:00Z",
+    "endDate": null,
+    "locationDetails": null,
+    "asnDetails": null,
+    "originDetails": {
+     "origin": "amazon-us-east-1",
+     "name": "Amazon Web Services us-east-1"
+    },
+    "outageId": null
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP_ORIGINS"
+    ],
+    "uuid": "00000000-0000-4000-8000-000000000008",
+    "type": "ORIGIN",
+    "status": "TP",
+    "startDate": "2026-11-21T04:00:00Z",
+    "endDate": null,
+    "locationDetails": null,
+    "asnDetails": null,
+    "originDetails": {
+     "origin": "amazon-eu-central-1",
+     "name": "Amazon Web Services eu-central-1"
+    },
+    "outageId": null
+   }
+  ]
+ }
+}

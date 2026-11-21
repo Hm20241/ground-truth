@@ -141,7 +141,7 @@ reg = reg[:reg.index("\n}")]
 existing = set(re.findall(r'^\s*"([a-z]+)":', reg, re.M))
 check(len(existing) >= 20 and set(S.FEEDS) == {"websites", "cloud"} and not set(S.FEEDS) & existing
       and all(re.match(r"^[a-z]+$", n) for n in S.FEEDS), "FEEDS websites + cloud: lowercase, no clash with feeds.REGISTRY")
-check(S.FEEDS["websites"] == (S.websites, 300) and S.FEEDS["cloud"] == (S.cloud, 300) and S.VERSION == "1.0"
+check(S.FEEDS["websites"] == (S.websites, 300) and S.FEEDS["cloud"] == (S.cloud, 300) and S.VERSION == "1.1"
       and S.PUBLIC_OK == {"websites": False, "cloud": False} and S.NON_COMMERCIAL == {"websites": True, "cloud": True},
       "FEEDS every 300 s; PUBLIC_OK False and NON_COMMERCIAL True per feed")
 check(S.UA == "GroundTruth/1.5 (personal non-commercial OSINT dashboard)" and S.TIMEOUT + S.TIME_BUDGET <= 60
@@ -457,10 +457,12 @@ IKEYS = {"id", "source", "provider", "kind", "title", "summary", "lang", "url", 
          "active", "severity", "status", "regions", "where", "cc", "ll", "place", "tags", "metric"}
 check(all(set(i) == IKEYS for d in (w1, c1) for i in d["items"]), "item keys exactly as the contract")
 check(all(set(s) == {"name", "label", "ok", "error", "checked", "good", "newest", "n", "active"} for d in (w1, c1) for s in d["sources"])
-      and [s["name"] for s in w1["sources"]] == list(S.FEED_SOURCES["websites"]), "source rows: contract keys, one per source")
+      and [s["name"] for s in w1["sources"]] == list(S.FEED_SOURCES["websites"]) + list(S.FEED_RADAR["websites"])
+      and [s["name"] for s in c1["sources"]] == list(S.FEED_SOURCES["cloud"]) + list(S.FEED_RADAR["cloud"]),
+      "source rows: contract keys, one per source, then the Radar rows (1.5.5)")
 check(all(set(b) == {"source", "provider", "status", "active", "url"} for d in (w1, c1) for b in d["board"])
       and set(c1["pops"]) == {"total", "partial_outage", "under_maintenance", "named"}, "board rows and pops keys")
-check(w1["version"] == "1.0" and w1["fetched_at"] == "2026-11-21T05:00:00Z" and w1["public_ok"] is False
+check(w1["version"] == "1.1" and w1["fetched_at"] == "2026-11-21T05:00:00Z" and w1["public_ok"] is False
       and w1["non_commercial"] is True and w1["count"] == len(w1["items"]) and w1["trimmed"] == 0
       and len(w1["summary"]) <= 700 and "\n" not in w1["note"] and "\n" not in c1["note"] and w1["attribution"],
       "envelope: version, UTC fetched_at, flags, count, summary <= 700, one-paragraph note")
@@ -523,7 +525,7 @@ check(c1["summary"].startswith("%d active: DigitalOcean (critical): Control pane
       and "+%d more" % (nact - 5) in c1["summary"] and "Cloudflare PoPs: 3 of 8 partial outage" in c1["summary"]
       and "4 datacenter incident headlines" in c1["summary"], "summary: active incidents worst first, PoP and news counts")
 st = state()
-check(set(st["sources"]) == set(S.SOURCES) and st["version"] == "1.0"
+check(set(st["sources"]) == set(S.SOURCES) and st["version"] == "1.1"
       and not os.path.exists(os.path.join(TMP, "cache", S.STATE_FILE + ".tmp")), "state saved atomically with every source")
 
 # ids stable

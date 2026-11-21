@@ -1,0 +1,715 @@
+{
+ "success": true,
+ "errors": [],
+ "result": {
+  "annotations": [
+   {
+    "id": "1749",
+    "dataSource": "HTTP_ORIGINS",
+    "description": "A global Microsoft 365 disruption impacted Exchange Online and dependent services, including Outlook, Copilot and Teams calendar features. Microsoft said a large number of servers had become unexpectedly unavailable.",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-11-12T16:45:00Z",
+    "endDate": "2026-11-13T13:00:00Z",
+    "locations": [],
+    "asns": [],
+    "geoIds": [],
+    "origins": [
+     "microsoft-australiacentral",
+     "microsoft-australiacentral2",
+     "microsoft-australiaeast",
+     "microsoft-australiasoutheast",
+     "microsoft-austriaeast",
+     "microsoft-belgiumcentral",
+     "microsoft-brazilne",
+     "microsoft-brazilse",
+     "microsoft-brazilsouth",
+     "microsoft-canadacentral",
+     "microsoft-canadaeast",
+     "microsoft-centralfrance",
+     "microsoft-centralindia",
+     "microsoft-centralus",
+     "microsoft-centraluseuap",
+     "microsoft-chilec",
+     "microsoft-denmarkeast",
+     "microsoft-eastasia",
+     "microsoft-eastus",
+     "microsoft-eastus2",
+     "microsoft-eastus2euap",
+     "microsoft-eastus3",
+     "microsoft-germanyn",
+     "microsoft-germanywc",
+     "microsoft-global",
+     "microsoft-indiasouthcentral",
+     "microsoft-indonesiacentral",
+     "microsoft-israelcentral",
+     "microsoft-israelnorthwest",
+     "microsoft-italynorth",
+     "microsoft-japaneast",
+     "microsoft-japanwest",
+     "microsoft-jioindiacentral",
+     "microsoft-jioindiawest",
+     "microsoft-koreacentral",
+     "microsoft-koreasouth",
+     "microsoft-malaysiasouth",
+     "microsoft-malaysiawest",
+     "microsoft-mexicocentral",
+     "microsoft-newzealandnorth",
+     "microsoft-northcentralus",
+     "microsoft-northeastus5",
+     "microsoft-northeurope",
+     "microsoft-northeurope2",
+     "microsoft-norwaye",
+     "microsoft-norwayw",
+     "microsoft-polandcentral",
+     "microsoft-qatarcentral",
+     "microsoft-saudiarabiaeast",
+     "microsoft-southafricanorth",
+     "microsoft-southafricawest",
+     "microsoft-southcentralus",
+     "microsoft-southcentralus2",
+     "microsoft-southeastasia",
+     "microsoft-southeastasia3",
+     "microsoft-southeastus",
+     "microsoft-southeastus3",
+     "microsoft-southeastus5",
+     "microsoft-southfrance",
+     "microsoft-southindia",
+     "microsoft-southwestus",
+     "microsoft-spaincentral",
+     "microsoft-swedencentral",
+     "microsoft-swedensouth",
+     "microsoft-switzerlandn",
+     "microsoft-switzerlandw",
+     "microsoft-taiwannorth",
+     "microsoft-taiwannorthwest",
+     "microsoft-uaecentral",
+     "microsoft-uaenorth",
+     "microsoft-uksouth",
+     "microsoft-ukwest",
+     "microsoft-usstagec",
+     "microsoft-usstagee",
+     "microsoft-westcentralus",
+     "microsoft-westeurope",
+     "microsoft-westindia",
+     "microsoft-westus",
+     "microsoft-westus2",
+     "microsoft-westus3"
+    ],
+    "entities": [
+     {
+      "entityType": "ORIGIN",
+      "entityValue": "microsoft-australiacentral",
+      "entityName": "Microsoft Azure australiacentral",
+      "entityLocation": null
+     },
+     {
+      "entityType": "ORIGIN",
+      "entityValue": "microsoft-australiacentral2",
+      "entityName": "Microsoft Azure australiacentral2",
+      "entityLocation": null
+     },
+     {
+      "entityType": "ORIGIN",
+      "entityValue": "microsoft-australiaeast",
+      "entityName": "Microsoft Azure australiaeast",
+      "entityLocation": null
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://x.com/CloudflareRadar/status/2121241680007377398",
+    "asnsDetails": [],
+    "locationsDetails": [],
+    "originsDetails": [
+     {
+      "name": "Microsoft Azure australiacentral",
+      "origin": "microsoft-australiacentral"
+     },
+     {
+      "name": "Microsoft Azure australiacentral2",
+      "origin": "microsoft-australiacentral2"
+     },
+     {
+      "name": "Microsoft Azure australiaeast",
+      "origin": "microsoft-australiaeast"
+     },
+     {
+      "name": "Microsoft Azure australiasoutheast",
+      "origin": "microsoft-australiasoutheast"
+     },
+     {
+      "name": "Microsoft Azure austriaeast",
+      "origin": "microsoft-austriaeast"
+     },
+     {
+      "name": "Microsoft Azure belgiumcentral",
+      "origin": "microsoft-belgiumcentral"
+     },
+     {
+      "name": "Microsoft Azure brazilne",
+      "origin": "microsoft-brazilne"
+     },
+     {
+      "name": "Microsoft Azure brazilse",
+      "origin": "microsoft-brazilse"
+     },
+     {
+      "name": "Microsoft Azure brazilsouth",
+      "origin": "microsoft-brazilsouth"
+     },
+     {
+      "name": "Microsoft Azure canadacentral",
+      "origin": "microsoft-canadacentral"
+     },
+     {
+      "name": "Microsoft Azure canadaeast",
+      "origin": "microsoft-canadaeast"
+     },
+     {
+      "name": "Microsoft Azure centralfrance",
+      "origin": "microsoft-centralfrance"
+     },
+     {
+      "name": "Microsoft Azure centralindia",
+      "origin": "microsoft-centralindia"
+     },
+     {
+      "name": "Microsoft Azure centralus",
+      "origin": "microsoft-centralus"
+     },
+     {
+      "name": "Microsoft Azure centraluseuap",
+      "origin": "microsoft-centraluseuap"
+     },
+     {
+      "name": "Microsoft Azure chilec",
+      "origin": "microsoft-chilec"
+     },
+     {
+      "name": "Microsoft Azure denmarkeast",
+      "origin": "microsoft-denmarkeast"
+     },
+     {
+      "name": "Microsoft Azure eastasia",
+      "origin": "microsoft-eastasia"
+     },
+     {
+      "name": "Microsoft Azure eastus",
+      "origin": "microsoft-eastus"
+     },
+     {
+      "name": "Microsoft Azure eastus2",
+      "origin": "microsoft-eastus2"
+     },
+     {
+      "name": "Microsoft Azure eastus2euap",
+      "origin": "microsoft-eastus2euap"
+     },
+     {
+      "name": "Microsoft Azure eastus3",
+      "origin": "microsoft-eastus3"
+     },
+     {
+      "name": "Microsoft Azure germanyn",
+      "origin": "microsoft-germanyn"
+     },
+     {
+      "name": "Microsoft Azure germanywc",
+      "origin": "microsoft-germanywc"
+     },
+     {
+      "name": "Microsoft Azure global",
+      "origin": "microsoft-global"
+     },
+     {
+      "name": "Microsoft Azure indiasouthcentral",
+      "origin": "microsoft-indiasouthcentral"
+     },
+     {
+      "name": "Microsoft Azure indonesiacentral",
+      "origin": "microsoft-indonesiacentral"
+     },
+     {
+      "name": "Microsoft Azure israelcentral",
+      "origin": "microsoft-israelcentral"
+     },
+     {
+      "name": "Microsoft Azure israelnorthwest",
+      "origin": "microsoft-israelnorthwest"
+     },
+     {
+      "name": "Microsoft Azure italynorth",
+      "origin": "microsoft-italynorth"
+     },
+     {
+      "name": "Microsoft Azure japaneast",
+      "origin": "microsoft-japaneast"
+     },
+     {
+      "name": "Microsoft Azure japanwest",
+      "origin": "microsoft-japanwest"
+     },
+     {
+      "name": "Microsoft Azure jioindiacentral",
+      "origin": "microsoft-jioindiacentral"
+     },
+     {
+      "name": "Microsoft Azure jioindiawest",
+      "origin": "microsoft-jioindiawest"
+     },
+     {
+      "name": "Microsoft Azure koreacentral",
+      "origin": "microsoft-koreacentral"
+     },
+     {
+      "name": "Microsoft Azure koreasouth",
+      "origin": "microsoft-koreasouth"
+     },
+     {
+      "name": "Microsoft Azure malaysiasouth",
+      "origin": "microsoft-malaysiasouth"
+     },
+     {
+      "name": "Microsoft Azure malaysiawest",
+      "origin": "microsoft-malaysiawest"
+     },
+     {
+      "name": "Microsoft Azure mexicocentral",
+      "origin": "microsoft-mexicocentral"
+     },
+     {
+      "name": "Microsoft Azure newzealandnorth",
+      "origin": "microsoft-newzealandnorth"
+     },
+     {
+      "name": "Microsoft Azure northcentralus",
+      "origin": "microsoft-northcentralus"
+     },
+     {
+      "name": "Microsoft Azure northeastus5",
+      "origin": "microsoft-northeastus5"
+     },
+     {
+      "name": "Microsoft Azure northeurope",
+      "origin": "microsoft-northeurope"
+     },
+     {
+      "name": "Microsoft Azure northeurope2",
+      "origin": "microsoft-northeurope2"
+     },
+     {
+      "name": "Microsoft Azure norwaye",
+      "origin": "microsoft-norwaye"
+     },
+     {
+      "name": "Microsoft Azure norwayw",
+      "origin": "microsoft-norwayw"
+     },
+     {
+      "name": "Microsoft Azure polandcentral",
+      "origin": "microsoft-polandcentral"
+     },
+     {
+      "name": "Microsoft Azure qatarcentral",
+      "origin": "microsoft-qatarcentral"
+     },
+     {
+      "name": "Microsoft Azure saudiarabiaeast",
+      "origin": "microsoft-saudiarabiaeast"
+     },
+     {
+      "name": "Microsoft Azure southafricanorth",
+      "origin": "microsoft-southafricanorth"
+     },
+     {
+      "name": "Microsoft Azure southafricawest",
+      "origin": "microsoft-southafricawest"
+     },
+     {
+      "name": "Microsoft Azure southcentralus",
+      "origin": "microsoft-southcentralus"
+     },
+     {
+      "name": "Microsoft Azure southcentralus2",
+      "origin": "microsoft-southcentralus2"
+     },
+     {
+      "name": "Microsoft Azure southeastasia",
+      "origin": "microsoft-southeastasia"
+     },
+     {
+      "name": "Microsoft Azure southeastasia3",
+      "origin": "microsoft-southeastasia3"
+     },
+     {
+      "name": "Microsoft Azure southeastus",
+      "origin": "microsoft-southeastus"
+     },
+     {
+      "name": "Microsoft Azure southeastus3",
+      "origin": "microsoft-southeastus3"
+     },
+     {
+      "name": "Microsoft Azure southeastus5",
+      "origin": "microsoft-southeastus5"
+     },
+     {
+      "name": "Microsoft Azure southfrance",
+      "origin": "microsoft-southfrance"
+     },
+     {
+      "name": "Microsoft Azure southindia",
+      "origin": "microsoft-southindia"
+     },
+     {
+      "name": "Microsoft Azure southwestus",
+      "origin": "microsoft-southwestus"
+     },
+     {
+      "name": "Microsoft Azure spaincentral",
+      "origin": "microsoft-spaincentral"
+     },
+     {
+      "name": "Microsoft Azure swedencentral",
+      "origin": "microsoft-swedencentral"
+     },
+     {
+      "name": "Microsoft Azure swedensouth",
+      "origin": "microsoft-swedensouth"
+     },
+     {
+      "name": "Microsoft Azure switzerlandn",
+      "origin": "microsoft-switzerlandn"
+     },
+     {
+      "name": "Microsoft Azure switzerlandw",
+      "origin": "microsoft-switzerlandw"
+     },
+     {
+      "name": "Microsoft Azure taiwannorth",
+      "origin": "microsoft-taiwannorth"
+     },
+     {
+      "name": "Microsoft Azure taiwannorthwest",
+      "origin": "microsoft-taiwannorthwest"
+     },
+     {
+      "name": "Microsoft Azure uaecentral",
+      "origin": "microsoft-uaecentral"
+     },
+     {
+      "name": "Microsoft Azure uaenorth",
+      "origin": "microsoft-uaenorth"
+     },
+     {
+      "name": "Microsoft Azure uksouth",
+      "origin": "microsoft-uksouth"
+     },
+     {
+      "name": "Microsoft Azure ukwest",
+      "origin": "microsoft-ukwest"
+     },
+     {
+      "name": "Microsoft Azure usstagec",
+      "origin": "microsoft-usstagec"
+     },
+     {
+      "name": "Microsoft Azure usstagee",
+      "origin": "microsoft-usstagee"
+     },
+     {
+      "name": "Microsoft Azure westcentralus",
+      "origin": "microsoft-westcentralus"
+     },
+     {
+      "name": "Microsoft Azure westeurope",
+      "origin": "microsoft-westeurope"
+     },
+     {
+      "name": "Microsoft Azure westindia",
+      "origin": "microsoft-westindia"
+     },
+     {
+      "name": "Microsoft Azure westus",
+      "origin": "microsoft-westus"
+     },
+     {
+      "name": "Microsoft Azure westus2",
+      "origin": "microsoft-westus2"
+     },
+     {
+      "name": "Microsoft Azure westus3",
+      "origin": "microsoft-westus3"
+     }
+    ],
+    "outage": {
+     "outageCause": "TECHNICAL_PROBLEM",
+     "outageType": "PLATFORM"
+    }
+   },
+   {
+    "id": "1727",
+    "dataSource": "ALL",
+    "description": "A technical problem at Google Cloud caused elevated errors and network failures for multiple services in its europe-west2 (London) region",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-10-20T05:45:00Z",
+    "endDate": "2026-10-20T14:00:00Z",
+    "locations": [],
+    "asns": [],
+    "geoIds": [],
+    "origins": [
+     "google-europe-west2"
+    ],
+    "entities": [
+     {
+      "entityType": "ORIGIN",
+      "entityValue": "google-europe-west2",
+      "entityName": "Google Cloud europe-west2",
+      "entityLocation": null
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://x.com/CloudflareRadar/status/2112486747032457726",
+    "asnsDetails": [],
+    "locationsDetails": [],
+    "originsDetails": [
+     {
+      "name": "Google Cloud europe-west2",
+      "origin": "google-europe-west2"
+     }
+    ],
+    "outage": {
+     "outageCause": "TECHNICAL_PROBLEM",
+     "outageType": "PLATFORM"
+    }
+   },
+   {
+    "id": "1659",
+    "dataSource": "ALL",
+    "description": "Multiple products in us-central1-b are experiencing network service degradation.",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-09-01T14:30:00Z",
+    "endDate": "2026-09-01T16:00:00Z",
+    "locations": [],
+    "asns": [],
+    "geoIds": [],
+    "origins": [
+     "google-us-central1"
+    ],
+    "entities": [
+     {
+      "entityType": "ORIGIN",
+      "entityValue": "google-us-central1",
+      "entityName": "Google Cloud us-central1",
+      "entityLocation": null
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://status.cloud.google.com/incidents/J5ia5t9p3g9Q5Wi7r8Ev",
+    "asnsDetails": [],
+    "locationsDetails": [],
+    "originsDetails": [
+     {
+      "name": "Google Cloud us-central1",
+      "origin": "google-us-central1"
+     }
+    ],
+    "outage": {
+     "outageCause": "NETWORK_PROBLEM",
+     "outageType": "PLATFORM"
+    }
+   },
+   {
+    "id": "1621",
+    "dataSource": "ALL",
+    "description": "Meta outage affecting social media and messaging platforms",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-06-23T21:00:00Z",
+    "endDate": "2026-06-23T22:00:00Z",
+    "locations": [],
+    "asns": [
+     32934
+    ],
+    "geoIds": [],
+    "origins": [],
+    "entities": [
+     {
+      "entityType": "AS",
+      "entityValue": "32934",
+      "entityName": "FACEBOOK",
+      "entityLocation": "US"
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://x.com/CloudflareRadar/status/2069796514403176469",
+    "asnsDetails": [
+     {
+      "asn": "32934",
+      "name": "FACEBOOK",
+      "location": {
+       "code": "US",
+       "name": "United States"
+      }
+     }
+    ],
+    "locationsDetails": [],
+    "originsDetails": [],
+    "outage": {
+     "outageCause": "UNKNOWN",
+     "outageType": "PLATFORM"
+    }
+   },
+   {
+    "id": "1541",
+    "dataSource": "ALL",
+    "description": "Iranian strikes on AWS data centers",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-03-31T08:00:00Z",
+    "endDate": "2026-05-01T00:00:00Z",
+    "locations": [],
+    "asns": [],
+    "geoIds": [],
+    "origins": [
+     "amazon-me-central-1"
+    ],
+    "entities": [
+     {
+      "entityType": "ORIGIN",
+      "entityValue": "amazon-me-central-1",
+      "entityName": "Amazon Web Services me-central-1",
+      "entityLocation": null
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://health.aws.amazon.com/health/status#multipleservices-me-central-1_1777533954",
+    "asnsDetails": [],
+    "locationsDetails": [],
+    "originsDetails": [
+     {
+      "name": "Amazon Web Services me-central-1",
+      "origin": "amazon-me-central-1"
+     }
+    ],
+    "outage": {
+     "outageCause": "MILITARY_ACTION",
+     "outageType": "PLATFORM"
+    }
+   },
+   {
+    "id": "1538",
+    "dataSource": "ALL",
+    "description": "Disruption due to drone activity",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-03-23T22:30:00Z",
+    "endDate": "2026-04-01T01:00:00Z",
+    "locations": [],
+    "asns": [],
+    "geoIds": [],
+    "origins": [
+     "amazon-me-south-1"
+    ],
+    "entities": [
+     {
+      "entityType": "ORIGIN",
+      "entityValue": "amazon-me-south-1",
+      "entityName": "Amazon Web Services me-south-1",
+      "entityLocation": null
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://bsky.app/profile/radar.cloudflare.com/post/3mhskms3dke2z",
+    "asnsDetails": [],
+    "locationsDetails": [],
+    "originsDetails": [
+     {
+      "name": "Amazon Web Services me-south-1",
+      "origin": "amazon-me-south-1"
+     }
+    ],
+    "outage": {
+     "outageCause": "MILITARY_ACTION",
+     "outageType": "PLATFORM"
+    }
+   },
+   {
+    "id": "1533",
+    "dataSource": "ALL",
+    "description": "Localized power issue affecting APIs and instances in a single Availability Zone (mes1-az2)",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-03-02T05:00:00Z",
+    "endDate": "2026-03-13T12:00:00Z",
+    "locations": [],
+    "asns": [],
+    "geoIds": [],
+    "origins": [
+     "amazon-me-south-1"
+    ],
+    "entities": [
+     {
+      "entityType": "ORIGIN",
+      "entityValue": "amazon-me-south-1",
+      "entityName": "Amazon Web Services me-south-1",
+      "entityLocation": null
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://health.aws.amazon.com/health/status?eventID=arn:aws:health:me-south-1::event/MULTIPLE_SERVICES/AWS_MULTIPLE_SERVICES_OPERATIONAL_ISSUE/AWS_MULTIPLE_SERVICES_OPERATIONAL_ISSUE_E6426_01AD72B4E1E",
+    "asnsDetails": [],
+    "locationsDetails": [],
+    "originsDetails": [
+     {
+      "name": "Amazon Web Services me-south-1",
+      "origin": "amazon-me-south-1"
+     }
+    ],
+    "outage": {
+     "outageCause": "POWER_OUTAGE",
+     "outageType": "PLATFORM"
+    }
+   },
+   {
+    "id": "1532",
+    "dataSource": "ALL",
+    "description": "Connectivity and power issues affecting APIs and instances in a single Availability Zone (mec1-az2) ",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-03-01T12:00:00Z",
+    "endDate": "2026-03-13T12:00:00Z",
+    "locations": [],
+    "asns": [],
+    "geoIds": [],
+    "origins": [
+     "amazon-me-central-1"
+    ],
+    "entities": [
+     {
+      "entityType": "ORIGIN",
+      "entityValue": "amazon-me-central-1",
+      "entityName": "Amazon Web Services me-central-1",
+      "entityLocation": null
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://health.aws.amazon.com/health/status?eventID=arn:aws:health:me-central-1::event/MULTIPLE_SERVICES/AWS_MULTIPLE_SERVICES_OPERATIONAL_ISSUE/AWS_MULTIPLE_SERVICES_OPERATIONAL_ISSUE_5E6B8_EF2498889B5",
+    "asnsDetails": [],
+    "locationsDetails": [],
+    "originsDetails": [
+     {
+      "name": "Amazon Web Services me-central-1",
+      "origin": "amazon-me-central-1"
+     }
+    ],
+    "outage": {
+     "outageCause": "POWER_OUTAGE",
+     "outageType": "PLATFORM"
+    }
+   }
+  ]
+ }
+}

@@ -376,7 +376,7 @@ check(all(set(s) == SRC for s in p1["sources"] + c1["sources"]) and
       [s["name"] for s in c1["sources"]] == list(ds.FEED_SOURCES["cellular"]), "sources rows: keys and order")
 check(all(s["ok"] and s["error"] is None and s["checked"] == ISO(NT) for s in p1["sources"] + c1["sources"]),
       "all sources ok")
-check(p1["version"] == c1["version"] == "1.1" and p1["fetched_at"] == ISO(NT) and p1["public_ok"] is False and
+check(p1["version"] == c1["version"] == "1.2" and p1["fetched_at"] == ISO(NT) and p1["public_ok"] is False and
       c1["non_commercial"] is True and p1["count"] == len(p1["items"]) and p1["trimmed"] == 0,
       "version, fetched_at, count, trimmed, flags")
 check(all(i["ts_ms"] <= NT * 1000 for i in ALL_ITEMS) and

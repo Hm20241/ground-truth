@@ -1,5 +1,6 @@
 """Website and cloud disruption layers: official status pages, the Cloudflare PoP list and datacenter news.
-v1.0, 2026-11-21 (Ground Truth 1.5.3).
+v1.1, 2026-11-21 (Ground Truth 1.5.5; v1.0 came with 1.5.3). 1.1 adds Cloudflare Radar's platform outages and
+cloud-region traffic anomalies (see "Cloudflare Radar" below).
 
 Two feeds (FEEDS at the bottom), both every 300 s, sharing one cache (<GT_DATA>/cache/services_state.json). Each
 source has its own cadence; a feed poll fetches only the sources that are due (the oldest first), stops fetching
@@ -27,6 +28,26 @@ first; the two feeds may run at the same time, so the cache is re-read and merge
   On-Prem (every 30 min). Provider regions are pinned at city-level metro coordinates from the tables below (place
   "region"); AI services and region-less incidents at the HQ; news by the first country gt.placer finds in the
   headline (+ summary), at the country centroid of web/geo/theatres.json (place "country"), not pinned without one.
+
+Cloudflare Radar (1.1): two more rows per feed, `radar_platform` (websites, cloud) and `radar_origins` (cloud), built
+from the Radar API lists gt/disruption.py already fetches every 15 min for the power and cell layers
+(disruption.radar_rows(); never fetched here, so no second request). Radar data is CC BY-NC 4.0.
+* PLATFORM outage annotations (one online service or cloud platform; ~8 a year, mostly single cloud regions). The
+  provider comes from the description (Microsoft 365, AWS, Google Cloud, Meta ...), else the cloud origins'
+  prefix ("amazon-me-central-1" -> AWS), else the networks' names. The record goes to the layer where that provider's
+  own status items go (Microsoft 365, Google Workspace, Cloudflare and other websites -> websites; clouds and AI ->
+  cloud; Meta -> websites; unknown -> cloud). Pinned at the provider regions its origins name (AWS / Google Cloud /
+  Azure / OCI region tables below), or at the HQ when it names none, more than 4, or a "-global" origin. Severity:
+  critical when global / worldwide / complete / total, else major. Linked to the annotation's own link (Cloudflare's
+  post or the provider's status page), else Radar's Outage Center.
+* ORIGIN traffic anomalies (Radar's automatic detection on one cloud region, "oracle-eu-frankfurt-1"): verified
+  ones (VERIFIED / TP) not already tied to an annotation, pinned at the region (else the HQ), minor, on the cloud
+  layer, linked to the region's Radar Cloud Observatory page.
+* Active while Radar has no end or the end is ahead (status "in effect"); the window rules below apply.
+* Duplicates: a Radar record is dropped when an official item of the same provider (its status source on the same
+  layer) overlaps it in time (3 h slack either side) and shares a region (or either side has none), or has the
+  same link; that official item gets the tag "radar". The summary counts both.
+* The rows show disruption's ok / error / last fetch; a list older than 2 h reads "stale" (the items still build).
 
 Cadence: 300 s for small JSON / RSS, 600 s for the ~300-500 KB pages (GitHub, Jira, OVH, Google Cloud, Workspace),
 900 s for Linode (~815 KB) and Cloudflare's summary (~230 KB), 1800 s for news. A failing source is retried after
@@ -68,7 +89,8 @@ unknown. `pops` counts Cloudflare's PoP components (named "Ashburn, United State
 Not used: Downdetector (no free API, terms forbid scraping), Apple System Status (terms forbid monitoring),
 health.aws.amazon.com JSON (the RSS is the supported feed). Terms: these are the providers' own public status pages
 and RSS feeds, read at a modest rate and linked per item; none grants republishing, so both feeds are private
-(PUBLIC_OK False) and marked non-commercial. Headlines are linked, never copied beyond title and teaser.
+(PUBLIC_OK False) and marked non-commercial. Headlines are linked, never copied beyond title and teaser. Cloudflare
+Radar's data is CC BY-NC 4.0 (attribution, non-commercial): it stays in these private, non-commercial feeds.
 """
 import datetime as dt
 import email.utils
@@ -85,9 +107,9 @@ import urllib.request
 import xml.etree.ElementTree as ET
 import zlib
 
-from . import placer
+from . import disruption, placer
 
-VERSION = "1.0"
+VERSION = "1.1"
 UA = "GroundTruth/1.5 (personal non-commercial OSINT dashboard)"
 TIMEOUT = 15                  # s per request: 45 s budget + one last request stays under ~60 s
 MAX_BODY = 8 * 1024 * 1024
@@ -140,6 +162,7 @@ CITIES = {
     "fremont": (-121.99, 37.55, "Fremont, US", "USA"), "sanfrancisco": (-122.42, 37.77, "San Francisco, US", "USA"),
     "southsf": (-122.41, 37.65, "South San Francisco, US", "USA"),
     "mountainview": (-122.08, 37.39, "Mountain View, US", "USA"), "boardman": (-119.7, 45.84, "Boardman, US", "USA"),
+    "menlopark": (-122.18, 37.45, "Menlo Park, US", "USA"),
     "thedalles": (-121.18, 45.6, "The Dalles, US", "USA"), "hillsboro": (-122.99, 45.52, "Hillsboro, US", "USA"),
     "quincy": (-119.85, 47.23, "Quincy, US", "USA"), "seattle": (-122.33, 47.61, "Seattle, US", "USA"),
     "redmond": (-122.12, 47.67, "Redmond, US", "USA"), "toronto": (-79.38, 43.65, "Toronto, CA", "CAN"),
@@ -368,15 +391,80 @@ NOTE = {
                  "follows each page's own impact (critical/major/minor/none -> critical/major/minor/info). "
                  "Maintenance is listed only while in progress. RSS sources (PayPal) count an incident as active "
                  "for 24 h after its last update unless it says resolved. Slack, M365 and Cloudflare list only "
-                 "current incidents: one that disappears is marked resolved then."),
+                 "current incidents: one that disappears is marked resolved then. Cloudflare Radar adds the platform "
+                 "outages it records for websites and online services (Microsoft 365, Meta ...), from the cell "
+                 "layer's Radar fetch; one that matches an official item of the same provider and time is left out."),
     "cloud": ("Cloud, AI-service and datacenter disruptions from the providers' own status pages, pinned at the "
               "named region's metro (approximate) or, for global and AI services, at the HQ. Cloudflare incidents "
               "that name a PoP code such as (IAD) are pinned at that PoP; PoPs shown as partial outage on "
               "Cloudflare's list usually only reroute traffic, so they are counted, not pinned. AWS, Azure, OCI, "
               "Hetzner and Hugging Face are RSS/Atom: an incident counts as active for 24 h after its last update "
               "unless it says resolved, restored or mitigated. Datacenter news: incident headlines only (outage, "
-              "fire, power or cooling failure, flood, explosion, attack, sabotage, evacuation), placed by country."),
+              "fire, power or cooling failure, flood, explosion, attack, sabotage, evacuation), placed by country. "
+              "Cloudflare Radar adds its platform outage records for clouds and AI services and the traffic "
+              "anomalies it verifies on single cloud regions (AWS, Google Cloud, Azure, Oracle), pinned at the "
+              "region or the HQ, active until Radar records an end; one that matches an official item of the same "
+              "provider, time and region is left out."),
 }
+
+# ---------------- Cloudflare Radar (1.1) ----------------
+# Not fetched here: disruption.radar_rows() lends the lists the power / cell feeds fetch. Shaped like SOURCES rows.
+RADAR = {
+    "radar_platform": {"key": "radar_platform", "label": "Cloudflare Radar platform outages", "provider": "Cloudflare Radar",
+                       "fmt": "radar", "url": None, "every": None, "retry": None, "page": disruption.RADAR_CENTER,
+                       "family": None, "hq": None, "tags": ["radar"], "from": "radar_outages"},
+    "radar_origins": {"key": "radar_origins", "label": "Cloudflare Radar cloud-region anomalies",
+                      "provider": "Cloudflare Radar", "fmt": "radar", "url": None, "every": None, "retry": None,
+                      "page": "https://radar.cloudflare.com/cloud-observatory", "family": None, "hq": None,
+                      "tags": ["radar"], "from": "radar_anomalies"},
+}
+FEED_RADAR = {"websites": ("radar_platform",), "cloud": ("radar_platform", "radar_origins")}
+RADAR_CLOUD = "https://radar.cloudflare.com/cloud-observatory/%s/%s"   # provider prefix, region ("oracle", "eu-frankfurt-1")
+RADAR_STALE = 2 * 3600        # s: lists the power / cell feeds stored longer ago than this make the row "stale"
+RADAR_SLACK = 3 * 3600        # s: an official item this close to a Radar record's span is the same event
+RADAR_GLOBAL = 4              # a platform record naming more provider regions than this is pinned at the HQ
+# Radar origin prefix -> (provider, region family, HQ, the provider's status source here)
+ORIGIN_PROVIDER = {"amazon": ("AWS", "aws", "seattle", "aws"), "google": ("Google Cloud", "gcp", "mountainview", "gcp"),
+                   "microsoft": ("Microsoft Azure", "azure", "redmond", "azure"),
+                   "oracle": ("Oracle Cloud (OCI)", "oci", "austin", "oci")}
+# Radar's short Azure origin ids that are not the display name without spaces
+AZURE_SHORT = {"brazilse": "Brazil Southeast", "germanyn": "Germany North", "germanywc": "Germany West Central",
+               "norwaye": "Norway East", "norwayw": "Norway West", "chilec": "Chile Central",
+               "switzerlandn": "Switzerland North", "switzerlandw": "Switzerland West", "centralfrance": "France Central",
+               "southfrance": "France South"}
+# A platform annotation's description (or network names) -> its provider: (pattern, status source here or None,
+# provider, layer, HQ). First match wins, so Microsoft 365 comes before Azure and Gemini before Workspace.
+_PLAT = (
+    (r"(?i)Microsoft 365|Office 365|Exchange Online|\bOutlook\b|Microsoft Teams|OneDrive|SharePoint", "m365",
+     "Microsoft 365", "websites", "redmond"),
+    (r"(?i)\bGemini\b", "gworkspace", "Google Gemini", "cloud", "mountainview"),
+    (r"(?i)Google Workspace|\bGmail\b|Google (?:Drive|Meet|Docs|Calendar)", "gworkspace", "Google Workspace", "websites",
+     "mountainview"),
+    (r"(?i)\bAzure\b", "azure", "Microsoft Azure", "cloud", "redmond"),
+    (r"\bAWS\b|(?i:Amazon Web Services)", "aws", "AWS", "cloud", "seattle"),
+    (r"(?i)Google Cloud|\bGCP\b", "gcp", "Google Cloud", "cloud", "mountainview"),
+    (r"(?i)Oracle Cloud|\bOCI\b", "oci", "Oracle Cloud (OCI)", "cloud", "austin"),
+    (r"(?i)DigitalOcean", "digitalocean", "DigitalOcean", "cloud", "newyork"),
+    (r"(?i)\bLinode\b|Akamai", "linode", "Akamai Cloud (Linode)", "cloud", "cambridge"),
+    (r"(?i)Hetzner", "hetzner", "Hetzner", "cloud", "gunzenhausen"),
+    (r"(?i)\bOVH", "ovh", "OVHcloud", "cloud", "roubaix"),
+    (r"(?i)OpenAI|ChatGPT", "openai", "OpenAI", "cloud", "sanfrancisco"),
+    (r"(?i)Anthropic|\bClaude\b", "anthropic", "Anthropic", "cloud", "sanfrancisco"),
+    (r"(?i)Mistral", "mistral", "Mistral AI", "cloud", "paris"),
+    (r"(?i)Hugging ?Face", "huggingface", "Hugging Face", "cloud", "newyork"),
+    (r"(?i)Cloudflare", "cloudflare", "Cloudflare", "websites", "sanfrancisco"),
+    (r"(?i)GitHub", "github", "GitHub", "websites", "sanfrancisco"),
+    (r"(?i)Discord", "discord", "Discord", "websites", "sanfrancisco"),
+    (r"(?i)Reddit", "reddit", "Reddit", "websites", "sanfrancisco"),
+    (r"(?i)\bZoom\b", "zoom", "Zoom", "websites", "sanjose"),
+    (r"(?i)Dropbox", "dropbox", "Dropbox", "websites", "sanfrancisco"),
+    (r"(?i)\bStripe\b", "stripe", "Stripe", "websites", "southsf"),
+    (r"(?i)Atlassian|\bJira\b", "jira", "Atlassian Jira", "websites", "sydney"),
+    (r"(?i)\bSlack\b", "slack", "Slack", "websites", "sanfrancisco"),
+    (r"(?i)PayPal", "paypal", "PayPal", "websites", "sanjose"),
+    (r"\bMeta\b|(?i:Facebook|Instagram|WhatsApp|Messenger)", None, "Meta", "websites", "menlopark"),
+)
+PLATFORMS = tuple((re.compile(rx), key, prov, layer, hq) for rx, key, prov, layer, hq in _PLAT)
 
 # ---------------- helpers ----------------
 
@@ -1293,8 +1381,16 @@ def _hq_place(key):
             "code": None, "city": key}
 
 
+def _def(key):
+    """A source's definition: a SOURCES row, or a RADAR row (1.1; not fetched here)."""
+    return SOURCES.get(key) or RADAR[key]
+
+
 def places(feed, key, rec):
-    """Where an item is pinned: [{"ll", "label", "a3", "place", "code", "city"}], first = primary; [] = not on the map."""
+    """Where an item is pinned: [{"ll", "label", "a3", "place", "code", "city"}], first = primary; [] = not on the map.
+    A Radar record carries its own ("pins")."""
+    if rec.get("pins") is not None:
+        return list(rec["pins"])
     src = SOURCES[key]
     out = []
     for c in rec.get("pops") or []:
@@ -1352,7 +1448,7 @@ def is_active(rec, nt):
 
 
 def _provider(feed, key):
-    return FEED_PROVIDER.get((feed, key)) or SOURCES[key]["provider"]
+    return FEED_PROVIDER.get((feed, key)) or _def(key)["provider"]
 
 
 def make_item(feed, key, rec, nt):
@@ -1370,7 +1466,7 @@ def make_item(feed, key, rec, nt):
     if active and (start or ts) < nt - ACTIVE_MAX:
         return None, None
     pl = places(feed, key, rec)
-    src = SOURCES[key]
+    src = _def(key)
     sev = "maintenance" if rec.get("maint") else (rec.get("severity") or "minor")
     status = rec.get("status")
     if rec.get("news"):
@@ -1389,10 +1485,11 @@ def make_item(feed, key, rec, nt):
     labels = list(dict.fromkeys(p["label"] for p in pl))
     where = "; ".join(labels[:4]) + (" +%d" % (len(labels) - 4) if len(labels) > 4 else "") if pl else None
     codes = list(dict.fromkeys(list(rec.get("pops") or []) + [c for c, _ in (regions(src["family"], rec)
-                                                                               if src["family"] else [])]))
+                                                                               if src["family"] else [])] +
+                               list(rec.get("codes") or [])))
     item = {
-        "id": "%s:%s:%s" % (feed, key, rec["sid"]), "source": key, "provider": _provider(feed, key),
-        "kind": "news" if rec.get("news") else "status", "title": _clip(rec.get("title"), 240),
+        "id": "%s:%s:%s" % (feed, key, rec["sid"]), "source": key, "provider": rec.get("provider") or _provider(feed, key),
+        "kind": rec.get("kind") or ("news" if rec.get("news") else "status"), "title": _clip(rec.get("title"), 240),
         "summary": _clip(rec.get("summary"), 400) if rec.get("summary") else None, "lang": "en",
         "url": rec.get("url") or src["page"], "ts": _iso(ts), "ts_ms": ts * 1000,
         "start_ms": min(int(start), nt) * 1000 if start else None,
@@ -1449,7 +1546,7 @@ def board(feed, srcs, items):
     return rows
 
 
-def _summary(feed, items, srcs, pops=None):
+def _summary(feed, items, srcs, pops=None, matched=0):
     act = sorted((i for i in items if i["active"]), key=lambda i: (-SEV_RANK[i["severity"]], -i["ts_ms"], i["id"]))
     keys = [k for k in FEED_SOURCES[feed] if SOURCES[k]["fmt"] != "news"]
     up = sum(1 for k in keys if (srcs.get(k) or {}).get("good"))
@@ -1467,6 +1564,16 @@ def _summary(feed, items, srcs, pops=None):
     news = sum(1 for i in items if i["kind"] == "news")
     if news:
         parts.append("%d datacenter incident headline%s in 72 h." % (news, "" if news == 1 else "s"))
+    rad = [i for i in items if i["source"] in RADAR]
+    if rad or matched:
+        plat = sum(1 for i in rad if i["source"] == "radar_platform")
+        reg, live = len(rad) - plat, sum(1 for i in rad if i["active"])
+        what = ["%d platform outage%s" % (plat, "" if plat == 1 else "s")] + \
+            (["%d cloud-region anomal%s" % (reg, "y" if reg == 1 else "ies")] if "radar_origins" in FEED_RADAR[feed]
+             else [])
+        parts.append("Cloudflare Radar: %s in 72 h%s%s." % (
+            " and ".join(what), (", %d in effect" % live) if live else "",
+            ("; %d more matched an official item" % matched) if matched else ""))
     if pops and pops.get("total"):
         parts.append("Cloudflare PoPs: %d of %d partial outage (usually rerouted traffic), %d in maintenance." % (
             pops["partial_outage"], pops["total"], pops["under_maintenance"]))
@@ -1481,7 +1588,173 @@ def _attribution(feed):
         s += "; datacenter headlines: " + ", ".join(news)
     if feed == "cloud":
         s += "; PoP coordinates: OurAirports (public domain)"
+    if FEED_RADAR.get(feed):
+        s += "; Cloudflare Radar (platform outage annotations%s: CC BY-NC 4.0)" % (
+            ", cloud-region traffic anomalies" if "radar_origins" in FEED_RADAR[feed] else "")
     return s + ". Linked per item; private, non-commercial use."
+
+
+# ---------------- Cloudflare Radar records (1.1) ----------------
+
+def origin_region(slug):
+    """Radar origin "amazon-me-central-1" -> (prefix, region code, CITIES key or None); None for another provider.
+    A "-global" origin gives code None. Azure codes are display names ("UAE North") when known."""
+    pre, _, rest = str(slug or "").strip().lower().partition("-")
+    if pre not in ORIGIN_PROVIDER or not rest:
+        return None
+    if rest == "global":
+        return pre, None, None
+    fam = ORIGIN_PROVIDER[pre][1]
+    if fam == "aws":
+        return pre, rest, AWS_REGIONS.get(rest)
+    if fam == "gcp":
+        return pre, rest, GCP_REGIONS.get(rest)
+    if fam == "azure":
+        name = _AZ_IDS.get(rest) or AZURE_SHORT.get(rest)
+        return pre, name or rest, AZURE_REGIONS.get(name) if name else None
+    m = _RX_OCI_ID.search(rest)
+    return pre, rest, _city_by_name(m.group(1)) if m else None
+
+
+def _who(desc, regs, asns):
+    """A platform annotation's provider: {"provider", "key", "route", "hq"}: the description first, then the cloud
+    origins' prefix, then the networks' names; None when nothing names one."""
+    for text in (desc, " ".join(str(x.get("name") or "") for x in asns or [])):
+        for rx, key, prov, layer, hq in PLATFORMS:
+            if text and rx.search(text):
+                return {"provider": prov, "key": key, "route": layer, "hq": hq}
+    pres = [r[0] for r in regs]
+    if pres:
+        prov, _fam, hq, key = ORIGIN_PROVIDER[max(set(pres), key=pres.count)]
+        return {"provider": prov, "key": key, "route": "cloud", "hq": hq}
+    return None
+
+
+_RX_WIDE = re.compile(r"\b(?:global|globally|worldwide|world-wide|complete|total)\b", re.I)
+
+
+def _span_ok(r):
+    """A stored Radar row's start / end are epoch seconds (end None while open); anything else is skipped."""
+    st, end = r.get("start"), r.get("end")
+    return type(st) is int and st > 0 and (end is None or type(end) is int)
+
+
+def _radar_span(r, nt):
+    end = r.get("end")
+    done = end is not None and end <= nt
+    return end if done else r["start"], end, done
+
+
+def platform_record(a, nt):
+    """A PLATFORM annotation (disruption.parse_radar_outages row) -> a record for make_item, or None."""
+    if a.get("type") != "PLATFORM" or not _span_ok(a):
+        return None
+    desc = a.get("desc") if isinstance(a.get("desc"), str) else ""
+    origins = [o for o in a.get("origins") or [] if isinstance(o, dict) and isinstance(o.get("slug"), str)]
+    regs = [r for r in (origin_region(o["slug"]) for o in origins) if r]
+    who = _who(desc, regs, [x for x in a.get("asns") or [] if isinstance(x, dict)]) or {"provider": "Online platform", "key": None, "route": "cloud", "hq": None}
+    first = {}
+    for _p, code, c in regs:
+        if c and c not in first:
+            first[c] = code                                    # one pin per city, its first region code
+    cities = list(first.items())
+    wide = any(code is None for _p, code, _c in regs) or len(regs) > RADAR_GLOBAL
+    if cities and not wide:
+        pins, codes = [_city_place(c, code) for c, code in cities], [code for _c, code in cities]
+    else:
+        pins, codes = ([_hq_place(who["hq"])] if who["hq"] else []), []
+    title, rest = disruption.title_summary(desc) if desc else (None, None)
+    if not title:
+        title = "%s: platform outage" % who["provider"]
+    elif codes and len(title) < 60 and not any(c.lower() in title.lower() for c in codes):
+        title = "%s (%s %s)" % (title, who["provider"], ", ".join(codes[:3]))   # "Disruption due to drone activity (AWS me-south-1)"
+    facts = "Cloudflare Radar outage record. Cause: %s." % (
+        disruption._cause(a.get("cause")).lower() if a.get("cause") not in (None, "UNKNOWN") else "not stated")
+    if origins and not codes:
+        names = sorted({ORIGIN_PROVIDER[r[0]][0] for r in regs}) or ["cloud"]
+        facts += " Seen in traffic to %d %s origin%s; shown at the HQ." % (
+            len(origins), " / ".join(names), "" if len(origins) == 1 else "s")
+    ts, end, done = _radar_span(a, nt)
+    return {"sid": str(a["id"]), "title": title, "summary": " ".join(x for x in (rest, facts) if x), "ts": ts,
+            "start": a["start"], "end": end, "resolved": done, "status": None if done else "in effect",
+            "severity": "critical" if _RX_WIDE.search(desc) else "major",
+            "url": a.get("url") or disruption.RADAR_CENTER, "route": who["route"], "provider": who["provider"],
+            "match": (who["key"],) if who["key"] else (), "pins": pins, "codes": codes, "kind": "outage",
+            "tags": ["platform", (a.get("cause") or "unknown").lower().replace("_", "-")]}
+
+
+def origin_record(x, nt):
+    """A verified ORIGIN traffic anomaly (disruption.parse_radar_anomalies row) -> a record for make_item, or None."""
+    og = x.get("origin") if isinstance(x.get("origin"), dict) else None
+    if x.get("type") != "ORIGIN" or x.get("status") not in ("VERIFIED", "TP") or x.get("outage") or not og or \
+            not isinstance(og.get("slug"), str) or not _span_ok(x):
+        return None
+    slug, name = og["slug"], og.get("name") or og["slug"]
+    r = origin_region(slug)
+    pre, _, rest = slug.partition("-")
+    prov, _fam, hq, key = ORIGIN_PROVIDER.get(pre) or (re.sub(r"\s+\S+$", "", name) or name, None, None, None)
+    city = r[2] if r else None
+    pins = [_city_place(city, r[1])] if city else ([_hq_place(hq)] if hq else [])
+    title = "Traffic anomaly at %s%s" % (name, (" (%s)" % CITIES[city][2].split(",")[0]) if city else "")
+    seen = ", ".join(x.get("seen") or []) or "traffic"
+    ts, end, done = _radar_span(x, nt)
+    return {"sid": str(x["id"]), "title": title, "ts": ts, "start": x["start"], "end": end, "resolved": done,
+            "summary": ("Cloudflare Radar's automatic detection flagged an unusual drop in traffic to the cloud region "
+                        "%s, seen in its %s data (status %s at Cloudflare; no cause given)." % (name, seen, x["status"])),
+            "status": None if done else "in effect", "severity": "minor",
+            "url": RADAR_CLOUD % (pre, rest) if r else RADAR["radar_origins"]["page"], "route": "cloud",
+            "provider": prov, "match": (key,) if key else (), "pins": pins, "codes": [r[1]] if r and r[1] else [],
+            "kind": "outage", "tags": ["anomaly", "region"]}
+
+
+def radar_records(radar, nt):
+    """disruption.radar_rows() -> [(source key, record)] for both feeds (each record's "route" picks its feed)."""
+    out = []
+    for name, key, fn in (("radar_outages", "radar_platform", platform_record),
+                          ("radar_anomalies", "radar_origins", origin_record)):
+        rows = ((radar or {}).get(name) or {}).get("rows")
+        for a in (rows.values() if isinstance(rows, dict) else ()):
+            try:
+                r = fn(a, nt) if isinstance(a, dict) else None
+            except (TypeError, ValueError, KeyError, AttributeError):   # a damaged stored row is skipped
+                r = None
+            if r:
+                out.append((key, r))
+    return out
+
+
+def same_event(rec, it, pl, nt):
+    """True when the official item `it` (pins `pl`) reports the event of Radar record `rec`: same link, or same
+    provider (rec["match"]), overlapping time (RADAR_SLACK either side) and a shared region: the same city when both
+    are pinned at regions, else the same region code, else (either names none) yes."""
+    if it["source"] not in rec["match"]:
+        return False
+    if it["url"] and it["url"] == rec.get("url") and it["url"] != SOURCES[it["source"]]["page"]:
+        return True                                  # Radar linked this very incident (not just the status page)
+    lo, hi = rec["start"] - RADAR_SLACK, (rec["end"] or nt) + RADAR_SLACK
+    a = (it["start_ms"] or it["ts_ms"]) // 1000
+    b = it["end_ms"] // 1000 if it["end_ms"] else (nt if it["active"] else it["ts_ms"] // 1000)
+    if b < lo or a > hi:
+        return False
+    rc = {p["city"] for p in rec["pins"] if p["place"] == "region"}
+    ic = {p["city"] for p in pl or [] if p["place"] == "region"}
+    if rc and ic:
+        return bool(rc & ic)
+    rk, ik = ({re.sub(r"[\s_-]+", "", str(c).lower()) for c in xs or []} for xs in (rec.get("codes"), it.get("regions")))
+    return not rk or not ik or bool(rk & ik)                # "UAE North" == "uaenorth"; an unplaced side counts
+
+
+def _radar_row(key, radar, mine, nt):
+    r = (radar or {}).get(RADAR[key]["from"]) or {}
+    ok, err = bool(r.get("ok")), r.get("error")
+    if not r.get("t"):
+        ok, err = False, "not fetched yet (the power / cell feeds fetch Radar)"
+    elif nt - r["t"] > RADAR_STALE:
+        ok, err = False, "stale: the power / cell feeds last fetched Radar at %s" % _iso(r["t"])
+    return {"name": key, "label": RADAR[key]["label"], "ok": ok, "error": err,
+            "checked": _iso(r["t"]) if r.get("t") else None, "good": _iso(r["good"]) if r.get("good") else None,
+            "newest": _iso(max(i["ts_ms"] for i in mine) // 1000) if mine else None, "n": len(mine),
+            "active": sum(1 for i in mine if i["active"])}
 
 
 # ---------------- polling ----------------
@@ -1549,10 +1822,14 @@ def poll(feed, now=None, fetch=None, clock=time.monotonic):
     if not any((srcs.get(k) or {}).get("good") for k in keys):
         raise RuntimeError("%s: no source has answered yet: %s" % (feed, "; ".join(
             "%s %s" % (k, (srcs.get(k) or {}).get("error")) for k in keys if srcs.get(k))[:600]))
-    return build(feed, srcs, nt)
+    try:
+        radar = disruption.radar_rows()            # read only: the power / cell feeds fetch Radar
+    except Exception:  # noqa: BLE001  Radar never fails these feeds
+        radar = {}
+    return build(feed, srcs, nt, radar)
 
 
-def build(feed, srcs, nt):
+def build(feed, srcs, nt, radar=None):
     items, pls = [], {}
     for key in FEED_SOURCES[feed]:
         data = (srcs.get(key) or {}).get("data") or {}
@@ -1563,6 +1840,21 @@ def build(feed, srcs, nt):
             if it and it["id"] not in pls:
                 items.append(it)
                 pls[it["id"]] = pl
+    official, matched = list(items), 0
+    for key, rec in radar_records(radar, nt):
+        if rec["route"] != feed or key not in FEED_RADAR[feed]:
+            continue
+        it, pl = make_item(feed, key, rec, nt)
+        if not it or it["id"] in pls:
+            continue
+        same = [o for o in official if same_event(rec, o, pls[o["id"]], nt)]
+        if same:                                   # the provider's own report stands; it gets the tag
+            for o in same:
+                o["tags"] = o["tags"] + ([] if "radar" in o["tags"] else ["radar"])
+            matched += 1
+            continue
+        items.append(it)
+        pls[it["id"]] = pl
     items.sort(key=lambda i: (-i["ts_ms"], i["id"]))
     full = list(items)
     items, trimmed = _cap(items)
@@ -1582,8 +1874,11 @@ def build(feed, srcs, nt):
                         "good": _iso(s["good"]) if s.get("good") else None,
                         "newest": _iso(max(i["ts_ms"] for i in mine) // 1000) if mine else None, "n": len(mine),
                         "active": sum(1 for i in mine if i["active"])})
+    for key in FEED_RADAR[feed]:
+        sources.append(_radar_row(key, radar, [i for i in full if i["source"] == key], nt))
     out = {"version": VERSION, "fetched_at": _iso(nt), "count": len(items), "trimmed": trimmed, "items": items,
-           "geojson": geojson(items, pls, feed), "sources": sources, "summary": _summary(feed, full, srcs, pops),
+           "geojson": geojson(items, pls, feed), "sources": sources,
+           "summary": _summary(feed, full, srcs, pops, matched),
            "note": NOTE[feed], "attribution": _attribution(feed), "public_ok": PUBLIC_OK[feed],
            "non_commercial": NON_COMMERCIAL[feed], "board": board(feed, srcs, full)}
     if feed == "cloud":

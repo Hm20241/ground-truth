@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title><![CDATA[Amazon Web Services Service Status]]></title>
+    <link>https://status.aws.amazon.com/</link>
+    <description><![CDATA[SYNTHETIC for tests/test_radar_cloud.py: the real feed's fields, invented updates.]]></description>
+	 <item>
+	  <title><![CDATA[Service disruption: Increased Error Rates]]></title>
+	  <link>https://status.aws.amazon.com/</link>
+	  <pubDate>Sat, 21 Nov 2026 03:30:00 GMT</pubDate>
+	  <guid isPermaLink="false">https://status.aws.amazon.com/#multipleservices-me-central-1_1795230000</guid>
+	  <description><![CDATA[We are investigating increased error rates in the ME-CENTRAL-1 Region.]]></description>
+	 </item>
+	 <item>
+	  <title><![CDATA[Service degradation: Elevated latencies]]></title>
+	  <link>https://status.aws.amazon.com/</link>
+	  <pubDate>Sat, 21 Nov 2026 04:10:00 GMT</pubDate>
+	  <guid isPermaLink="false">https://status.aws.amazon.com/#ec2-us-east-1_1795232400</guid>
+	  <description><![CDATA[We are investigating elevated API latencies for EC2 in the US-EAST-1 Region.]]></description>
+	 </item>
+  </channel>
+</rss>

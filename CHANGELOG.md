@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.5 (2026-11-21): Cloudflare Radar platform outages and cloud-region anomalies on the websites and AI / cloud layers (self-hosted only)
+- **`gt/services.py` 1.1** shows the two kinds of Radar record that 1.5.4 left out:
+  - **Platform outages:** one online service going down. Each goes to its provider's layer: websites for services such as Microsoft 365, GitHub or Slack, AI / cloud for cloud providers.
+  - **Cloud-region traffic anomalies:** each is pinned at its cloud region's city.
+- **No extra requests:** it reads the Radar lists `gt/disruption.py` 1.2 already fetches for the power and cell layers. The same token covers it.
+- **No duplicates:** a Radar record is left out when the provider's own status page already shows the same incident (same provider and region, overlapping time, or Radar links that very incident).
+- **Popups name the link:** "Radar Cloud Observatory", "Cloudflare's post", or "Linked report" when Radar links the provider's own status page.
+- **Not on this copy:** Radar data is CC BY-NC 4.0, and the websites and AI / cloud feeds stay on self-hosted copies only.
+
 ## 1.5.4 (2026-11-21): Cloudflare Radar API outage records on the power and cell layers (self-hosted only)
 - **Two new sources in `gt/disruption.py` 1.1:** the Cloudflare Radar API's outage annotations and its traffic anomalies, each polled every 15 minutes and shared by the power and cell feeds.
   - Power cuts go on the power layer, mobile-network outages on the cell layer, and the rest in the Internet list. Single-service (PLATFORM) records are left out for now.

@@ -32,7 +32,8 @@
    name a day that has not begun here yet.
    1.5.2: on the GitHub Pages copy the tab and window title read "Ground Truth --GitHub".
    1.5.3: Feed groups Power, Web, AI / cloud and Cell for the outage layers (ext/outages.js).
-   1.5.4: no change here (cache-busting only); ext/outages.js 1.1 labels the Cloudflare Radar API links. */
+   1.5.4: no change here (cache-busting only); ext/outages.js 1.1 labels the Cloudflare Radar API links.
+   1.5.5: no change here (cache-busting only); ext/outages.js 1.2: Cloudflare Radar platform / cloud-region records. */
 (() => {
   "use strict";
   const THEATRES = {
@@ -1112,7 +1113,7 @@
   const feedOff = new Set((() => { try { return JSON.parse(localStorage.getItem("gt-feed-off") || "[]"); } catch (err) { return []; } })());
   // country -> [theatre, lon, lat, name], from tools/build_theatres.py (the server's own placement rule)
   let TH = { a3: {}, a2: {}, names: {} };
-  fetch("geo/theatres.json?v=1.5.4").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
+  fetch("geo/theatres.json?v=1.5.5").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
   function country(k) {
     if (!k) return null;
     const s = String(k).trim(), u0 = s.toUpperCase();  // ISO-3, ISO-2, or a name ("Côte d’Ivoire", "Mexico Travel Advisory")

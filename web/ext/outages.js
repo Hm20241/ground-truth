@@ -1,4 +1,5 @@
-// Ground Truth page extension: outage layers (1.5.4, ext 1.1; 1.1 labels Cloudflare Radar API links). Asked for: four separate map layers for power
+// Ground Truth page extension: outage layers (1.5.5, ext 1.2; 1.1 labels Cloudflare Radar API links; 1.2 adds Radar's
+// platform outages and cloud-region anomalies on the websites / cloud layers: link labels by host). Asked for: four separate map layers for power
 // outages, website / online-service disruptions, AI / cloud / datacenter disruptions and cell / mobile network
 // disruptions. Feeds: /api/feed/power and /api/feed/cellular (gt/disruption.py), /api/feed/websites and
 // /api/feed/cloud (gt/services.py). Each layer draws its feed's own GeoJSON (one point per item and place), every
@@ -22,13 +23,13 @@
       src: "Cell / mobile networks: NetBlocks, Cloudflare Radar, Russia's shutdown map",
       credit: "Cell networks: NetBlocks, Cloudflare Radar and a public map of Russia's regional mobile-internet shutdowns; each item links to its source." },
     { key: "websites", after: "cellular", color: "#a78bfa", group: "web", short: "Web", cat: "cyber",
-      label: "Websites / online services (official status pages)",
-      src: "Websites / online services: official status pages",
-      credit: "Websites and online services: the services' own official status pages, linked from each item." },
+      label: "Websites / online services (official status pages, Cloudflare Radar)",
+      src: "Websites / online services: official status pages, Cloudflare Radar",
+      credit: "Websites and online services: the services' own official status pages and Cloudflare Radar's platform-outage records, linked from each item." },
     { key: "cloud", after: "websites", color: "#f472b6", group: "cloud", short: "AI / cloud", cat: "cyber",
-      label: "AI / cloud / datacenters (status pages, Cloudflare PoPs, DC news)",
-      src: "AI / cloud / datacenters: status pages, Cloudflare PoPs, DC news",
-      credit: "AI, cloud and datacenters: the providers' official status pages, Cloudflare's data-centre status list and datacenter news; each item links to its source." },
+      label: "AI / cloud / datacenters (status pages, Cloudflare PoPs and Radar, DC news)",
+      src: "AI / cloud / datacenters: status pages, Cloudflare PoPs and Radar, DC news",
+      credit: "AI, cloud and datacenters: the providers' official status pages, Cloudflare's data-centre status list, Cloudflare Radar's platform outages and cloud-region anomalies, and datacenter news; each item links to its source." },
   ];
   const KEYS = CFG.map((c) => c.key), BY = {};
   CFG.forEach((c) => { BY[c.key] = c; });
@@ -182,11 +183,15 @@
     if (regs.length === 1 && !ru[regs[0]] && String(it.where || "").includes(regs[0])) return "";
     return `<div class="small">${regs.length === 1 ? "Region" : "Regions"}: ${names.join(", ")}${regs.length > 12 ? ` +${regs.length - 12} more` : ""}</div>`;
   }
+  // Cloudflare's own posts (an annotation's link): its X and Bluesky accounts and blog
+  const CF_POST = /^https:\/\/(?:x\.com|twitter\.com|bsky\.app|blog\.cloudflare\.com)\//i;
   const linkText = (it) => {
     const u = String(it.url || "");
-    if (String(it.source || "").startsWith("radar_"))   // Cloudflare Radar API records (1.5.4)
+    if (String(it.source || "").startsWith("radar_"))   // Cloudflare Radar API records (1.5.4; 1.5.5 platform / cloud-region ones)
       return u.includes("radar.cloudflare.com/outage-center") ? "Radar Outage Center"
-        : u.includes("radar.cloudflare.com/traffic/") ? "Radar traffic page" : "Cloudflare's post";
+        : u.includes("radar.cloudflare.com/traffic/") ? "Radar traffic page"
+        : u.includes("radar.cloudflare.com/cloud-observatory") ? "Radar Cloud Observatory"
+        : CF_POST.test(u) ? "Cloudflare's post" : "Linked report";   // an annotation may link the provider's own status page
     return it.kind === "post" ? "Post" : it.kind === "news" ? "Article" : "Official status";
   };
   function itemHtml(k, it, here) {
@@ -303,7 +308,7 @@
         + `<div class="muted small">${d.fetched_at ? "Updated " + when(d.fetched_at) : ""}${d.trimmed ? ` · ${nf(d.trimmed)} older items trimmed` : ""}${src ? " · Sources: " + src : ""}</div>`; }).join("");
     return `<div class="card"><details><summary>How these feeds are built, and their sources</summary>${notes}</details>`
       + `${attr.length ? `<div class="muted small" style="margin-top:6px">${attr.map(esc).join(" ")}</div>` : ""}`
-      + `<div class="muted small" style="margin-top:6px">Status pages are the providers' own reports: an outage a provider does not post does not show. Positions are approximate (headquarters, region city, country centre). Personal, non-commercial use.</div></div>`;
+      + `<div class="muted small" style="margin-top:6px">Status pages are the providers' own reports: an outage a provider does not post does not show, unless Cloudflare Radar records it from its own traffic. Positions are approximate (headquarters, region city, country centre). Personal, non-commercial use.</div></div>`;
   }
   function renderTab(el) {
     if (!el) return;

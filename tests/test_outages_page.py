@@ -1,6 +1,8 @@
-"""Offline tests for 1.5.3 / 1.5.4, the page side of the outage layers (web/ext/outages.js, ext 1.1): power, cell /
+"""Offline tests for 1.5.3 to 1.5.5, the page side of the outage layers (web/ext/outages.js, ext 1.2): power, cell /
 mobile networks, websites / online services, AI / cloud / datacenters. 1.5.4: Cloudflare Radar API records name
-their link (Radar Outage Center, Radar traffic page, Cloudflare's post).
+their link (Radar Outage Center, Radar traffic page, Cloudflare's post). 1.5.5: Radar's platform and cloud-region
+records on the cloud layer name theirs too (Radar Cloud Observatory; "Linked report" for a provider's status page
+an annotation links; "Cloudflare's post" only for Cloudflare's X / Bluesky / blog posts).
 
 Static checks on the page files (the script tag, the Feed groups in app.js, relative requests only, the CSS) and a
 behaviour check: node runs web/ext/outages.js against a stub GTX and a stub map, with SYNTHETIC fixtures shaped like
@@ -163,9 +165,20 @@ RADAR = data("cellular", [
     (item("cellular", "radar_anomalies", "r2", provider="Cloudflare Radar", kind="outage", title="Traffic anomaly on EXAMPLE-NET (AS64500)",
           url="https://radar.cloudflare.com/traffic/as64500", place="country", ll=[101.7, 3.1], cc=["MYS"], ts=NOW - 40 * M),),
     (item("cellular", "radar_outages", "r3", provider="Cloudflare Radar", kind="outage", title="Mobile outage with a post",
-          url="https://example.org/cellular/r3", place="country", ll=[30.5, 50.4], cc=["UKR"], ts=NOW - 50 * M),),
+          url="https://bsky.app/profile/radar.cloudflare.com/post/example-r3", place="country", ll=[30.5, 50.4], cc=["UKR"],
+          ts=NOW - 50 * M),),
 ])
 FX["radar"] = RADAR
+RADARC = data("cloud", [   # 1.5.5: Radar platform / cloud-region records on the cloud layer
+    (item("cloud", "radar_platform", "r4", provider="AWS", kind="outage", title="Power issue in one availability zone",
+          severity="major", status="in effect", url="https://example.org/status/r4", place="region", ll=[55.27, 25.2],
+          regions=["me-central-1"], ts=NOW - 20 * M),),
+    (item("cloud", "radar_origins", "r5", provider="Oracle Cloud (OCI)", kind="outage",
+          title="Traffic anomaly at Oracle Cloud eu-frankfurt-1 (Frankfurt)", status="in effect",
+          url="https://radar.cloudflare.com/cloud-observatory/oracle/eu-frankfurt-1", place="region", ll=[8.68, 50.11],
+          regions=["eu-frankfurt-1"], ts=NOW - 25 * M),),
+])
+FX["radarc"] = RADARC
 
 HARNESS = r"""
 const fs = require("fs"), vm = require("vm");
@@ -236,6 +249,11 @@ gh.pop(); out.vom = rec.shown[rec.shown.length - 1];
 rec.feeds.cellular(FX.radar);
 hits = [];
 out.popRadar = ["r1", "r2", "r3"].map((id) => { rec.popups["ou-cellular"]({ properties: { pid: "cellular:radar_" + (id === "r2" ? "anomalies" : "outages") + ":" + id } }, [0, 0]);
+  return rec.shown[rec.shown.length - 1].html; });
+// 1.5.5: Radar platform / cloud-region records (a second cloud delivery)
+rec.feeds.cloud(FX.radarc);
+hits = [];
+out.popRadarC = [["radar_platform", "r4"], ["radar_origins", "r5"]].map(([src, id]) => { rec.popups["ou-cloud"]({ properties: { pid: "cloud:" + src + ":" + id } }, [0, 0]);
   return rec.shown[rec.shown.length - 1].html; });
 process.stdout.write(JSON.stringify(out, (k, v) => (typeof v === "function" ? "[fn]" : v)));
 """
@@ -369,5 +387,11 @@ check("Radar Outage Center ↗" in r1 and 'href="https://radar.cloudflare.com/ou
       "Radar traffic page ↗" in r2 and 'href="https://radar.cloudflare.com/traffic/as64500"' in r2 and
       "Cloudflare's post ↗" in r3 and "Official status" not in r1 + r2 + r3,
       "Radar records name their link: Outage Center, traffic page, Cloudflare's post")
+r4, r5 = R["popRadarC"]
+check("Linked report ↗" in r4 and 'href="https://example.org/status/r4"' in r4 and "Power issue in one availability zone" in r4
+      and "Cloudflare's post" not in r4 and "Official status" not in r4 and "the provider's own report" not in r4
+      and "Radar Cloud Observatory ↗" in r5 and 'href="https://radar.cloudflare.com/cloud-observatory/oracle/eu-frankfurt-1"' in r5
+      and "map point: the provider region&#39;s city" in r5,
+      "1.5.5: Radar platform / cloud-region popups: Linked report for a status page, Radar Cloud Observatory")
 
 print("\n%d checks passed" % ok)

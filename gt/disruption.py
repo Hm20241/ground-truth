@@ -1,7 +1,10 @@
-"""Power and cell-network disruption layers. v1.1, 2026-11-21 (Ground Truth 1.5.4; v1.0 came with 1.5.3).
+"""Power and cell-network disruption layers. v1.2, 2026-11-21 (Ground Truth 1.5.5; v1.1 came with 1.5.4, v1.0 with
+1.5.3).
 
 1.1 adds Cloudflare Radar's own API (radar_outages, radar_anomalies below; a free read-only token) next to its
-Bluesky posts.
+Bluesky posts. 1.2 keeps the cloud origins of each annotation and anomaly (`origins`, `origin`) and lends both Radar
+lists to gt/services.py through radar_rows(), so its websites and AI / cloud layers show the PLATFORM annotations and
+cloud-region (ORIGIN) anomalies this module leaves out, without a second fetch.
 
 Two feeds (FEEDS at the bottom), both called every 300 s, built to the shared 1.5.3 outage-layer contract (the same
 item shape, window, caps and GeoJSON as gt/services.py). Each source has its own cadence and cached state in
@@ -32,8 +35,9 @@ source sends validators (Taipower does). One lock covers both feeds: they share 
   countries, networks (ASNs) and, for some, regions (GeoNames entities). One fetch serves both feeds. Each annotation
   is classified (radar_class()): cause POWER_OUTAGE, or a description naming power / the grid -> a `power` item;
   a description naming mobile networks -> a `cellular` item; anything else -> the `cellular` feed's `internet`
-  list (a government-directed one is kind "shutdown"); PLATFORM ones (cloud services such as Microsoft 365) are
-  left out here. Active while it has no end, or its end is still ahead. Severity: nationwide critical, regional
+  list (a government-directed one is kind "shutdown"); PLATFORM ones (one online service or cloud region, such as
+  Microsoft 365 or AWS me-central-1) are left out here: gt/services.py 1.1 lists them. Active while it has no end, or
+  its end is still ahead. Severity: nationwide critical, regional
   major, a single network major when the wording says so (significant, complete, near-total ...), else minor.
   Places: Ukrainian oblasts / Russian subjects in the region entities or the description; else the countries it
   lists (or its networks' countries; else gt/placer.py on the description), at their centroids. The link is the
@@ -43,7 +47,10 @@ source sends validators (Taipower does). One lock covers both feeds: they share 
   the last 7 days). Kept: status VERIFIED or TP (the confirmed states seen in the data), not linked to an annotation
   (that one already counts), for a country or a network. An anomaly on a known mobile operator's network (Tele2 / T2,
   Beeline, MegaFon, MTS, Celcom, ...; by its network name) -> a `cellular` item; the rest -> the `internet` list.
-  Cloud-region (ORIGIN) anomalies are left out here. Country ones major, network ones minor; placed at the country.
+  Cloud-region (ORIGIN) anomalies are left out here (gt/services.py 1.1 lists them). Country ones major, network ones
+  minor; placed at the country.
+  radar_rows() (1.2) hands both stored lists, with each source's ok / error / last fetch, to gt/services.py. It reads
+  the state file without the lock (the file is replaced atomically; a poll may hold the lock for a minute).
   The token: $CF_RADAR_TOKEN, else $GT_SEED/cfradar.key (the host's read-only seed mount, written by
   deploy/stage.py from tools/cfradar-key.sh's ~/.config/cloudflare/radar_token), else that file. It goes only to
   api.cloudflare.com in the Authorization header and is never logged or stored. Without one, both sources show
@@ -99,7 +106,7 @@ import urllib.request
 
 from . import geo, placer, telegram, wire
 
-VERSION = "1.1"
+VERSION = "1.2"
 UA = "GroundTruth/1.5 (personal non-commercial OSINT dashboard)"
 TIMEOUT = 15
 MAX_BODY = 8 * 1024 * 1024
@@ -914,10 +921,19 @@ def _radar_link(url):
     return url.strip()
 
 
+_RX_ORIGIN = re.compile(r"^[a-z][a-z0-9]{1,20}-[a-z0-9][a-z0-9-]{0,40}$")   # "amazon-me-central-1", "microsoft-uaenorth"
+
+
+def _origin(slug, name=None):
+    slug = str(slug or "").strip().lower()
+    return {"slug": slug, "name": _clip(name, 80) or slug} if _RX_ORIGIN.match(slug) else None
+
+
 def parse_radar_outages(body):
     """/radar/annotations/outages -> annotations {"id", "start", "end", "cause", "type", "desc", "url", "loc": [a2],
-    "loc_names": {a2: name}, "asns": [{"asn", "name", "cc"}], "geo": [entity names]}; rows without an id or start
-    are skipped."""
+    "loc_names": {a2: name}, "asns": [{"asn", "name", "cc"}], "geo": [entity names], "origins": [{"slug", "name"}]
+    (1.2: the cloud origins, e.g. "amazon-me-central-1" / "Amazon Web Services me-central-1")}; rows without an id or
+    start are skipped."""
     out = []
     for a in _radar_result(body, "annotations"):
         aid, start = str(a.get("id") or "").strip(), wire.parse_time(str(a.get("startDate") or ""))
@@ -937,18 +953,25 @@ def parse_radar_outages(body):
                     names.setdefault(_a2(lc.get("code")), str(lc["name"]).strip())
         geo_names = [_clip(e.get("entityName"), 80) for e in a.get("entities") or []
                      if isinstance(e, dict) and e.get("entityType") == "GEOLOCATION" and e.get("entityName")]
+        origins, seen = [], set()
+        for x in [(d.get("origin"), d.get("name")) for d in a.get("originsDetails") or [] if isinstance(d, dict)] + \
+                [(s, None) for s in a.get("origins") or [] if isinstance(s, str)]:
+            og = _origin(*x)
+            if og and og["slug"] not in seen:
+                seen.add(og["slug"])
+                origins.append(og)
         out.append({"id": aid, "start": start, "end": wire.parse_time(str(a.get("endDate") or "")),
                     "cause": str(o.get("outageCause") or "UNKNOWN").upper(),
                     "type": str(o.get("outageType") or "").upper() or None,
                     "desc": "" if desc in ("-", "") else desc[:1200], "url": _radar_link(a.get("linkedUrl")),
-                    "loc": loc, "loc_names": names, "asns": asns[:12], "geo": geo_names[:12]})
+                    "loc": loc, "loc_names": names, "asns": asns[:12], "geo": geo_names[:12], "origins": origins[:120]})
     return out
 
 
 def parse_radar_anomalies(body):
     """/radar/traffic_anomalies -> {"id" (uuid), "start", "end", "status", "type" (LOCATION / AS / ORIGIN),
     "loc": {"cc", "name"} | None, "asn": {"asn", "name", "cc", "country"} | None, "outage": annotation id | None,
-    "seen": [data sources]}."""
+    "seen": [data sources], "origin": {"slug", "name"} | None (1.2: the cloud region of an ORIGIN anomaly)}."""
     out = []
     for a in _radar_result(body, "trafficAnomalies"):
         uid, start = str(a.get("uuid") or "").strip(), wire.parse_time(str(a.get("startDate") or ""))
@@ -956,6 +979,7 @@ def parse_radar_anomalies(body):
             continue
         ld = a.get("locationDetails") if isinstance(a.get("locationDetails"), dict) else None
         ad = a.get("asnDetails") if isinstance(a.get("asnDetails"), dict) else None
+        od = a.get("originDetails") if isinstance(a.get("originDetails"), dict) else {}
         asn = None
         if ad and re.match(r"^\d{1,10}$", str(ad.get("asn") or "")):
             lc = ad.get("location") if isinstance(ad.get("location"), dict) else {}
@@ -965,7 +989,8 @@ def parse_radar_anomalies(body):
                     "status": str(a.get("status") or "").upper(), "type": str(a.get("type") or "").upper(),
                     "loc": {"cc": _a2(ld.get("code")), "name": _clip(ld.get("name"), 60)} if ld and _a2(ld.get("code"))
                     else None, "asn": asn, "outage": str(a["outageId"]) if a.get("outageId") else None,
-                    "seen": [str(s) for s in a.get("visibleInDataSources") or []][:6]})
+                    "seen": [str(s) for s in a.get("visibleInDataSources") or []][:6],
+                    "origin": _origin(od.get("origin"), od.get("name"))})
     return out
 
 
@@ -1787,6 +1812,22 @@ def _power_summary(items, grid, us, geo, nt):
 
 def _newest_start(rows):
     return max((r["start"] for r in (rows or {}).values()), default=None)
+
+
+def radar_rows():
+    """The Cloudflare Radar API lists these feeds last stored, for gt/services.py (1.2), which never fetches them:
+    {"radar_outages": {"rows": {id: annotation}, "ok", "error", "t", "good"}, "radar_anomalies": {...}} (rows as
+    parse_radar_outages / parse_radar_anomalies return them; {} before the first answer). No lock: the state file is
+    replaced atomically, and a poll may hold the lock for up to a minute."""
+    st = _load()
+    srcs = st.get("sources") if isinstance(st.get("sources"), dict) else {}
+    out = {}
+    for name, key in (("radar_outages", "anns"), ("radar_anomalies", "anoms")):
+        s = srcs.get(name) if isinstance(srcs.get(name), dict) else {}
+        rows = s["data"].get(key) if isinstance(s.get("data"), dict) else None
+        out[name] = {"rows": {k: v for k, v in rows.items() if isinstance(v, dict)} if isinstance(rows, dict) else {},
+                     "ok": bool(s.get("ok")), "error": s.get("error"), "t": s.get("t"), "good": s.get("good")}
+    return out
 
 
 def power(now=None, fetch=None, clock=time.monotonic):

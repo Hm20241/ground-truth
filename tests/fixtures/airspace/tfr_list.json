@@ -1,0 +1,68 @@
+[
+ {
+  "notam_id": "6/0001",
+  "facility": "ZHU",
+  "state": "TX",
+  "type": "HAZARDS",
+  "description": "TEST GULF HAZARD, Thursday, November 19, 2026 through Saturday, November 28, 2026 UTC",
+  "mod_date": "11/18/2026 21:31:00",
+  "mod_abs_time": "202611182131",
+  "is_new": "N",
+  "gid": "6/0001"
+ },
+ {
+  "notam_id": "6/0002",
+  "facility": "ZJX",
+  "state": "FL",
+  "type": "SECURITY",
+  "description": "TEST OFFSHORE RANGE, Sunday, November 1, 2026 through Sunday, March 14, 2027 Local",
+  "mod_date": "11/20/2026 04:03:00",
+  "mod_abs_time": "202611200403",
+  "is_new": "Y",
+  "gid": "6/0002"
+ },
+ {
+  "notam_id": "6/0003",
+  "facility": "FDC",
+  "state": "USA",
+  "type": "SPECIAL",
+  "description": "  USA, Wednesday, September 29, 2021 UTC",
+  "mod_date": "09/29/2021 16:37:00",
+  "mod_abs_time": "202109291637",
+  "is_new": "N",
+  "gid": "6/0003"
+ },
+ {
+  "notam_id": "6/0004",
+  "facility": "ZFW",
+  "state": "TX",
+  "type": "VIP",
+  "description": "TESTTOWN, TX",
+  "mod_date": "10/08/2015 05:55:00",
+  "mod_abs_time": "201510080555",
+  "is_new": "N",
+  "gid": "6/0004"
+ },
+ {
+  "notam_id": "6/0005",
+  "facility": "ZLC",
+  "state": "ID",
+  "type": "SPACE OPERATIONS",
+  "description": "TEST SPACE AREA, Wednesday, November 18, 2026 UTC",
+  "mod_date": "11/17/2026 10:00:00",
+  "mod_abs_time": "202611171000",
+  "is_new": "N",
+  "gid": "6/0005"
+ },
+ {
+  "notam_id": "../0006",
+  "facility": "ZZZ",
+  "state": "XX",
+  "type": "SECURITY",
+  "description": "malformed id",
+  "mod_date": "11/17/2026 10:00:00",
+  "mod_abs_time": "202611171000",
+  "is_new": "N",
+  "gid": "../0006"
+ }
+]

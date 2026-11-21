@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<alerts>
+<alert start="2022/11/30 14:00:00" end="2023/05/24 14:00:00" type="Bulletin Threat" href="https://www.dhs.gov/sites/default/files/ntas/alerts/22_1130_S1_NTAS-Bulletin-508.pdf">
+<summary><h2>Summary of Terrorism Threat to the United States</h2><p>The United States remains in a heightened threat environment. Lone offenders and small groups motivated by a range of ideological beliefs and/or personal grievances continue to pose a persistent and lethal threat to the Homeland.  Domestic actors and foreign terrorist organizations continue to maintain a visible presence online in attempts to motivate supporters to conduct attacks in the Homeland.  Threat actors have recently mobilized to violence, citing factors such as reactions to current events and adherence to violent extremist ideologies. In the coming months, threat actors could exploit several upcoming events to justify or commit acts of violence, including certifications related to the midterm elections, the holiday season and associated large gatherings, the marking of two years since the breach of the U.S. Capitol on January 6, 2021, and potential sociopolitical developments connected to ideological beliefs or personal hostility. Targets of potential violence include public gatherings, faith-based institutions, the LGBTQI+ community, schools, racial and religious minorities, government facilities and personnel, U.S. critical infrastructure, the media, and perceived ideological opponents.</p>
+
+<ul><li><a href="/publication/national-terrorism-advisory-system-bulletin-november-30-2022-translations">Read the November 30, 2022 Bulletin translated into various languages</a></li>
+</ul></summary>
+<details><h2>Additional Information</h2><ul><li>Trimmed for the test fixture.</li></ul></details>
+<locations>
+<location>Nationwide</location>
+</locations>
+<sectors>
+<sector>All Sectors</sector>
+</sectors>
+<duration>This Bulletin will expire on May 24, 2023 at 2:00 PM ET</duration>
+</alert>
+</alerts>

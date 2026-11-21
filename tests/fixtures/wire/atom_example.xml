@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+  <title>Example Defence Desk</title>
+  <subtitle>SYNTHETIC test feed: every headline here is invented.</subtitle>
+  <link rel="self" href="https://defence.example.com/feed.atom"/>
+  <link rel="alternate" href="https://defence.example.com/"/>
+  <id>tag:defence.example.com,2026:feed</id>
+  <updated>2026-11-20T05:40:00Z</updated>
+  <entry>
+    <title type="html">Navy intercepts drones over the &lt;em&gt;Red Sea&lt;/em&gt;</title>
+    <link rel="alternate" type="text/html" href="https://defence.example.com/2026/11/20/navy-intercepts-drones/"/>
+    <link rel="enclosure" type="image/jpeg" href="https://defence.example.com/img/navy.jpg"/>
+    <id>tag:defence.example.com,2026:2001</id>
+    <published>2026-11-20T05:00:00Z</published>
+    <updated>2026-11-20T05:40:00Z</updated>
+    <summary type="html">&lt;p&gt;Two example destroyers were involved, an official said.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>Army chief visits forward posts in Kashmir</title>
+    <link href="https://defence.example.com/2026/11/20/army-chief-kashmir/"/>
+    <id>tag:defence.example.com,2026:2002</id>
+    <updated>2026-11-20T04:30:00-05:00</updated>
+    <content type="html">&lt;p&gt;The example visit follows a week of tension along the frontier.&lt;/p&gt;</content>
+  </entry>
+</feed>

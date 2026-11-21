@@ -1,0 +1,286 @@
+{
+ "objectIdFieldName": "OBJECTID",
+ "uniqueIdField": {
+  "name": "OBJECTID",
+  "isSystemMaintained": true
+ },
+ "globalIdFieldName": "",
+ "geometryType": "esriGeometryPoint",
+ "spatialReference": {
+  "wkid": 4326,
+  "latestWkid": 4326
+ },
+ "fields": [
+  {
+   "name": "OBJECTID",
+   "type": "esriFieldTypeOID",
+   "alias": "OBJECTID",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "IncidentType",
+   "type": "esriFieldTypeString",
+   "alias": "IncidentType",
+   "sqlType": "sqlTypeOther",
+   "length": 255,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "IncidentName",
+   "type": "esriFieldTypeString",
+   "alias": "IncidentName",
+   "sqlType": "sqlTypeOther",
+   "length": 255,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Date",
+   "type": "esriFieldTypeDate",
+   "alias": "Date",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Description",
+   "type": "esriFieldTypeString",
+   "alias": "Description",
+   "sqlType": "sqlTypeOther",
+   "length": 255,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Notes",
+   "type": "esriFieldTypeString",
+   "alias": "Notes",
+   "sqlType": "sqlTypeOther",
+   "length": 255,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "GeolocationNotes",
+   "type": "esriFieldTypeString",
+   "alias": "GeolocationNotes",
+   "sqlType": "sqlTypeOther",
+   "length": 255,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "EnemyWounded",
+   "type": "esriFieldTypeBigInteger",
+   "alias": "EnemyWounded",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "EnemyKilled",
+   "type": "esriFieldTypeBigInteger",
+   "alias": "EnemyKilled",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "CivilianWounded",
+   "type": "esriFieldTypeBigInteger",
+   "alias": "CivilianWounded",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "CivilianKilled",
+   "type": "esriFieldTypeBigInteger",
+   "alias": "CivilianKilled",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "NeutralWounded",
+   "type": "esriFieldTypeBigInteger",
+   "alias": "NeutralWounded",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "NeutralKilled",
+   "type": "esriFieldTypeBigInteger",
+   "alias": "NeutralKilled",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "FriendlyWounded",
+   "type": "esriFieldTypeBigInteger",
+   "alias": "FriendlyWounded",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "FriendlyKilled",
+   "type": "esriFieldTypeBigInteger",
+   "alias": "FriendlyKilled",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Research1",
+   "type": "esriFieldTypeString",
+   "alias": "Research1",
+   "sqlType": "sqlTypeOther",
+   "length": 255,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Research2",
+   "type": "esriFieldTypeString",
+   "alias": "Research2",
+   "sqlType": "sqlTypeOther",
+   "length": 255,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Research3",
+   "type": "esriFieldTypeString",
+   "alias": "Research3",
+   "sqlType": "sqlTypeOther",
+   "length": 255,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "ReportCredit",
+   "type": "esriFieldTypeString",
+   "alias": "ReportCredit",
+   "sqlType": "sqlTypeOther",
+   "length": 255,
+   "domain": null,
+   "defaultValue": null
+  }
+ ],
+ "features": [
+  {
+   "attributes": {
+    "OBJECTID": 301,
+    "IncidentType": "MerchantVesselSunk",
+    "IncidentName": "Merchant Vessel Sunk (EX) Synthetic Trader",
+    "Date": 1795046400000,
+    "Description": null,
+    "Notes": null,
+    "GeolocationNotes": null,
+    "Research1": "https://x.com/example_s2/status/2123378250348680839",
+    "Research2": null,
+    "Research3": null,
+    "ReportCredit": null,
+    "EnemyWounded": null,
+    "EnemyKilled": null,
+    "CivilianWounded": null,
+    "CivilianKilled": null,
+    "NeutralWounded": null,
+    "NeutralKilled": null,
+    "FriendlyWounded": null,
+    "FriendlyKilled": null
+   },
+   "geometry": {
+    "x": 56.31,
+    "y": 26.52
+   }
+  },
+  {
+   "attributes": {
+    "OBJECTID": 302,
+    "IncidentType": "IranianBallisticMissileStrike",
+    "IncidentName": "Synthetic Base Impact",
+    "Date": 1794182400000,
+    "Description": "Synthetic: impact reported near a base.",
+    "Notes": null,
+    "GeolocationNotes": null,
+    "Research1": "https://www.example-news.com/article/1",
+    "Research2": "https://x.com/example_s2/status/2119973314361480839",
+    "Research3": null,
+    "ReportCredit": "Example Credit",
+    "EnemyWounded": null,
+    "EnemyKilled": null,
+    "CivilianWounded": null,
+    "CivilianKilled": 2,
+    "NeutralWounded": null,
+    "NeutralKilled": null,
+    "FriendlyWounded": null,
+    "FriendlyKilled": null
+   },
+   "geometry": {
+    "x": 50.55,
+    "y": 26.2
+   }
+  },
+  {
+   "attributes": {
+    "OBJECTID": 303,
+    "IncidentType": "AmericanAircraftDowned",
+    "IncidentName": "Synthetic Aircraft Downed",
+    "Date": 1794096000000,
+    "Description": null,
+    "Notes": "Synthetic note.",
+    "GeolocationNotes": null,
+    "Research1": null,
+    "Research2": null,
+    "Research3": null,
+    "ReportCredit": null,
+    "EnemyWounded": null,
+    "EnemyKilled": null,
+    "CivilianWounded": null,
+    "CivilianKilled": null,
+    "NeutralWounded": null,
+    "NeutralKilled": null,
+    "FriendlyWounded": null,
+    "FriendlyKilled": null
+   },
+   "geometry": {
+    "x": 52.0,
+    "y": 27.0
+   }
+  },
+  {
+   "attributes": {
+    "OBJECTID": 304,
+    "IncidentType": "MerchantVesselSunk",
+    "IncidentName": "Synthetic Old Sinking",
+    "Date": 1788220800000,
+    "Description": null,
+    "Notes": null,
+    "GeolocationNotes": null,
+    "Research1": "https://x.com/example_s2/status/2094711860230280839",
+    "Research2": null,
+    "Research3": null,
+    "ReportCredit": null,
+    "EnemyWounded": null,
+    "EnemyKilled": null,
+    "CivilianWounded": null,
+    "CivilianKilled": null,
+    "NeutralWounded": null,
+    "NeutralKilled": null,
+    "FriendlyWounded": null,
+    "FriendlyKilled": null
+   },
+   "geometry": {
+    "x": 57.0,
+    "y": 25.0
+   }
+  }
+ ]
+}

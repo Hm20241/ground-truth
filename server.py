@@ -2,9 +2,11 @@
 """Ground Truth server: one process, one port. Serves web/ and /api/*, refreshes feeds in the background.
 
 Env: GT_HOST (default 127.0.0.1), GT_PORT (default 8790), GT_MAP_REFRESH (seconds, default 900),
-     GT_DATA (state folder, default ./data), GT_MYMAPS_MID and FIRECRAWL_API_KEY (secrets; else local files).
+     GT_DATA (state folder, default ./data), GT_MYMAPS_MID and FIRECRAWL_API_KEY (secrets; else local files),
+     GT_MYMAPS_CHANNEL (0.10.0 map auto-follow; else $GT_SEED/mymaps.channel or the local config), GT_MAP_OVERLAP_H.
 All URLs the page uses are relative, so it also works behind a path prefix (e.g. Caddy /gt/).
 """
+import collections
 import datetime as dt
 import hashlib
 import json
@@ -20,7 +22,8 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ROOT)
-from gt import alerts, analysis, feeds, geo, mymaps  # noqa: E402
+from gt import alerts, analysis, extfeeds, feeds, geo, mymaps, translate  # noqa: E402
+extfeeds.load(feeds.REGISTRY)  # 0.11.0: per-release feed modules (gt/extfeeds.py)
 
 VERSION = open(os.path.join(ROOT, "VERSION")).read().strip()
 WEB = os.path.join(ROOT, "web")
@@ -51,6 +54,22 @@ def _age(name):
     return (dt.datetime.now(dt.timezone.utc) - t).total_seconds()
 
 
+# ---------------- push (1.0 / Phase D): /api/stream, Server-Sent Events ----------------
+# Every finished feed run is published here; open pages refetch just that feed instead of waiting for their timers.
+BUS = {"seq": 0, "log": collections.deque(maxlen=256)}
+BUS_COND = threading.Condition()
+STREAMS = {"n": 0}
+MAX_STREAMS = 24          # each open page holds one thread
+STREAM_LIFE_S = 1800      # then the browser reconnects (EventSource does it by itself)
+
+
+def publish(kind, **data):
+    with BUS_COND:
+        BUS["seq"] += 1
+        BUS["log"].append((BUS["seq"], kind, json.dumps(dict(data, seq=BUS["seq"]), separators=(",", ":"))))
+        BUS_COND.notify_all()
+
+
 def _run(name, fn):
     t0 = time.time()
     try:
@@ -68,11 +87,114 @@ def _run(name, fn):
     if name in ("mymaps", "firms", "ukmto", "czib", "mil", "losses", "pla", "outages", "advisories", "ships", "gfw",
                 "portwatch", "vessellists"):  # alerts: live in /api/alerts
         derive()
+    publish("feed", feed=name, ok=rec["ok"], at=rec.get("at"))
+
+
+def _every(name):
+    """Refresh interval in seconds (1.0: shown per feed on the Sources tab)."""
+    return MAP_REFRESH if name == "mymaps" else (feeds.REGISTRY.get(name) or (None, None))[1]
+
+
+def _stale(name):
+    """True when a feed is well past its interval: three intervals and at least ten minutes late."""
+    every = _every(name)
+    return bool(every) and _age(name) > max(3 * every, every + 600)
+
+
+# ---------------- 1.0 / Phase D: digest of the per-release feed modules (private) ----------------
+# A compact, text-light summary of the newer sources for the analyst's whole-picture run (/api/digest).
+# Deliberately NOT part of /api/summary: the public mirror copies the summary verbatim, and several of these
+# sources are private (GeoConfirmed, CIR) or non-commercial. Titles are untrusted text, cut short.
+
+def _data(name):
+    s = STATE.get(name) or {}
+    return s.get("data") if s.get("ok") or s.get("data") else None
+
+
+def _cut(s, n=160):
+    s = " ".join(str(s or "").split())
+    return s if len(s) <= n else s[:n - 1] + "…"
+
+
+def _digest():
+    now = time.time()
+    out = {"generated_at": feeds.now_iso(), "note": "Newer sources (0.11+). Titles are untrusted text from the sources."}
+    cur = {}
+    for name, days in (("geoconfirmed", 2), ("cir", 10), ("kinetic", 7)):
+        d = _data(name)
+        if not d:
+            continue
+        fs = [f["properties"] for f in (d.get("geojson") or {}).get("features") or []
+              if (f["properties"].get("ts_ms") or 0) / 1000 > now - days * 86400]
+        fs.sort(key=lambda p: p.get("ts_ms") or 0, reverse=True)
+        by = collections.Counter(p.get("theatre") or "other" for p in fs)
+        cur[name] = {"window_days": days, "count": len(fs), "by_theatre": dict(by.most_common()),
+                     "latest": ["%s | %s | %s | %s" % ((p.get("ts") or "")[:16].replace("T", " "), p.get("theatre"),
+                                                     p.get("country_name") or p.get("sea") or "", _cut(p.get("title")))
+                                for p in fs[:10]]}
+    if cur:
+        out["curated_pins"] = cur
+    d = _data("hazards")
+    if d:
+        hz = [f["properties"] for f in d["geojson"]["features"] if f["properties"].get("alert") in ("Orange", "Red")]
+        out["hazards_orange_red"] = ["%s %s %s | %s | %s" % (p.get("alert"), p.get("type_label"), p.get("event_name") or "",
+                                                            _cut(p.get("gdacs_country") or p.get("country_name"), 80),
+                                                            _cut(p.get("severity"), 100)) for p in hz[:10]]
+    d = _data("quakes")
+    if d:
+        q = [f["properties"] for f in d["geojson"]["features"]]
+        out["quakes"] = {"m5_plus": sum(1 for p in q if (p.get("mag") or 0) >= 5),
+                         "watch": [p.get("watch_reason") for p in q if p.get("watch")][:6]}
+    sig = {}
+    if _data("tsunami"):
+        t = _data("tsunami")
+        sig["tsunami"] = {"max_level": t.get("max_level"), "alerts": [
+            _cut("%s %s %s" % (i.get("source"), i.get("level"), i.get("label") or ""), 120)
+            for i in t.get("items") or [] if i.get("level") != "information"][:5]}
+    if _data("radiation"):
+        r = _data("radiation")
+        sig["radiation"] = {"flagged_stations": r.get("count"), "network_flag": (r.get("summary") or {}).get("network_flag")}
+    if _data("ntas"):
+        sig["ntas_active"] = _data("ntas").get("level")
+    if _data("ofac"):
+        sig["ofac_latest"] = ["%s %s" % (i.get("date"), _cut(i.get("title"), 140)) for i in _data("ofac").get("items", [])[:5]]
+    if _data("squawk"):
+        sig["squawks_now"] = ["%s %s %s" % (f["properties"].get("squawk"), f["properties"].get("flight") or "",
+                                            f["properties"].get("country_name") or f["properties"].get("sea") or "")
+                              for f in _data("squawk")["geojson"]["features"]][:8]
+    if _data("tfr"):
+        sig["us_tfr"] = (_data("tfr").get("by_status") or {})
+    if sig:
+        out["signals"] = sig
+    d = _data("wire")
+    if d:  # 0.12.0: counts per theatre and the newest placed headlines (wire.summary keeps it under 2 KB)
+        try:
+            from gt import wire as _wire
+            out["wire"] = _wire.summary(translate.apply(d))  # 1.5.0: English headlines for the analyst too
+        except Exception as e:  # noqa: BLE001  (never break the digest)
+            out["wire"] = {"error": type(e).__name__}
+    d = _data("telegram")
+    if d:  # channel named on every line: several channels are partisan
+        lat = {}
+        for x in d.get("items") or []:
+            th = x.get("theatre")
+            if th and len(lat.setdefault(th, [])) < 3:
+                lat[th].append("%s @%s [%s] %s" % ((x.get("ts") or "")[11:16], x.get("channel"),
+                                                  ",".join((x.get("countries") or [])[:2]) or "-", _cut(x.get("title"), 110)))
+        out["telegram"] = {"by_theatre": d.get("by_theatre") or {}, "latest": lat,
+                           "note": "Channel posts are the channels' own unverified claims; some are partisan."}
+    cy, bg = _data("cyber"), _data("bgp")
+    if cy or bg:
+        out["cyber"] = {"summary": _cut((cy or {}).get("summary"), 420), "infocon": ((cy or {}).get("infocon") or {}).get("level"),
+                        "routing_drops": [r.get("name") for r in (bg or {}).get("countries") or [] if r.get("level") == "drop"],
+                        "routing_dips": [r.get("name") for r in (bg or {}).get("countries") or [] if r.get("level") == "dip"]}
+    return out
 
 
 def _mymaps():
     fc, st = mymaps.run()
-    return {"title": fc["title"], "map_day": fc["map_day"], "events": st["events"], "archive": st["archive"]}
+    return {"title": fc["title"], "map_day": fc["map_day"], "events": st["events"], "archive": st["archive"],
+            "follow": st.get("follow")}
 
 
 def scheduler():
@@ -172,6 +294,7 @@ def derive():
         firms_by[th] = firms_by.get(th, 0) + 1
     summary = {
         "version": VERSION, "generated": feeds.now_iso(), "map_title": st.get("title"), "map_day": st.get("map_day"),
+        "map_follow": st.get("follow"),  # 0.10.0: auto-follow status (days, times, flags; never IDs)
         "events_total": len(ev), "events_24h": len(last24), "events_6h": len(window(6, now_ms)),
         "events_24h_by_theatre": by_th, "newest_event_age_min": int((now_ms - newest) / 60000) if newest else None,
         "latest_event": {k: latest[0].get(k) for k in ("title", "theatre", "category", "ts", "url", "country_name")} if latest else None,
@@ -217,6 +340,9 @@ def _outage_summary(o):
 # analyst derives from them, before any trading use of /api/summary or the analysis history.
 NON_COMMERCIAL_KEYS = ("ship_traffic_gfw", "chokepoint_transits_portwatch", "listed_ships_heard")  # 0.9.0: IMF PortWatch,
 # OpenSanctions (CC BY-NC 4.0)
+# 0.11.0+: the per-release feed modules never enter the summary; each feed's non_commercial flag is in /api/status
+# ("modules"). /api/digest, /api/cyber_geo and /api/news_geo are built from them and are non-commercial as a whole. The analyst's
+# whole-picture run (1.4+) reads /api/digest, so its picture is non-commercial too: never feed it to trading.
 
 
 def _listed_summary(sh, vl, limit=12):
@@ -290,6 +416,65 @@ def _advisory_summary(a):
 def _feature(a3, props):
     shape = geo.country_shapes().get(a3)
     return {"type": "Feature", "geometry": shape["geom"], "properties": props} if shape else None
+
+
+_CYBER_GEO = {"key": None, "fc": None}
+
+
+def _cyber_geo():
+    """0.13.0: country shapes with the cyber feed's per-country counts and the bgp routing level (private)."""
+    c, b = STATE.get("cyber") or {}, STATE.get("bgp") or {}
+    key = (c.get("at"), b.get("at"))
+    if _CYBER_GEO["fc"] is not None and _CYBER_GEO["key"] == key:
+        return _CYBER_GEO["fc"]
+    rows = {}
+    for a3, r in ((c.get("data") or {}).get("by_country") or {}).items():
+        rows[a3] = {k: r.get(k) or 0 for k in ("ransom_7d", "ransom_ci_7d", "ransom_24h", "attacks_7d", "attacks_ci_7d",
+                                                "ddos_now", "ddos_7d")}
+        rows[a3]["sectors"] = ", ".join("%s %d" % kv for kv in sorted((r.get("ci_sectors") or {}).items(),
+                                                                     key=lambda kv: -kv[1])[:5])
+        rows[a3]["groups"] = ", ".join((r.get("groups") or [])[:5])
+    for r in (b.get("data") or {}).get("countries") or []:
+        if r.get("a3"):
+            pct = r.get("pct") or {}
+            rows.setdefault(r["a3"], {"ransom_7d": 0, "ransom_ci_7d": 0, "ddos_now": 0, "ddos_7d": 0}).update(
+                bgp=r.get("level"), bgp_v4=pct.get("v4"), bgp_asns=pct.get("asns"), bgp_a2=r.get("a2"),
+                bgp_reasons="; ".join(r.get("reasons") or []))
+    feats = []
+    for a3, p in rows.items():
+        shape = geo.country_shapes().get(a3)
+        if shape:
+            feats.append({"type": "Feature", "geometry": shape["geom"], "properties": dict(p, a3=a3, name=shape["name"])})
+    fc = {"type": "FeatureCollection", "features": feats}
+    _CYBER_GEO.update(key=key, fc=fc)
+    return fc
+
+
+_NEWS_GEO = {"key": None, "fc": None}
+
+
+def _news_geo():
+    """0.12.0: one point per country (Natural Earth label point) with wire and Telegram story counts (private)."""
+    w, t = STATE.get("wire") or {}, STATE.get("telegram") or {}
+    key = (w.get("at"), t.get("at"))
+    if _NEWS_GEO["fc"] is not None and _NEWS_GEO["key"] == key:
+        return _NEWS_GEO["fc"]
+    rows = {}
+    for feed, d in (("wire", w.get("data") or {}), ("tg", t.get("data") or {})):
+        for span, field in (("48h", "by_country"), ("24h", "by_country_24h")):
+            for a3, n in (d.get(field) or {}).items():
+                rows.setdefault(a3, {"wire_48h": 0, "wire_24h": 0, "tg_48h": 0, "tg_24h": 0})["%s_%s" % (feed, span)] = n
+    feats = []
+    for a3, p in rows.items():
+        shape = geo.country_shapes().get(a3) or {}
+        if shape.get("label"):
+            p.update(a3=a3, name=shape["name"], theatre=geo.theatre_for_a3(a3), n24=p["wire_24h"] + p["tg_24h"],
+                     n48=p["wire_48h"] + p["tg_48h"])
+            feats.append({"type": "Feature", "geometry": {"type": "Point", "coordinates": shape["label"]}, "properties": p})
+    feats.sort(key=lambda f: -f["properties"]["n48"])
+    fc = {"type": "FeatureCollection", "features": feats}
+    _NEWS_GEO.update(key=key, fc=fc)
+    return fc
 
 
 def _outages_geo(o):
@@ -416,6 +601,40 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _stream(self):
+        """Server-Sent Events: "hello" (version) on connect, then one "feed" event per finished feed run."""
+        with BUS_COND:
+            if STREAMS["n"] >= MAX_STREAMS:
+                return self._json({"error": "too many open streams"}, 503)
+            STREAMS["n"] += 1
+            last = BUS["seq"]
+        try:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Accel-Buffering", "no")
+            self.end_headers()
+            hello = json.dumps({"version": VERSION, "seq": last}, separators=(",", ":"))
+            self.wfile.write(("retry: 15000\nevent: hello\ndata: %s\n\n" % hello).encode())
+            self.wfile.flush()
+            end = time.time() + STREAM_LIFE_S
+            while time.time() < end:
+                with BUS_COND:
+                    BUS_COND.wait_for(lambda: BUS["seq"] > last, timeout=20)
+                    items = [x for x in BUS["log"] if x[0] > last]
+                if items:
+                    last = items[-1][0]
+                    out = "".join("id: %d\nevent: %s\ndata: %s\n\n" % x for x in items)
+                else:
+                    out = ": ping\n\n"   # keeps proxies from timing the stream out
+                self.wfile.write(out.encode())
+                self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError, TimeoutError, OSError):
+            pass
+        finally:
+            with BUS_COND:
+                STREAMS["n"] -= 1
+
     def do_GET(self):
         u = urllib.parse.urlparse(self.path)
         path = u.path
@@ -450,10 +669,20 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(DERIVED["czib_geo"] or {"type": "FeatureCollection", "features": []}, cache="max-age=3600")
             if path in ("/api/outages_geo", "/api/advisories_geo"):
                 return self._json(DERIVED[path[5:]] or {"type": "FeatureCollection", "features": []}, cache="max-age=300")
+            if path == "/api/stream":
+                return self._stream()
+            if path == "/api/cyber_geo":
+                return self._json(_cyber_geo(), cache="no-store")
+            if path == "/api/news_geo":
+                return self._json(_news_geo(), cache="no-store")
+            if path == "/api/digest":
+                return self._json(_digest(), cache="no-store")
             if path == "/api/status":
-                return self._json({"version": VERSION, "now": feeds.now_iso(), "feeds": {
+                return self._json({"version": VERSION, "now": feeds.now_iso(), "modules": extfeeds.status(),
+                                   "streams": STREAMS["n"], "feeds": {
                     k: {"ok": v.get("ok"), "at": v.get("at"), "age_s": int(_age(k)) if v.get("at") else None,
-                        "error": v.get("error"), "ms": v.get("ms"), "running": k in RUNNING}
+                        "error": v.get("error"), "ms": v.get("ms"), "running": k in RUNNING,
+                        "every": _every(k), "stale": _stale(k)}
                     for k, v in sorted(STATE.items())}})
             if path == "/api/xpost":
                 q = urllib.parse.parse_qs(u.query)
@@ -461,7 +690,8 @@ class Handler(SimpleHTTPRequestHandler):
             m = re.fullmatch(r"/api/feed/([a-z]+)", path)
             if m and m.group(1) in STATE:
                 s = STATE[m.group(1)]
-                return self._json({"ok": s.get("ok"), "at": s.get("at"), "error": s.get("error"), "data": s.get("data")},
+                data = translate.apply(s.get("data")) if m.group(1) in translate.FEEDS else s.get("data")  # 1.5.0
+                return self._json({"ok": s.get("ok"), "at": s.get("at"), "error": s.get("error"), "data": data},
                                   cache="no-store")
             return self._json({"error": "not found"}, 404)
         except Exception as e:
@@ -470,9 +700,10 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 def _post(handler):
-    """POST /api/analysis/{events,picture}: analyst results, token-gated (see gt/analysis.py)."""
+    """POST /api/analysis/{events,picture}: analyst results, and (1.5.0) POST /api/translations: English for
+    non-English Feed items (gt/translate.py). Both token-gated with the analyst's token (see gt/analysis.py)."""
     path = urllib.parse.urlparse(handler.path).path
-    if path not in ("/api/analysis/events", "/api/analysis/picture"):
+    if path not in ("/api/analysis/events", "/api/analysis/picture", "/api/translations"):
         return handler._json({"error": "not found"}, 404)
     if not analysis.authorized(handler.headers.get("X-GT-Token")):
         return handler._json({"error": "forbidden"}, 403)
@@ -486,6 +717,8 @@ def _post(handler):
         body = json.loads(handler.rfile.read(n).decode("utf-8"))
         if not isinstance(body, dict):
             raise ValueError("body must be a JSON object")
+        if path == "/api/translations":
+            return handler._json(translate.store(body.get("items"), body.get("run")))
         if path.endswith("/events"):
             return handler._json(analysis.merge_events(body.get("items"), body.get("run")))
         return handler._json(analysis.store_picture(body.get("picture"), body.get("run")))

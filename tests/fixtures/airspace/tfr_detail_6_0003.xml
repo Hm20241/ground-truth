@@ -1,0 +1,85 @@
+﻿<XNOTAM-Update xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="0.1" origin="" created="2026-11-20T11:00:00">
+  <Group>
+    <Add>
+      <Not>
+        <NotUid>
+          <txtNameAcctFac>FDC</txtNameAcctFac>
+          <dateIndexYear>2026</dateIndexYear>
+          <noSeqNo>0003</noSeqNo>
+          <dateIssued>2026-11-18T21:31:00</dateIssued>
+          <txtLocalName>TEST 0003</txtLocalName>
+          <codeGUID>00000000-0000-4000-8000-000000000003</codeGUID>
+          <noUSNSWorkNo>TFR0000000000003</noUSNSWorkNo>
+        </NotUid>
+        <codeDailyOper>false</codeDailyOper>
+        <dateEffective>2021-09-29T16:37:00</dateEffective>
+        <codeTimeZone>UTC</codeTimeZone>
+        <codeExpirationTimeZone>UTC</codeExpirationTimeZone>
+        <AffLocGroup>
+          <txtNameCity></txtNameCity>
+          <txtNameUSState></txtNameUSState>
+        </AffLocGroup>
+        <codeFacility>ZZZ</codeFacility>
+        <TfrNot>
+          <codeType>SPECIAL</codeType>
+          <TFRAreaGroup>
+            <aseTFRArea>
+              <AseUid>
+                <codeType>RAS</codeType>
+                <codeId>401</codeId>
+              </AseUid>
+              <txtName>Special Notice Area1</txtName>
+              <codeDistVerUpper>HEI</codeDistVerUpper>
+              <valDistVerUpper>999</valDistVerUpper>
+              <uomDistVerUpper>FL</uomDistVerUpper>
+              <codeDistVerLower>HEI</codeDistVerLower>
+              <valDistVerLower>0</valDistVerLower>
+              <uomDistVerLower>FT</uomDistVerLower>
+              <Att>
+                <codeWorkHr>NOTAM</codeWorkHr>
+              </Att>
+              <codeExclVerUpper>INCLUDE</codeExclVerUpper>
+              <codeExclVerLower>INCLUDE</codeExclVerLower>
+              <isScheduledTfrArea>FALSE</isScheduledTfrArea>
+              <ScheduleGroup>
+                <isTimeSeparate>FALSE</isTimeSeparate>
+                <dateEffective>2021-09-29T16:37:00</dateEffective>
+              </ScheduleGroup>
+            </aseTFRArea>
+            <Aac>
+              <AacUid>
+                <AseUidChi>
+                  <codeType>RAS</codeType>
+                  <codeId>401</codeId>
+                </AseUidChi>
+                <AseUidPar>
+                  <codeType>PART</codeType>
+                  <codeId>402</codeId>
+                </AseUidPar>
+              </AacUid>
+              <codeType>BOM</codeType>
+              <codeOpr>BASE</codeOpr>
+            </Aac>
+            <InstructionsGroup>
+              <txtInstr>TEST INSTRUCTION.</txtInstr>
+            </InstructionsGroup>
+            <codeIncFRD>FALSE</codeIncFRD>
+            <codeShpPrt>COMPOSITE</codeShpPrt>
+            <codeLclTime>FALSE</codeLclTime>
+            <codeAuthATC>FALSE</codeAuthATC>
+          </TFRAreaGroup>
+          <TemplateType>Hazards</TemplateType>
+          <codeCtrlFacilityType>ARTCC</codeCtrlFacilityType>
+        </TfrNot>
+        <txtNameCoordFacility>TEST CENTER</txtNameCoordFacility>
+        <codeCoordFacility>ZZZ</codeCoordFacility>
+        <codeCoordFacilityType>ARTCC</codeCoordFacilityType>
+        <txtAddrCoordPhone>000-000-0000</txtAddrCoordPhone>
+        <txtDescrUSNS>!FDC 6/0003 ZZZ SECURITY..SPECIAL SECURITY INSTRUCTIONS. SYNTHETIC TEST TEXT.</txtDescrUSNS>
+        <txtDescrTraditional>!FDC 6/0003 ZZZ SECURITY..SPECIAL SECURITY INSTRUCTIONS. SYNTHETIC TEST TEXT.</txtDescrTraditional>
+        <txtDescrModern>&lt;html&gt;&lt;b&gt;TEST&lt;/b&gt;&lt;/html&gt;</txtDescrModern>
+        <codeFreeformText>false</codeFreeformText>
+      </Not>
+    </Add>
+  </Group>
+</XNOTAM-Update>

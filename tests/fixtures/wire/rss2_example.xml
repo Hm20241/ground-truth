@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+    <channel>
+        <title><![CDATA[Example World News - World]]></title>
+        <description><![CDATA[SYNTHETIC test feed: every headline here is invented.]]></description>
+        <link>https://news.example.org/world</link>
+        <image>
+            <url>https://news.example.org/logo.gif</url>
+            <title>Example World News - World</title>
+            <link>https://news.example.org/world</link>
+        </image>
+        <generator>RSS for Node</generator>
+        <lastBuildDate>Fri, 20 Nov 2026 05:30:00 GMT</lastBuildDate>
+        <atom:link href="https://news.example.org/world/rss.xml" rel="self" type="application/rss+xml"/>
+        <copyright><![CDATA[Copyright: (C) Example World News]]></copyright>
+        <language><![CDATA[en-gb]]></language>
+        <ttl>15</ttl>
+        <item>
+            <title><![CDATA[Drone strike hits fuel depot in Kharkiv region]]></title>
+            <description><![CDATA[Emergency crews worked through the night to contain the blaze, the example regional governor said.]]></description>
+            <link>https://news.example.org/articles/ex1001?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://news.example.org/articles/ex1001#0</guid>
+            <pubDate>Fri, 20 Nov 2026 05:10:00 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://img.example.org/240/ex1001.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Floods displace thousands in southern Somalia]]></title>
+            <description><![CDATA[<p>Aid groups warn of <b>disease</b> as river levels keep rising.</p>]]></description>
+            <link>https://news.example.org/articles/ex1002?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://news.example.org/articles/ex1002#0</guid>
+            <pubDate>Fri, 20 Nov 2026 04:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title><![CDATA[Markets steady as investors await rate decision]]></title>
+            <description><![CDATA[Markets steady as investors await rate decision]]></description>
+            <link>https://news.example.org/articles/ex1003</link>
+            <guid isPermaLink="false">https://news.example.org/articles/ex1003#0</guid>
+            <pubDate>Fri, 20 Nov 2026 03:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title>Ceasefire talks resume in Doha &amp; Cairo</title>
+            <description>Negotiators return for a third example round. The post Ceasefire talks resume appeared first on Example World News.</description>
+            <link>https://news.example.org/articles/ex1004?utm_source=rss&amp;utm_medium=feed&amp;page=2</link>
+            <guid isPermaLink="false">ex1004</guid>
+            <pubDate>Fri, 20 Nov 2026 01:15:00 +0000</pubDate>
+        </item>
+        <item>
+            <title><![CDATA[Archive: election held in Ghana]]></title>
+            <description><![CDATA[An older example story, outside the 48-hour window.]]></description>
+            <link>https://news.example.org/articles/ex0900</link>
+            <guid isPermaLink="false">https://news.example.org/articles/ex0900#0</guid>
+            <pubDate>Tue, 17 Nov 2026 04:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title><![CDATA[Rescuers search rubble after quake in western Nepal]]></title>
+            <description><![CDATA[]]></description>
+            <guid isPermaLink="true">https://news.example.org/articles/ex1005</guid>
+            <pubDate>Thu, 19 Nov 2026 22:00:00 EST</pubDate>
+        </item>
+        <item>
+            <title><![CDATA[]]></title>
+            <description><![CDATA[An entry without a headline is skipped.]]></description>
+            <link>https://news.example.org/articles/ex1006</link>
+            <pubDate>Fri, 20 Nov 2026 02:00:00 GMT</pubDate>
+        </item>
+    </channel>
+</rss>

@@ -173,7 +173,8 @@ NAME_ALIASES = {
 
 
 def country_shapes():
-    """{ADM0_A3: {"name", "a2", "continent", "names", "geom"}}; geom is a light MultiPolygon for map fills."""
+    """{ADM0_A3: {"name", "a2", "continent", "names", "geom", "label"}}; geom is a light MultiPolygon for map fills,
+    label a [lon, lat] point inside the country."""
     global _shapes
     if _shapes is not None:
         return _shapes
@@ -190,8 +191,10 @@ def country_shapes():
         names = {(p.get(k) or "").lower() for k in ("NAME", "NAME_LONG", "ADMIN", "NAME_EN", "FORMAL_EN", "BRK_NAME",
                                                      "NAME_CIAWF", "NAME_SORT")} - {""}
         a2 = p.get("ISO_A2_EH") if p.get("ISO_A2_EH") not in (None, "-99") else p.get("ISO_A2")
+        lx, ly = p.get("LABEL_X"), p.get("LABEL_Y")  # Natural Earth's own label point (0.12.0: news bubbles)
         out[a3] = {"name": p.get("NAME"), "a2": a2 if a2 != "-99" else None, "continent": p.get("CONTINENT"),
-                   "names": names, "geom": {"type": "MultiPolygon", "coordinates": slim}}
+                   "names": names, "geom": {"type": "MultiPolygon", "coordinates": slim},
+                   "label": [round(lx, 2), round(ly, 2)] if lx is not None and ly is not None else None}
     _shapes = out
     return out
 

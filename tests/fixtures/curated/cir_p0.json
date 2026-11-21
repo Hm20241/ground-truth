@@ -1,0 +1,230 @@
+{
+ "objectIdFieldName": "OBJECTID",
+ "uniqueIdField": {
+  "name": "OBJECTID",
+  "isSystemMaintained": true
+ },
+ "globalIdFieldName": "",
+ "geometryType": "esriGeometryPoint",
+ "spatialReference": {
+  "wkid": 4326,
+  "latestWkid": 4326
+ },
+ "fields": [
+  {
+   "name": "Graphic_content_level",
+   "type": "esriFieldTypeString",
+   "alias": "Graphic_content_level",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Credit",
+   "type": "esriFieldTypeString",
+   "alias": "Credit",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Primary_category",
+   "type": "esriFieldTypeString",
+   "alias": "Primary_category",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Secondary_category",
+   "type": "esriFieldTypeString",
+   "alias": "Secondary_category",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Sector_affected",
+   "type": "esriFieldTypeString",
+   "alias": "Sector_affected",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Link",
+   "type": "esriFieldTypeString",
+   "alias": "Link",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Description",
+   "type": "esriFieldTypeString",
+   "alias": "Description",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Town_or_City",
+   "type": "esriFieldTypeString",
+   "alias": "Town_or_City",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Link_geolocation",
+   "type": "esriFieldTypeString",
+   "alias": "Link_geolocation",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Entry_Number",
+   "type": "esriFieldTypeString",
+   "alias": "Entry_Number",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "latitude",
+   "type": "esriFieldTypeDouble",
+   "alias": "latitude",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "longitude",
+   "type": "esriFieldTypeDouble",
+   "alias": "longitude",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "country",
+   "type": "esriFieldTypeString",
+   "alias": "country",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "province",
+   "type": "esriFieldTypeString",
+   "alias": "province",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "TIMESTAMP",
+   "type": "esriFieldTypeDate",
+   "alias": "TIMESTAMP",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "OBJECTID",
+   "type": "esriFieldTypeOID",
+   "alias": "OBJECTID",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  }
+ ],
+ "features": [
+  {
+   "attributes": {
+    "Graphic_content_level": "2 - Mild",
+    "Credit": "CIR",
+    "Primary_category": "Civilian Infrastructure Damage",
+    "Secondary_category": null,
+    "Sector_affected": "Civilian property",
+    "Link": "https://t.me/example_ua_news/31337",
+    "Description": "Synthetic damaged apartment block after an overnight strike.",
+    "Town_or_City": "Example City",
+    "Link_geolocation": null,
+    "Entry_Number": "XX90001",
+    "latitude": 50.4501,
+    "longitude": 30.5234,
+    "country": "Ukraine",
+    "province": "Example Oblast",
+    "TIMESTAMP": 1794528000000,
+    "OBJECTID": 91001
+   },
+   "geometry": {
+    "x": 30.5234,
+    "y": 50.4501
+   }
+  },
+  {
+   "attributes": {
+    "Graphic_content_level": "1 - None",
+    "Credit": "CIR",
+    "Primary_category": "Civilian Infrastructure Damage",
+    "Secondary_category": null,
+    "Sector_affected": "Educational facilities",
+    "Link": "https://t.me/example_ua_news/31337",
+    "Description": "Synthetic shattered windows at a nearby school.",
+    "Town_or_City": "Example City",
+    "Link_geolocation": null,
+    "Entry_Number": "XX90002",
+    "latitude": 50.4512,
+    "longitude": 30.5301,
+    "country": "Ukraine",
+    "province": "Example Oblast",
+    "TIMESTAMP": 1794441600000,
+    "OBJECTID": 91002
+   },
+   "geometry": {
+    "x": 30.5301,
+    "y": 50.4512
+   }
+  },
+  {
+   "attributes": {
+    "Graphic_content_level": "4 - Severe",
+    "Credit": "CIR",
+    "Primary_category": "Civilian Casualty",
+    "Secondary_category": "Bombing or explosion",
+    "Sector_affected": null,
+    "Link": "https://t.me/c/1234567890/42",
+    "Description": "Synthetic casualties reported at a market.",
+    "Town_or_City": "Example Town",
+    "Link_geolocation": null,
+    "Entry_Number": "XX90003",
+    "latitude": 49.9935,
+    "longitude": 36.2304,
+    "country": "Ukraine",
+    "province": "Example Oblast",
+    "TIMESTAMP": 1794355200000,
+    "OBJECTID": 91003
+   },
+   "geometry": {
+    "x": 36.2304,
+    "y": 49.9935
+   }
+  }
+ ],
+ "exceededTransferLimit": true
+}

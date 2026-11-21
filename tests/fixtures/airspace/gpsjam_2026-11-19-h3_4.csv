@@ -1,0 +1,14 @@
+hex,count_good_aircraft,count_bad_aircraft
+841e001ffffffff,98,2
+841e003ffffffff,0,1
+841e005ffffffff,1,1
+841e007ffffffff,97,3
+841e009ffffffff,90,10
+841e00bffffffff,89,11
+841e00dffffffff,8,2
+841e00fffffffff,3,40
+841e011ffffffff,500,0
+841e013ffffffff,47,3
+not-a-hex,1,1
+841e015ffffffff,x,1
+841e017ffffffff,0,0

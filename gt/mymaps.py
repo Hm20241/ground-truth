@@ -15,7 +15,7 @@ import sys
 import urllib.request
 import xml.etree.ElementTree as ET
 
-from . import geo
+from . import geo, mapfollow
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.environ.get("GT_DATA") or os.path.join(ROOT, "data")
@@ -289,11 +289,16 @@ def run(kml_path=None):
     if kml_path:
         with open(kml_path, "rb") as fh:
             raw = fh.read()
+        fc, follow = parse(raw), None
     else:
-        raw = fetch_kml(load_config()["mid"])
-    fc = parse(raw)
+        # 0.10.0: the curator rolls to a new map about weekly; mapfollow picks the newest one the publisher links
+        # and keeps the previous map in the mix for a while. Only the current map's KML is snapshotted.
+        maps, follow = mapfollow.resolve(load_config()["mid"], fetch_kml, parse)
+        raw, fc = maps[0][1], mapfollow.merge(maps)
     st = stats(fc)
     st["archive"] = archive(raw, fc)
+    if follow:
+        st["follow"] = follow
     st["fetched_at"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     os.makedirs(DATA, exist_ok=True)
     with open(os.path.join(DATA, "latest.geojson"), "w", encoding="utf-8") as fh:

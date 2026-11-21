@@ -8,18 +8,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800&family=Overpass+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link href="vendor/maplibre-gl.css?v=5.6.0" rel="stylesheet">
-<link href="style.css?v=0.9.0" rel="stylesheet">
+<link href="style.css?v=1.5.0" rel="stylesheet">
 </head>
 <body>
 <div class="app">
   <header class="top">
-    <button class="icon-btn only-narrow" id="btnRail" aria-label="Theatres and layers">☰</button>
-    <div class="brand"><span class="mark"></span><div><b>GROUND TRUTH</b><small>Global conflict watch floor</small></div></div>
+    <button class="icon-btn only-narrow" id="btnRail" aria-label="Theatres and layers" aria-controls="rail" aria-expanded="false">☰</button>
+    <div class="brand" title="Ground Truth: a global conflict watch floor built from open sources"><span class="mark"></span><div><b>GROUND TRUTH</b><small>Global conflict watch floor</small></div></div>
+    <button type="button" class="clock" id="clock"><span id="utc">--:--:--</span><small id="clockz">ET</small></button>
+    <div class="live" id="live"><span class="ver" id="livev"></span><i class="ldot" aria-hidden="true"></i><span class="lbl" aria-live="polite"><span class="lt" id="livet">Connecting</span><span class="ldown" id="liven"></span></span></div>
     <div class="kpis" id="kpis"></div>
-    <div class="clock"><span id="utc">--:--:--</span><small>UTC</small></div>
   </header>
+  <!-- 1.5.0: news ticker: the newest timed Feed items (app.js renderTicker) -->
+  <section class="ticker" id="ticker" aria-label="Latest from the Feed by category, newest first in each"><span class="tk-label" title="The newest timed items in the Feed by category, with the Feed's filters"><i aria-hidden="true"></i>Latest</span><div class="tk-view" id="tkview"><div class="tk-track" id="tktrack"></div></div><div class="tk-ctl"><button type="button" class="tk-b tk-src" id="tksrc" aria-haspopup="true" aria-expanded="false" aria-controls="tkmenu">SRC</button><button type="button" class="tk-b" id="tkpause" aria-pressed="false">❚❚</button><button type="button" class="tk-b tk-sp" id="tkspeed">1×</button></div></section>
 
   <aside class="rail" id="rail">
+    <!-- 1.5.0: the drawer's own close button on phones and tablets (hidden on a PC, where the rail is a column) -->
+    <div class="rail-top"><span>Theatres and layers</span><button type="button" class="icon-btn" id="railClose" aria-label="Close theatres and layers">✕</button></div>
     <section>
       <h3>Theatre</h3>
       <div id="theatres" class="theatres"></div>
@@ -32,11 +37,17 @@
       <h3>Event type</h3>
       <div id="cats" class="chips"></div>
     </section>
+    <section>
+      <h3>Times</h3>
+      <div id="tzchips" class="chips" role="group" aria-label="Time zone for the times on this page"><button type="button" class="chip" data-tz="et">Eastern <span class="muted">EST</span></button><button type="button" class="chip" data-tz="utc">UTC</button></div>
+    </section>
     <section class="foot">
       <div id="mapsrc"></div>
       <label class="proj"><input type="checkbox" id="globe"> Globe projection</label>
     </section>
   </aside>
+  <!-- 1.5.0: dims the page behind the open drawer; a tap on it closes the drawer (no box on a PC) -->
+  <div class="scrim" id="railScrim" aria-hidden="true"></div>
 
   <main class="stage">
     <div id="map"></div>
@@ -45,7 +56,7 @@
       <div class="tl-head">
         <span>Events per hour, curated map, by theatre</span>
         <div class="seg" id="range">
-          <button data-h="6">6h</button><button data-h="24">24h</button><button data-h="0" class="on">All</button>
+          <button data-h="6" title="Last 6 hours: map pins count back from the newest pin, other sources from now">6h</button><button data-h="24" title="Last 24 hours: map pins count back from the newest pin, other sources from now">24h</button><button data-h="0" class="on" title="Everything the sources hold">All</button>
         </div>
       </div>
       <canvas id="timeline" height="64"></canvas>
@@ -63,6 +74,8 @@
     </nav>
     <div class="tabbody" id="tab-feed">
       <input id="q" class="search" placeholder="Filter events, places, sources…" autocomplete="off">
+      <div id="srcstale" class="stale hidden" role="status"></div>
+      <div id="feedsrc" class="chips feedsrc" role="group" aria-label="Sources shown in the Feed"></div>
       <div id="feedcount" class="muted small"></div>
       <ol id="feed" class="feed"></ol>
     </div>
@@ -72,8 +85,22 @@
     <div class="tabbody hidden" id="tab-ai"></div>
     <div class="tabbody hidden" id="tab-sources"></div>
   </aside>
+  <!-- 1.5.0: PC sidebar grips (drag to resize) and collapse tabs; no box under 901 px -->
+  <div class="sb-grip" data-sb="rail" role="separator" aria-orientation="vertical" aria-controls="rail" aria-label="Resize the left sidebar" aria-valuemin="0" tabindex="0" title="Drag to resize the left sidebar; double-click resets it"></div>
+  <button type="button" class="sb-tab" data-sbmin="rail" aria-controls="rail" aria-expanded="true">‹</button>
+  <div class="sb-grip" data-sb="panel" role="separator" aria-orientation="vertical" aria-controls="panel" aria-label="Resize the right sidebar" aria-valuemin="0" tabindex="0" title="Drag to resize the right sidebar; double-click resets it"></div>
+  <button type="button" class="sb-tab" data-sbmin="panel" aria-controls="panel" aria-expanded="true">›</button>
 </div>
 <script src="vendor/maplibre-gl.js?v=5.6.0"></script>
-<script src="app.js?v=0.9.0"></script>
+<!-- H3 hexagon decoder for the GPSJAM layer (ext/airspace.js); h3-js 4.5.0, Apache-2.0, from the npm tarball -->
+<script src="vendor/h3-js.umd.js?v=4.5.0"></script>
+<!-- page extensions (web/ext/): load before app.js, which runs their queued setup -->
+<script src="ext/curated.js?v=1.5.0"></script>
+<script src="ext/airspace.js?v=1.5.0"></script>
+<script src="ext/hazards.js?v=1.5.0"></script>
+<script src="ext/signals.js?v=1.5.0"></script>
+<script src="ext/cyber.js?v=1.5.0"></script>
+<script src="ext/wire.js?v=1.5.0"></script>
+<script src="app.js?v=1.5.0"></script>
 </body>
 </html>

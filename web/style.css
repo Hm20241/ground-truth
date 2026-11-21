@@ -77,6 +77,33 @@ a:hover { text-decoration: underline; }
 .feed .t { font-weight: 600; font-size: 13px; }
 .feed .m { color: var(--muted); font-size: 11px; display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
 .feed .m .time { font-family: var(--mono); color: var(--text); }
+/* 1.4.0: each Feed item opens with a title bar: flag, country (or theatre), category in the item's colour */
+.feed .tb { display: flex; align-items: center; gap: 6px; min-width: 0; margin: 0 0 4px; padding: 2px 6px; border-radius: 4px; contain: inline-size;
+  background: color-mix(in srgb, var(--c, #888) 10%, transparent); font-size: 11px; line-height: 16px; }
+.feed .tb .fl { flex: none; font: 13px/1 "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+.feed .tb .fl.tx { font: 600 9px/13px var(--mono); padding: 0 3px; border: 1px solid var(--line-2); border-radius: 3px; color: var(--muted); }
+.feed .tb .cn { font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.feed .tb .cn.gl { color: var(--muted); font-weight: 500; }
+.feed .tb .mo { flex: none; color: var(--muted); font-size: 10px; cursor: help; }
+.feed .tb .ct { flex: 0 1 auto; min-width: 0; max-width: 42%; margin-left: auto; padding-left: 6px; color: var(--c, var(--muted)); font-size: 9.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 1.4.1: date, time and time since sit in the bar, right-aligned before the category; the meta line keeps place and source */
+.feed .tb .wh { flex: none; margin-left: auto; display: inline-flex; gap: 6px; align-items: baseline; white-space: nowrap; }
+.feed .tb .wh + .ct { margin-left: 2px; }
+.feed .tb .time { font: 500 10.5px/16px var(--mono); color: var(--text); }
+.feed .tb .ag { color: var(--muted); font-size: 10.5px; }
+.feed .m:not(:has(> *)) { display: none; }
+@media (max-width: 420px) { .feed .tb { gap: 5px; } .feed .tb .wh { gap: 5px; } .feed .tb .ct { max-width: 34%; } }
+.feed li::before { top: 17px; }
+/* 1.2.0: one Feed. Source-group chips, then rows from every source; map pins stay bold, the rest link out. */
+.feedsrc { margin: 6px 0; }
+.feedsrc .chip .muted { font-variant-numeric: tabular-nums; }
+.feed li.sx .t { font-weight: 500; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.feed li.sx .t a { color: inherit; text-decoration: none; }
+.feed li.sx .t a:hover, .feed li.sx .t a:focus-visible { text-decoration: underline; }
+.feed li.sx.nl { cursor: default; }
+.feed li.more { cursor: default; text-align: center; border-bottom: 0; }
+.feed li.more::before { display: none; }
+.feed li.more:hover { background: none; }
 .badge { font-size: 10px; padding: 0 6px; border-radius: 99px; border: 1px solid var(--line-2); color: var(--muted); }
 .badge.th { border-color: #8a5a1c; color: #f6b45a; }
 .badge.uk { border-color: #1d5b80; color: #7cc7f5; }
@@ -196,3 +223,337 @@ ul.shiplist li[data-ship]:hover { color: var(--accent); }
 table.pwt { table-layout: auto; }
 table.pwt td:first-child { width: 100%; }
 table.pwt td.num, table.pwt th.num { padding-left: 6px; }
+/* 0.9.1: source-map freshness notice (Feed tab) and badge (rail) */
+.stale { margin: 6px 0; padding: 6px 8px; border: 1px solid #8a5a1c; border-radius: 6px; background: rgba(246, 180, 90, .08); color: #f6b45a; font-size: 12px; line-height: 1.4; }
+.stale.bad { border-color: #8a2a2a; background: rgba(239, 68, 68, .08); color: #f87171; }
+.badge.stale { margin: 0; padding: 0 6px; border-radius: 99px; background: none; font-size: 10px; line-height: inherit; }
+.badge.stale.bad { color: #f87171; }
+/* 0.10.0: "source map moved" notice (auto-follow) */
+.stale.info { border-color: #2a5a8a; background: rgba(96, 165, 250, .08); color: #93c5fd; }
+
+/* 0.11.0 extension sources + 1.0 push */
+.badge.src { border-color: #3b4f6b; color: #9fb4d0; margin-left: 4px; }
+
+/* 1.3.0: the clock is a button: it switches the page between Eastern time and UTC */
+button.clock { background: none; border: 0; padding: 2px 4px; margin: 0; color: inherit; cursor: pointer; border-radius: 6px; }
+button.clock:hover small, button.clock:focus-visible small { color: var(--text); }
+button.clock:focus-visible, #tzchips .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#tzchips .chip .muted { font-family: var(--mono); }
+
+/* 1.4.0: header version + live light */
+/* The page's version, then a light for how fresh the page is (Live / Polling / Offline / Public copy / Connecting).
+   It replaces the old green dot after the clock; #utc still gets the "push" class for the checks that read it. */
+.live { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 3px 9px; border: 1px solid var(--line); border-radius: 99px; background: var(--panel-2); color: var(--muted); font-size: 10.5px; letter-spacing: .04em; white-space: nowrap; cursor: default; }
+.live .ver { font: 600 10.5px var(--mono); color: var(--text); letter-spacing: 0; }
+.live .ver:empty { display: none; }
+.live .ldot { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); flex: none; }
+.live .lt { font-weight: 600; color: var(--muted); }
+.live .ldown { color: var(--accent); }
+.live.on .ldot { background: var(--ok); animation: livepulse 2.4s ease-out infinite; } .live.on .lt { color: var(--ok); }
+.live.poll .ldot { background: var(--accent); } .live.poll .lt { color: var(--accent); }
+.live.off .ldot { background: var(--bad); } .live.off .lt { color: #f87171; }
+.live.pub .ldot { background: #7f93ab; } .live.pub .lt { color: #9fb4d0; }
+@keyframes livepulse { 0% { box-shadow: 0 0 0 0 rgba(62, 207, 142, .6); } 70%, 100% { box-shadow: 0 0 0 6px rgba(62, 207, 142, 0); } }
+@media (prefers-reduced-motion: reduce) { .live.on .ldot { animation: none; box-shadow: 0 0 5px var(--ok); } }
+/* narrow screens: the dot and the version only. The label is hidden visually, not removed, so screen readers still
+   hear a change of state; the tooltip carries it for everyone else. */
+@media (max-width: 900px) {
+  .live { gap: 5px; padding: 3px 7px; }
+  .live .lbl { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+}
+
+/* 1.4.1: the header's KPI strip sits centred between the version pill and the clock, each value centred over its
+   label (asked for: "center up the main page title bar and text elements"). Auto margins, not justify-content, so a strip
+   wider than the screen still scrolls from its first tile. A title bar never widens the page (contain: inline-size). */
+.top .kpis > .kpi:first-child { margin-left: auto; }
+.top .kpis > .kpi:last-child { margin-right: auto; }
+.kpi { text-align: center; }
+.brand > div { display: flex; flex-direction: column; justify-content: center; }
+
+/* 1.4.1: on a PC the header is taller and easier to read (asked for: "make pc page title bar bigger and more readable"),
+   and the clock sits between the brand and the live light (index.html order: brand, clock, light, KPIs). KPI labels
+   may wrap to two short lines so the larger strip still fits; phones keep the compact header. */
+@media (min-width: 901px) {
+  .app { grid-template-rows: 68px 1fr; }
+  .top { gap: 22px; padding: 0 20px; }
+  .mark { width: 22px; height: 22px; } .mark::after { inset: 5px; }
+  .brand b { font-size: 16px; letter-spacing: .16em; }
+  .brand small { font-size: 12px; margin-top: 1px; }
+  .clock { font-size: 21px; text-align: left; padding-left: 18px; border-left: 1px solid var(--line); border-radius: 0; }
+  .clock small { font-size: 11.5px; margin-top: 2px; }
+  .live { font-size: 12.5px; padding: 5px 12px; gap: 8px; }
+  .live .ver { font-size: 12.5px; }
+  .live .ldot { width: 9px; height: 9px; }
+  .kpi { padding: 0 16px; flex: none; }  /* tiles keep their width; the strip scrolls rather than squeeze labels */
+  .kpi b { font-size: 20px; line-height: 1.15; }
+  .kpi small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 10.5px; line-height: 1.2; letter-spacing: .06em; white-space: normal; max-width: 14em; margin: 2px auto 0; }
+}
+
+/* 1.4.3: tooltips on a PC (app.js lifts an element's title into this box while the mouse is over it) */
+#gtip { position: fixed; z-index: 1000; left: 0; top: 0; max-width: 340px; padding: 7px 10px; border-radius: 6px; background: #1f2429; border: 1px solid var(--line-2);
+  color: var(--text); font: 12px/1.45 var(--sans); white-space: pre-line; overflow-wrap: anywhere; box-shadow: 0 8px 24px rgba(0, 0, 0, .45); pointer-events: none; }
+#gtip[hidden] { display: none; }
+
+/* 1.5.0: mobile pass */
+/* The owner asked for a mobile-friendly version. Every layout rule below sits under max-width: 900px or
+   (pointer: coarse), so a PC with a mouse at 901 px and wider renders as 1.4.3 did. Two rules are global and change no
+   PC layout: popups draw over the map's own controls, and the drawer's scrim and close bar get no box on a PC.
+   Older rules overridden here, by name: the ≤900 grid rows (52px 1fr 42vh), #map bottom 72px and the 72 px timeline,
+   the drawer's top: 52px and width: 270px, the tabs' flex: 1 and 2 px padding, the ≤520 KPI padding and size, and
+   .feedsrc wrapping on phones. */
+.maplibregl-popup { z-index: 3; }  /* the control corners are z-index 2, so the scale bar and attribution drew over popups */
+.scrim, .rail-top { display: none; }
+/* --vh: 1dvh where the browser has it (the visible height as phone toolbars come and go), else 1vh. Set through a
+   variable so an older WebView never sees a dvh value it would reject. Nothing on a PC reads it. */
+:root { --vh: 1vh; }
+@supports (height: 1dvh) { :root { --vh: 1dvh; } }
+
+@media (max-width: 900px) {
+  /* --top-h: the header; --top-full adds the status-bar inset (viewport-fit=cover). The grid, the drawer and its scrim
+     all hang off it, so the taller two-row phone header moves them too. --tl-h: the activity chart under the map
+     (0 where it is hidden). --map-h: the map's height, which caps a popup. */
+  :root { --top-h: 52px; --top-full: calc(var(--top-h) + env(safe-area-inset-top, 0px)); --panel-h: calc(42 * var(--vh)); --tl-h: 72px;
+    --map-h: calc(100 * var(--vh) - var(--top-full) - var(--panel-h) - var(--tl-h)); }
+  .app { grid-template-rows: var(--top-full) 1fr var(--panel-h); }
+  .panel { min-width: 0; }  /* like .top and .stage: the nowrap tab and chip rows must scroll, not widen the page */
+  .top { padding: env(safe-area-inset-top, 0px) max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left)); }
+  #map { bottom: var(--tl-h); } .timeline { height: var(--tl-h); }
+  .tabbody { padding-bottom: max(10px, env(safe-area-inset-bottom)); }  /* the last row clears the home indicator */
+  .maplibregl-ctrl-top-right .maplibregl-ctrl, .maplibregl-ctrl-bottom-right .maplibregl-ctrl { margin-right: max(10px, env(safe-area-inset-right)); }
+
+  /* the drawer: under the header whatever its height, wider on big phones, dims the page behind it, and is hidden
+     when shut so its controls leave the tab order */
+  .rail { top: var(--top-full); width: min(300px, 85vw); padding: 0 0 max(12px, env(safe-area-inset-bottom)) env(safe-area-inset-left, 0px);
+    overscroll-behavior: contain; visibility: hidden; transition: transform .2s, visibility 0s .2s; }
+  .rail.open { visibility: visible; transition: transform .2s; }
+  .rail-top { display: flex; position: sticky; top: 0; z-index: 2; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 4px 6px 4px 12px; background: var(--panel); border-bottom: 1px solid var(--line);
+    color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+  .rail-top .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; }
+  .scrim { display: block; position: fixed; z-index: 19; top: var(--top-full); left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, .5);
+    opacity: 0; visibility: hidden; transition: opacity .2s, visibility 0s .2s; -webkit-tap-highlight-color: transparent; }
+  .rail.open ~ .scrim { opacity: 1; visibility: visible; transition: opacity .2s; }
+
+  /* popups: never wider than the screen, never taller than the map (the text scrolls inside, under a fixed ✕) */
+  .maplibregl-popup { max-width: calc(100vw - 24px) !important; }  /* !important: app.js sets max-width: 360px inline */
+  .maplibregl-popup-content { max-width: min(340px, calc(100vw - 24px)); }
+  .maplibregl-popup-content > .pop { max-height: max(140px, min(calc(var(--map-h) - 40px), calc(var(--map-h) * var(--pop-k, .75)))); overflow: auto; overscroll-behavior: contain; }
+  .maplibregl-popup-close-button { width: 44px; height: 44px; padding: 0; font-size: 22px; line-height: 1; z-index: 1; }
+  .pop > :first-child { padding-right: 32px; }  /* the title clears the bigger ✕ */
+
+  .search { font-size: 16px; }  /* under 16 px, iOS zooms the page when the box takes focus */
+}
+/* sideways strips (tabs, KPIs) on phones and tablets, and on any touch screen (a big phone held sideways is over
+   900 px wide, and there nine tabs overflowed the 320 px panel, so the browser zoomed the page out): no scrollbar, a
+   fade at the right edge as the swipe hint, and a spacer the size of the fade so that, scrolled to the end, only the
+   spacer sits under it. A PC with a mouse is in neither query. */
+@media (max-width: 900px), (pointer: coarse) {
+  .tabs, .kpis { scrollbar-width: none; overscroll-behavior-x: contain;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); }
+  .tabs::-webkit-scrollbar, .kpis::-webkit-scrollbar { display: none; }
+  .tabs::after, .kpis::after { content: ""; flex: 0 0 24px; }
+  .tabs { overflow-x: auto; overflow-y: hidden; }
+  .tabs button { flex: 1 0 auto; padding: 11px 12px; white-space: nowrap; }  /* fill the row when they fit, scroll when not */
+  .kpis { scroll-snap-type: x proximity; }
+  .kpi { flex: none; scroll-snap-align: start; }
+}
+@media (max-width: 900px) and (prefers-reduced-motion: reduce) { .rail, .rail.open, .scrim, .rail.open ~ .scrim { transition: none; } }
+
+/* touch screens: tap targets of 40 to 44 px (a finger, not a pointer) */
+@media (pointer: coarse) {
+  .icon-btn { min-width: 44px; min-height: 44px; }
+  .seg button { min-width: 44px; min-height: 40px; padding: 0 12px; font-size: 12px; }
+  .maplibregl-ctrl-group button { width: 44px; height: 44px; }
+  .maplibregl-ctrl-attrib.maplibregl-compact { min-height: 36px; padding-right: 40px; border-radius: 20px; }
+  .maplibregl-ctrl-attrib.maplibregl-compact-show { padding: 2px 44px 2px 10px; }
+  .maplibregl-ctrl-attrib-button { width: 40px; height: 40px; border-radius: 20px; background-position: center; background-repeat: no-repeat; }
+  .theatres button { min-height: 44px; }
+  .layers label { min-height: 40px; }
+  .chip { min-height: 40px; padding: 0 12px; }
+  #shipfilter .chip { padding: 0 10px; }
+  .proj { min-height: 40px; margin-top: 4px; }
+  .tabs button { min-height: 44px; }
+  button.clock { min-height: 40px; }
+  .pop button, .alertbar button { min-height: 44px; }
+  .pop button { padding: 0 14px; }
+  /* the time brush: without this a finger's drag is taken as a page pan (pointercancel), so it never reached pointerup.
+     The chart is 40 px high so the taller range buttons fit: the band stays 92 px at 901 px and wider, and grows from
+     72 to 92 px on a tablet held upright (--tl-h below). */
+  #timeline { touch-action: none; height: 40px; }
+  .timeline { padding: 4px 12px 6px; }
+  .tl-head { margin-bottom: 2px; }
+}
+@media (pointer: coarse) and (max-width: 900px) {
+  :root { --tl-h: 92px; }
+  .alertbar { max-width: calc(100% - 74px); }  /* clear of the 44 px zoom buttons */
+}
+
+/* phones (portrait ≤520, or any phone held sideways): the activity chart is hidden (it costs the map 72 px and its
+   brush needs a mouse). Its 6h / 24h / All buttons stay, floating at the map's bottom left above the scale bar,
+   because they filter the map and the Feed. app.js copes with a hidden chart: it draws into a 0 px canvas. */
+@media (max-width: 520px), (max-width: 900px) and (max-height: 500px) {
+  :root { --tl-h: 0px; --pop-k: .6; }  /* a popup leaves at least 40% of a phone's map in view; longer text scrolls */
+  .top > .icon-btn { min-width: 40px; min-height: 40px; }  /* the header row is under 50 px here: 44 would touch its edges */
+  .timeline { left: max(10px, env(safe-area-inset-left)); right: auto; bottom: 36px; height: auto; padding: 0; border: 0; background: none; z-index: 2; }
+  .tl-head { margin: 0; }
+  .tl-head > span, #timeline { display: none; }
+  .seg { background: rgba(13, 15, 17, .9); box-shadow: 0 4px 16px rgba(0, 0, 0, .45); }
+  /* the Feed's source chips: one sideways row, edge to edge, instead of three wrapped rows */
+  .feedsrc { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 6px -12px; padding: 0 12px;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); }
+  .feedsrc::-webkit-scrollbar { display: none; }
+  .feedsrc::after { content: ""; flex: 0 0 24px; }
+  .feedsrc .chip { flex: none; white-space: nowrap; }
+}
+
+/* phone portrait: a two-row header. Row 1: ☰, the brand and the live light; row 2: the KPI strip at full width,
+   swiped sideways (it got 88 px beside the brand, too narrow for one tile). The clock stays hidden (Times in the
+   rail switches the zone). The panel takes 46% of the visible height. */
+@media (max-width: 520px) {
+  :root { --top-h: 86px; --panel-h: calc(46 * var(--vh)); }
+  .top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr) 40px; column-gap: 10px; row-gap: 0; align-items: center; }
+  .top > #btnRail { grid-area: 1 / 1; }
+  .top > .brand { grid-area: 1 / 2; min-width: 0; }
+  .top > .live { grid-area: 1 / 3; }
+  .top > .kpis { grid-area: 2 / 1 / 3 / 4; align-self: stretch; align-items: center; margin: 0 -10px; padding-left: 10px; scroll-padding-left: 10px; }
+  .kpi { padding: 0 12px; }
+  .kpi:first-child { padding-left: 2px; }
+  .kpi b { font-size: 14px; }
+}
+
+/* phone held sideways (844 x 390 and the like): map on the left, the panel on the right, one compact header row and
+   no chart, so the map gets the full height instead of 102 px */
+@media (max-width: 900px) and (max-height: 500px) {
+  :root { --top-h: 48px; --map-h: calc(100 * var(--vh) - var(--top-full)); }
+  .app { grid-template-columns: minmax(0, 1fr) min(360px, 45vw); grid-template-rows: var(--top-full) 1fr; grid-template-areas: "top top" "stage panel"; }
+  .panel { border-top: 0; border-left: 1px solid var(--line); padding-right: env(safe-area-inset-right, 0px); }
+  /* the panel, not the screen edge, is right of the map; the notch and home bar can be on its left and bottom */
+  .maplibregl-ctrl-top-right .maplibregl-ctrl, .maplibregl-ctrl-bottom-right .maplibregl-ctrl { margin-right: 10px; }
+  .maplibregl-ctrl-bottom-left .maplibregl-ctrl { margin-left: max(10px, env(safe-area-inset-left)); margin-bottom: max(10px, env(safe-area-inset-bottom)); }
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl { margin-bottom: max(10px, env(safe-area-inset-bottom)); }
+  .timeline { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 26px); }
+  .alertbar { left: max(10px, env(safe-area-inset-left)); }
+  .maplibregl-popup { max-width: calc(100vw - min(360px, 45vw) - 24px) !important; }
+  .maplibregl-popup-content { max-width: min(340px, calc(100vw - min(360px, 45vw) - 24px)); }
+}
+
+/* 1.5.0: news ticker. A broadcast-style crawl under the title bar: a red label block with an angled edge, a dark
+   band with a red top rule, bold white headlines with the country in capitals, amber time since, diamond separators. */
+:root { --tick-h: 34px; --tick-red: #d0142c; }
+.ticker { grid-area: tick; display: flex; align-items: stretch; height: var(--tick-h); min-width: 0; overflow: hidden; position: relative; z-index: 4;
+  background: linear-gradient(180deg, #111a2e 0%, #0a1020 55%, #070b15 100%); border-top: 2px solid var(--tick-red); border-bottom: 1px solid #1c2538;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06); }
+.tk-label { flex: none; display: flex; align-items: center; gap: 7px; padding: 0 24px 0 14px; margin-right: -8px; position: relative; z-index: 1;
+  background: linear-gradient(180deg, #e8233d, var(--tick-red) 60%, #a80f23); color: #fff; font: 800 12.5px/1 var(--sans); letter-spacing: .14em;
+  text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%); text-shadow: 0 1px 0 rgba(0, 0, 0, .35); }
+.tk-label i { width: 7px; height: 7px; border-radius: 50%; background: #fff; box-shadow: 0 0 6px #fff; animation: tkpulse 1.6s ease-in-out infinite; }
+@keyframes tkpulse { 50% { opacity: .25; } }
+.tk-view { flex: 1; min-width: 0; overflow: hidden; display: flex; align-items: center;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 28px), transparent);
+          mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 28px), transparent); }
+.tk-track { display: flex; flex: none; white-space: nowrap; will-change: transform; padding-left: 14px; }
+.tk-run { display: flex; flex: none; align-items: center; min-width: var(--tk-vw, 0); }
+.tk-i { display: inline-flex; align-items: center; gap: 7px; flex: none; height: calc(var(--tick-h) - 3px); padding: 0 0 0 2px; margin: 0; border: 0;
+  background: none; color: #f5f6f8; font: 600 14px/1 var(--sans); cursor: pointer; }
+.tk-i::after { content: ""; flex: none; width: 6px; height: 6px; margin: 0 16px 0 12px; background: var(--tick-red); transform: rotate(45deg); }
+.tk-i::before { content: ""; flex: none; width: 3px; height: 15px; border-radius: 1px; background: var(--c, var(--muted)); }
+.tk-i .fl { font-size: 15px; line-height: 1; }
+.tk-i .fl.tx { font: 700 10px/1 var(--mono); padding: 2px 3px; border: 1px solid #5d6b85; border-radius: 2px; color: #dbe2ee; }
+.tk-c { font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #fff; }
+.tk-h { color: #e9ecf1; }
+.tk-ag { font: 600 12px/1 var(--mono); color: #f7c04a; }
+.tk-new { font: 800 10px/1 var(--sans); letter-spacing: .1em; padding: 3px 5px 2px; border-radius: 2px; background: #f7c04a; color: #14171a; }
+.tk-i:hover .tk-h, .tk-i:focus-visible .tk-h { text-decoration: underline; text-underline-offset: 3px; }
+.tk-i:focus-visible { outline: 2px solid #f7c04a; outline-offset: -2px; border-radius: 2px; }
+.tk-empty { color: var(--muted); font-size: 12.5px; }
+/* "organize ticker feed by category": a solid block in the category's colour opens each segment */
+.tk-cat { flex: none; display: inline-flex; align-items: center; height: 20px; padding: 0 12px 0 9px; margin: 0 12px 0 2px;
+  font: 800 11px/1 var(--sans); letter-spacing: .09em; text-transform: uppercase; white-space: nowrap;
+  background: var(--c, var(--muted)); color: #0b0f17; clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 100%, 0 100%); }
+.tk-cat.tk-oth { color: #fff; }
+/* 1.5.0: a machine-translated item's tag (the original is in its tooltip) */
+.badge.tr { border-color: #5b7bd6; color: #a9bdf5; cursor: help; }
+/* speed controls: a pause button and a speed button at the right end, in the band's own colours */
+.tk-ctl { flex: none; display: flex; align-items: stretch; border-left: 1px solid #22304b; background: linear-gradient(180deg, #17223b, #0b1222); }
+.tk-b { min-width: 34px; padding: 0 9px; margin: 0; border: 0; background: none; color: #cfd6e2; font: 700 11.5px/1 var(--mono); cursor: pointer; }
+.tk-b + .tk-b { border-left: 1px solid #22304b; }
+.tk-b:hover, .tk-b:focus-visible { color: #fff; background: rgba(255, 255, 255, .08); outline: none; }
+.tk-b[aria-pressed="true"] { color: #f7c04a; }
+.tk-sp { min-width: 46px; }
+.tk-src { min-width: 46px; letter-spacing: .06em; }
+/* the SRC menu hangs below the ticker's right end, outside the band (the band clips) */
+.tk-menu { position: fixed; z-index: 1001; width: 250px; max-height: min(70vh, 460px); overflow: auto; padding: 8px 6px 6px;
+  background: var(--panel-2); border: 1px solid var(--line-2); border-top: 2px solid var(--tick-red); border-radius: 0 0 8px 8px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .5); }
+.tk-mh { display: flex; align-items: center; gap: 6px; padding: 0 6px 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.tk-mh b { flex: 1; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.tk-mi { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 5px; cursor: pointer; font-size: 13px; }
+.tk-mi:hover { background: var(--line); }
+.tk-mi input { margin: 0; accent-color: var(--tick-red); }
+.tk-mi i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.tk-mi span:first-of-type { flex: 1; }
+.tk-mi .muted { font-family: var(--mono); font-size: 11.5px; }
+.tk-mf { margin: 6px 6px 2px; color: var(--dim); font-size: 11px; line-height: 1.35; }
+@media (pointer: coarse) { .tk-mi { min-height: 42px; } .tk-mh .chip { min-height: 36px; } }
+@media (pointer: coarse) { .tk-b { min-width: 44px; } }
+@media (prefers-reduced-motion: reduce) {
+  .tk-label i { animation: none; }
+  .tk-ctl { display: none; }
+  .tk-view { overflow-x: auto; scrollbar-width: none; -webkit-mask-image: none; mask-image: none; }
+  .tk-view::-webkit-scrollbar { display: none; }
+  .tk-run { min-width: 0; }
+}
+@media (max-width: 520px) {
+  :root { --tick-h: 30px; }
+  .tk-label { padding: 0 18px 0 10px; font-size: 11px; letter-spacing: .1em; }
+  .tk-i { font-size: 13px; gap: 6px; }
+  .tk-i::after { margin: 0 12px 0 10px; }
+  .tk-cat { height: 18px; padding: 0 10px 0 7px; margin-right: 10px; font-size: 10px; }
+}
+
+/* 1.5.0: resizable, collapsible sidebars on a PC (901 px and wider). app.js sets --rail-w / --panel-w on .app and saves
+   them per browser. A grip on each sidebar's inner edge drags it; a tab at mid-height on the map side collapses it to
+   nothing and back. Collapsed sidebars are hidden (out of the tab order too) and the map takes the room. */
+.sb-grip, .sb-tab { display: none; }
+@media (min-width: 901px) {
+  .app { grid-template-columns: var(--rail-w, 236px) 1fr var(--panel-w, 372px); }
+  .sb-grip { display: block; position: relative; z-index: 6; width: 9px; align-self: stretch; cursor: col-resize; touch-action: none; }
+  .sb-grip[data-sb="rail"] { grid-area: rail; justify-self: end; margin-right: -5px; }
+  .sb-grip[data-sb="panel"] { grid-area: panel; justify-self: start; margin-left: -5px; }
+  .sb-grip::after { content: ""; position: absolute; top: 0; bottom: 0; left: 4px; width: 2px; background: transparent; transition: background .15s; }
+  .sb-grip:hover::after, .sb-grip.on::after, .sb-grip:focus-visible::after { background: var(--accent); }
+  .sb-grip:focus-visible { outline: none; }
+  .sb-tab { display: flex; align-items: center; justify-content: center; position: relative; z-index: 7; align-self: center;
+    width: 18px; height: 48px; padding: 0; border: 1px solid var(--line-2); background: var(--panel-2); color: var(--muted);
+    font: 700 15px/1 var(--sans); cursor: pointer; box-shadow: 0 2px 10px rgba(0, 0, 0, .4); }
+  .sb-tab[data-sbmin="rail"] { grid-area: rail; justify-self: end; margin-right: -18px; border-left: 0; border-radius: 0 7px 7px 0; }
+  .sb-tab[data-sbmin="panel"] { grid-area: panel; justify-self: start; margin-left: -18px; border-right: 0; border-radius: 7px 0 0 7px; }
+  .sb-tab:hover, .sb-tab:focus-visible { color: var(--text); background: var(--line-2); outline: none; }
+  .app.rail-min .rail, .app.panel-min .panel { visibility: hidden; border: 0; overflow: hidden; }
+  .app.sizing, .app.sizing * { cursor: col-resize !important; user-select: none; }
+  .app.sizing #map { pointer-events: none; }
+  /* The panel's tabs (six, nine with the extension tabs) ran up to 24 px past a 320 px panel and squeezed together in
+     a 372 px one. They now wrap to a second row when they don't fit, so every tab stays visible and the page never
+     gets wider than the window. */
+  .tabs { flex-wrap: wrap; }
+  .tabs button { flex: 1 0 auto; white-space: nowrap; padding: 10px 7px; }
+}
+@media (min-width: 901px) and (max-width: 1180px) { .app { grid-template-columns: var(--rail-w, 210px) 1fr var(--panel-w, 320px); } }
+
+/* 1.5.0: the ticker's row in every layout, right under the title bar (it spans all columns) */
+.app { grid-template-rows: 52px var(--tick-h) 1fr; grid-template-areas: "top top top" "tick tick tick" "rail stage panel"; }
+@media (min-width: 901px) { .app { grid-template-rows: 68px var(--tick-h) 1fr; } }
+@media (max-width: 900px) {
+  :root { --map-h: calc(100 * var(--vh) - var(--top-full) - var(--tick-h) - var(--panel-h) - var(--tl-h)); }
+  .app { grid-template-rows: var(--top-full) var(--tick-h) 1fr var(--panel-h); grid-template-areas: "top" "tick" "stage" "panel"; }
+}
+@media (max-width: 900px) and (max-height: 500px) {
+  :root { --tick-h: 28px; --map-h: calc(100 * var(--vh) - var(--top-full) - var(--tick-h)); }
+  .app { grid-template-rows: var(--top-full) var(--tick-h) 1fr; grid-template-areas: "top top" "tick tick" "stage panel"; }
+}
+
+/* 1.5.0: "View on map" on Feed rows with a place, at the right end of the meta line */
+.feed .vm { margin-left: auto; padding: 1px 9px; border: 1px solid var(--line-2); border-radius: 10px; background: none; color: #9cc7ff;
+  font: 600 11px/16px var(--sans); white-space: nowrap; cursor: pointer; }
+.feed .vm:hover, .feed .vm:focus-visible { border-color: #9cc7ff; color: #fff; background: rgba(156, 199, 255, .1); outline: none; }
+@media (pointer: coarse) { .feed .vm { min-height: 36px; padding: 0 12px; border-radius: 18px; } }

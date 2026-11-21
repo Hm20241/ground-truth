@@ -286,4 +286,37 @@ check("listed_ships_heard" in server.NON_COMMERCIAL_KEYS and "chokepoint_transit
       and "ship_traffic_gfw" in server.NON_COMMERCIAL_KEYS, "new non-commercial summary keys are fenced off from trading")
 check(feeds.REGISTRY["portwatch"][1] == 6 * 3600 and feeds.REGISTRY["vessellists"][1] == 86400, "new feeds registered")
 
+# ---- 1.5.0 (ais 1.2): worldwide military ships
+check(ais.is_military("GOUWE", 35) and ais.is_military("WARSHIP", None) and ais.is_military("GERMAN WARSHIP F224", 0)
+      and ais.is_military("HNLMS SCHIEDAM", None) and ais.is_military("DNK NAVY MARIE MILJO", 90), "type 35 or a navy name is military")
+check(not ais.is_military("HMS CARGO STAR", 70) and not ais.is_military("JS SHENG", 80) and not ais.is_military("FS YACHT", 37)
+      and not ais.is_military("NAVY PIER FERRY", 60) and not ais.is_military("HSBC", None) and not ais.is_military("", None)
+      and not ais.is_military("LE MULET COUREAU", None) and not ais.is_military("HS HOOD", None) and ais.is_military("RFA TIDESPRING", None),
+      "a navy-looking name on a civilian type, a pleasure craft or a bare word is not military")
+check(ais.vessel_class({"name": "FRENCH WARSHIP", "type": None}) == "military" and ais.vessel_class({"type": 80}) == "tanker",
+      "vessel_class folds navy names into military")
+heard = {"1": {"lat": 59.0, "lon": 20.0, "type": 70},                       # in the Baltic box
+         "2": {"lat": 32.7, "lon": -117.9, "name": "WARSHIP"},              # San Diego, military by name
+         "3": {"lat": 10.0, "lon": -30.0, "type": 70},                      # mid-Atlantic cargo: dropped
+         "4": {"type": 35, "name": "GOUWE", "mpos": [53.0, 4.8]},           # static only, military
+         "5": {"type": 80, "mpos": [59.1, 20.1]},                           # static only, inside a box
+         "6": {"type": 80, "mpos": [10.0, -30.0]},                          # static only, outside: dropped
+         "7": {"lat": 10.0, "lon": -30.0},                                  # military by the registry's type
+         "8": {"lat": 11.0, "lon": -31.0}}                                  # already stored: kept
+kept, far = ais.keep(heard, {"8": {}}, {"7": {"t": 35}})
+check(sorted(kept) == ["1", "2", "4", "5", "7", "8"] and far == 3, "keep(): boxes, military anywhere, stored ships; %s %s" % (sorted(kept), far))
+check(all("mpos" not in r for r in kept.values()), "keep() drops the MetaData position before the merge")
+T3 = (NOW - dt.timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+vm = {"366000001": {"lat": 32.7, "lon": -117.9, "ts": T3, "name": "WARSHIP", "sog": 12.0},      # 2 h old, outside every box
+      "211211490": {"lat": 54.35, "lon": 10.14, "ts": T, "name": "GERMAN WARSHIP", "type": 35},  # in the Baltic box
+      "273000009": {"lat": 10.0, "lon": -30.0, "ts": T, "type": 70},                            # outside, civilian: not shown
+      "227000001": {"lat": 43.1, "lon": 5.9, "ts": (NOW - dt.timedelta(hours=4)).strftime("%Y-%m-%dT%H:%M:%SZ"), "type": 35}}
+dm = feeds.ships_view(vm, {}, {}, NOW, ais, mid)
+check(sorted(p[6] for p in dm["points"]) == [211211490, 366000001] and all(p[4] == "military" for p in dm["points"]),
+      "military ships anywhere within 3 h are points; a civilian ship outside the boxes and a 4 h old warship are not")
+mc = {c["mmsi"]: c for c in dm["military"]}
+check(set(mc) == {211211490, 366000001} and mc[366000001]["area"] is None and mc[211211490]["area"] == "baltic"
+      and mc[366000001]["flag"] == "US" and dm["military_by_flag"] == {"DE": 1, "US": 1}, "military cards: area, flag, count by flag")
+check(mc[366000001]["theatre"] == "americas" and dm["areas"]["baltic"]["military"] == 1, "military card theatre; box count")
+
 print("%d checks passed" % ok)

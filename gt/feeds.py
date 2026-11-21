@@ -644,6 +644,9 @@ def ships():
         raise
     bo.clear()
     now = dt.datetime.now(dt.timezone.utc)
+    st["world_ships"] = len(heard)
+    heard, st["military_far"] = ais.keep(heard, vessels, reg)  # 1.5.0: the sample is worldwide
+    st["ships_kept"] = len(heard)
     ais.learn(reg, heard, now.date())
     reg = ais.prune_registry(reg, now.date())
     vessels = ais.merge(vessels, heard, now, reg)
@@ -657,18 +660,27 @@ def ships_view(vessels, reg, st, now, ais, mid):
     for c in counts.values():
         c["listed"] = 0
     hour = (now - dt.timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    pts, tankers, listed, tracks = [], [], [], {}
+    mil_since = (now - dt.timedelta(hours=ais.KEEP_H)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    pts, tankers, listed, tracks, military = [], [], [], {}, []
     for mmsi, v in vessels.items():
-        if v.get("lat") is None or (v.get("ts") or "") < hour:
+        cls = ais.vessel_class(v)
+        # 1.5.0: military ships anywhere, heard in the last 3 hours (they transmit seldom); the rest in a box, last hour
+        if v.get("lat") is None or (v.get("ts") or "") < (mil_since if cls == "military" else hour):
             continue
         box = ais.box_of(v["lat"], v["lon"])
-        if not box:
+        if not box and cls != "military":
             continue
-        cls, flag = ais.ship_class(v.get("type")), mid.iso2_of(mmsi)
+        flag = mid.iso2_of(mmsi)
         hit = sanctions.lookup(imo=v.get("imo"), mmsi=mmsi)
         marks = hit["marks"] if hit else ""
         pts.append([v["lon"], v["lat"], v.get("sog"), v.get("cog"), cls, v.get("name") or "", int(mmsi), v.get("ts"),
                     v.get("dest") or "", v.get("hdg"), flag, marks, v.get("imo") or "", v.get("dr"), v.get("len")])
+        if cls == "military":
+            loc = geo.locate(v["lon"], v["lat"])
+            military.append({"mmsi": int(mmsi), "name": v.get("name") or "", "flag": flag, "lon": v["lon"], "lat": v["lat"],
+                             "ts": v.get("ts"), "sog": v.get("sog"), "cog": v.get("cog"), "hdg": v.get("hdg"),
+                             "dest": v.get("dest") or "", "len": v.get("len"), "type": v.get("type"), "area": box,
+                             "sea": loc.get("sea"), "near": loc.get("country_name"), "theatre": loc.get("theatre")})
         card = None
         if cls == "tanker" or hit:
             hist = ((reg.get(mmsi) or {}).get("dr") or [])
@@ -691,18 +703,23 @@ def ships_view(vessels, reg, st, now, ais, mid):
     order = lambda c: (min(("SGD".index(m) for m in c["marks"] if m in "SGD"), default=3), c["area"], -(c["sog"] or 0))
     tankers.sort(key=order)
     listed.sort(key=order)
+    military.sort(key=lambda c: (c["flag"] or "~", c["name"]))
+    mil_flags = {}
+    for c in military:
+        mil_flags[c["flag"] or "?"] = mil_flags.get(c["flag"] or "?", 0) + 1
     heard_1h = sum(c["ships_1h"] for c in counts.values())
     typed_1h = sum(c["typed"] for c in counts.values())
     boxes = {k: dict(label=b[0], theatre=b[1], bbox=[b[3], b[2], b[5], b[4]], no_live_coverage=k in ais.NO_COVERAGE, **counts[k])
              for k, b in ais.BOXES.items()}
     return {"count": len(pts), "sample": st, "areas": boxes, "points": pts, "tankers": tankers, "tracks": tracks,
-            "listed": listed, "typed_pct": round(100.0 * typed_1h / heard_1h) if heard_1h else None,
+            "listed": listed, "military": military, "military_by_flag": mil_flags, "typed_pct": round(100.0 * typed_1h / heard_1h) if heard_1h else None,
             "registry": {"ships": len(reg), "with_type": sum(1 for e in reg.values() if e.get("t")),
                          "with_imo": sum(1 for e in reg.values() if e.get("imo")), "days": ais.REG_DAYS},
             "lists": {"attribution": sanctions.ATTRIBUTION, "attribution_url": sanctions.ATTRIBUTION_URL,
                       "licence": sanctions.LICENCE},
             "note": "Volunteer terrestrial AIS receivers: dense in Europe, absent in the Gulf and Red Sea. "
-                    "No ships in an area means no coverage, not no traffic. Military ships rarely transmit. "
+                    "No ships in an area means no coverage, not no traffic. Military ships are shown worldwide (AIS "
+                    "type 35 or a navy name, last 3 hours), but most warships switch AIS off at sea. "
                     "List marks match a ship's IMO or MMSI to a public list entry; MMSIs get reused and spoofed."}
 
 
@@ -771,7 +788,7 @@ REGISTRY = {
     "embassy": (embassy.poll, 60),           # US embassy alert RSS: only the posts that are due (If-Modified-Since)
     "pla": (taiwan_pla, 3 * 3600),
     "czib": (easa_czib, 12 * 3600),
-    "official": (official, 1800),
+    "official": (official, 600),  # 1.0.0: was 1800; CENTCOM (Firecrawl) keeps its own 6 h cache
     "outages": (outages, 900),
     "advisories": (advisories, 6 * 3600),
     "ships": (ships, 300),

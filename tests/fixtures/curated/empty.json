@@ -1,0 +1,156 @@
+{
+ "objectIdFieldName": "OBJECTID",
+ "uniqueIdField": {
+  "name": "OBJECTID",
+  "isSystemMaintained": true
+ },
+ "globalIdFieldName": "",
+ "geometryType": "esriGeometryPoint",
+ "spatialReference": {
+  "wkid": 4326,
+  "latestWkid": 4326
+ },
+ "fields": [
+  {
+   "name": "Graphic_content_level",
+   "type": "esriFieldTypeString",
+   "alias": "Graphic_content_level",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Credit",
+   "type": "esriFieldTypeString",
+   "alias": "Credit",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Primary_category",
+   "type": "esriFieldTypeString",
+   "alias": "Primary_category",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Secondary_category",
+   "type": "esriFieldTypeString",
+   "alias": "Secondary_category",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Sector_affected",
+   "type": "esriFieldTypeString",
+   "alias": "Sector_affected",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Link",
+   "type": "esriFieldTypeString",
+   "alias": "Link",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Description",
+   "type": "esriFieldTypeString",
+   "alias": "Description",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Town_or_City",
+   "type": "esriFieldTypeString",
+   "alias": "Town_or_City",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Link_geolocation",
+   "type": "esriFieldTypeString",
+   "alias": "Link_geolocation",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Entry_Number",
+   "type": "esriFieldTypeString",
+   "alias": "Entry_Number",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "latitude",
+   "type": "esriFieldTypeDouble",
+   "alias": "latitude",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "longitude",
+   "type": "esriFieldTypeDouble",
+   "alias": "longitude",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "country",
+   "type": "esriFieldTypeString",
+   "alias": "country",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "province",
+   "type": "esriFieldTypeString",
+   "alias": "province",
+   "sqlType": "sqlTypeOther",
+   "length": 4000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "TIMESTAMP",
+   "type": "esriFieldTypeDate",
+   "alias": "TIMESTAMP",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "OBJECTID",
+   "type": "esriFieldTypeOID",
+   "alias": "OBJECTID",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  }
+ ],
+ "features": []
+}

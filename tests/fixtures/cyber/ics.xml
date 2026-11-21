@@ -1,0 +1,393 @@
+<?xml version='1.0' encoding='utf-8'?>
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0" xml:base="https://www.cisa.gov/">
+  <channel>
+    <title>ICS Advisories</title>
+    <link>https://www.cisa.gov/</link>
+    <description />
+    <language>en</language>
+    
+    <item>
+  <title>libumqtt</title>
+  <link>https://www.cisa.gov/news-events/ics-advisories/icsa-26-323-03</link>
+  <description>&lt;p&gt;&lt;a href="https://github.com/cisagov/CSAF/blob/develop/csaf_files/OT/white/2026/icsa-26-323-03.json"&gt;&lt;strong&gt;View CSAF&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Summary&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;Successful exploitation of this vulnerability could allow a remote attacker to cause a denial of service, memory corruption, or information disclosure.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;The following versions of libumqtt are affected:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;libumqtt &amp;lt;=1.1.1 (CVE-2026-125132)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="csaf-table"&gt;
+&lt;table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack" data-tablesaw-minimap&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th role="columnheader" data-tablesaw-priority="persist"&gt;CVSS&lt;/th&gt;
+&lt;th role="columnheader"&gt;Vendor&lt;/th&gt;
+&lt;th role="columnheader"&gt;Equipment&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;v3 8.6&lt;/td&gt;
+&lt;td&gt;libumqtt&lt;/td&gt;
+&lt;td&gt;libumqtt&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack" data-tablesaw-minimap&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th role="columnheader" data-tablesaw-priority="persist"&gt;1 Vulnerability&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Integer Underflow (Wrap or Wraparound)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;h3&gt;Background&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Critical Infrastructure Sectors: &lt;/strong&gt;Critical Manufacturing, Energy, Information Technology, Transportation Systems, Water and Wastewater&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Countries/Areas Deployed: &lt;/strong&gt;Worldwide&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Company Headquarters Location: &lt;/strong&gt;China&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+  <pubDate>Thu, 19 Nov 26 12:00:00 +0000</pubDate>
+    <dc:creator>CISA</dc:creator>
+    <guid isPermaLink="false">/node/25827</guid>
+    </item>
+<item>
+  <title>Elecbrakes EB2, VM1, ELBC2000</title>
+  <link>https://www.cisa.gov/news-events/ics-advisories/icsa-26-323-02</link>
+  <description>&lt;p&gt;&lt;a href="https://github.com/cisagov/CSAF/blob/develop/csaf_files/OT/white/2026/icsa-26-323-02.json"&gt;&lt;strong&gt;View CSAF&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Summary&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;Successful exploitation of these vulnerabilities could allow an attacker to gain control of the brakes of a trailer, modify the firmware, disable the brake lights, modify the brake conditions or disable other critical safety features.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;The following versions of Elecbrakes EB2, VM1, ELBC2000 are affected:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;EB2 &amp;lt;=3.0.4.2.0 (CVE-2026-124281, CVE-2026-125273, CVE-2026-96805)&lt;/li&gt;
+&lt;li&gt;ELBC2000 vers:all/* (CVE-2026-124281, CVE-2026-125273, CVE-2026-96805)&lt;/li&gt;
+&lt;li&gt;VM1 &amp;lt;1.3.4.2.1 (CVE-2026-124281, CVE-2026-125273, CVE-2026-96805)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="csaf-table"&gt;
+&lt;table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack" data-tablesaw-minimap&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th role="columnheader" data-tablesaw-priority="persist"&gt;CVSS&lt;/th&gt;
+&lt;th role="columnheader"&gt;Vendor&lt;/th&gt;
+&lt;th role="columnheader"&gt;Equipment&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;v3 9.6&lt;/td&gt;
+&lt;td&gt;Elecbrakes&lt;/td&gt;
+&lt;td&gt;EB2&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack" data-tablesaw-minimap&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th role="columnheader" data-tablesaw-priority="persist"&gt;3 Vulnerabilities&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Exposed Dangerous Method or Function, Authentication Bypass by Capture-replay, Missing Authentication for Critical Function&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;h3&gt;Background&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Critical Infrastructure Sectors: &lt;/strong&gt;Transportation Systems&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Countries/Areas Deployed: &lt;/strong&gt;Australia, New Zealand&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Company Headquarters Location: &lt;/strong&gt;Australia&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+  <pubDate>Thu, 19 Nov 26 12:00:00 +0000</pubDate>
+    <dc:creator>CISA</dc:creator>
+    <guid isPermaLink="false">/node/25826</guid>
+    </item>
+<item>
+  <title>Siemens Mendix Studio Pro</title>
+  <link>https://www.cisa.gov/news-events/ics-advisories/icsa-26-321-05</link>
+  <description>&lt;p&gt;&lt;a href="https://github.com/cisagov/CSAF/blob/develop/csaf_files/OT/white/2026/icsa-26-321-05.json"&gt;&lt;strong&gt;View CSAF&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Summary&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;Mendix Studio Pro contains multiple vulnerabilities in the MCP Server, that could allow an attacker with network access to interact with the server remotely or trick a user's browser into sending unauthorized requests, potentially leading to unauthorized data access, tool execution, or system compromise. Siemens has released new versions for the affected products and recommends to update to the latest versions.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;The following versions of Siemens Mendix Studio Pro are affected:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Mendix Studio Pro 11 vers:intdot/&amp;gt;=11.15.0|&amp;lt;11.16.0 (CVE-2026-112136, CVE-2026-112137)&lt;/li&gt;
+&lt;li&gt;Mendix Studio Pro 11.12 vers:intdot/&amp;gt;=11.12.6|&amp;lt;11.12.7 (CVE-2026-112136, CVE-2026-112137)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="csaf-table"&gt;
+&lt;table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack" data-tablesaw-minimap&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th role="columnheader" data-tablesaw-priority="persist"&gt;CVSS&lt;/th&gt;
+&lt;th role="columnheader"&gt;Vendor&lt;/th&gt;
+&lt;th role="columnheader"&gt;Equipment&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;v3 8.8&lt;/td&gt;
+&lt;td&gt;Siemens&lt;/td&gt;
+&lt;td&gt;Mendix Studio Pro 11&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack" data-tablesaw-minimap&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th role="columnheader" data-tablesaw-priority="persist"&gt;2 Vulnerabilities&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Binding to an Unrestricted IP Address, Cross-Site Request Forgery (CSRF)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;h3&gt;Background&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Critical Infrastructure Sectors: &lt;/strong&gt;Critical Manufacturing, Energy&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Countries/Areas Deployed: &lt;/strong&gt;Worldwide&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Company Headquarters Location: &lt;/strong&gt;Germany&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+  <pubDate>Tue, 17 Nov 26 12:00:00 +0000</pubDate>
+    <dc:creator>CISA</dc:creator>
+    <guid isPermaLink="false">/node/25805</guid>
+    </item>
+<item>
+  <title>Dorsett Controls InfoScan</title>
+  <link>https://www.cisa.gov/news-events/ics-advisories/icsa-26-321-01</link>
+  <description>&lt;p&gt;&lt;a href="https://github.com/cisagov/CSAF/blob/develop/csaf_files/OT/white/2026/icsa-26-321-01.json"&gt;&lt;strong&gt;View CSAF&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Summary&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;Successful exploitation of these vulnerabilities could allow an attacker to retrieve sensitive system information, access application data without authorization, recover stored credentials, or intercept and manipulate network communications.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;The following versions of Dorsett Controls InfoScan are affected:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;InfoScan &amp;lt;=1.45.0 (CVE-2026-117659, CVE-2026-120157, CVE-2026-120255, CVE-2026-120260, CVE-2026-120271, CVE-2026-120298)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="csaf-table"&gt;
+&lt;table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack" data-tablesaw-minimap&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th role="columnheader" data-tablesaw-priority="persist"&gt;CVSS&lt;/th&gt;
+&lt;th role="columnheader"&gt;Vendor&lt;/th&gt;
+&lt;th role="columnheader"&gt;Equipment&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;v3 8.1&lt;/td&gt;
+&lt;td&gt;Dorsett Controls&lt;/td&gt;
+&lt;td&gt;InfoScan&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack" data-tablesaw-minimap&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th role="columnheader" data-tablesaw-priority="persist"&gt;5 Vulnerabilities&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Improper Certificate Validation, Exposure of Sensitive System Information to an Unauthorized Control Sphere, Use of Hard-coded Cryptographic Key, Missing Authentication for Critical Function, Generation of Error Message Containing Sensitive Information&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;h3&gt;Background&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Critical Infrastructure Sectors: &lt;/strong&gt;Water and Wastewater Systems&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Countries/Areas Deployed: &lt;/strong&gt;Worldwide&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Company Headquarters Location: &lt;/strong&gt;United States&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+  <pubDate>Tue, 17 Nov 26 12:00:00 +0000</pubDate>
+    <dc:creator>CISA</dc:creator>
+    <guid isPermaLink="false">/node/25801</guid>
+    </item>
+<item>
+  <title>Siemens Building Automation and Energy Products</title>
+  <link>https://www.cisa.gov/news-events/ics-advisories/icsa-26-316-01</link>
+  <description>&lt;p&gt;&lt;a href="https://github.com/cisagov/CSAF/blob/develop/csaf_files/OT/white/2026/icsa-26-316-01.json"&gt;&lt;strong&gt;View CSAF&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Summary&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;On October 21, 2026, the PHP project and security researchers disclosed two critical, unauthenticated remote code execution vulnerabilities in the core PHP language runtime known as "php2shell" (tracked as CVE-2026-109618 and CVE-2026-109619). This advisory covers the status of impact of various Siemens software products. As a general security measure, Siemens strongly recommends to protect network access to devices with appropriate mechanisms. In order to operate the devices in a protected IT environment, Siemens recommends to configure the environment according to Siemens' operational guidelines, and to follow the recommendations in the product manuals. Siemens is actively monitoring the situation and assessing the implications of these vulnerabilities on our portfolio. Because this evaluation is ongoing, our findings are subject to change as new technical details and vendor updates emerge. We will publish updated findings, guidance, and remediation recommendations as soon as they become available. Siemens has released new versions for several affected products and recommends to update to the latest versions. Siemens is preparing further fixes and recommends mitigations for products where fixes are not or not yet available.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;The following versions of Siemens Building Automation and Energy Products are affected:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;AMIS TS vers:all/* (CVE-2026-109618, CVE-2026-109619)&lt;/li&gt;
+&lt;li&gt;blueplanet 360 NX3 M6 WM OD IISX vers:all/* (CVE-2026-109618, CVE-2026-109619)&lt;/li&gt;
+&lt;li&gt;blueplanet 360 NX3 M6 WM OD IISX - S vers:all/* (CVE-2026-109618, CVE-2026-109619)&lt;/li&gt;
+&lt;li&gt;Energy Engage V2.0SP9 vers:all/* (CVE-2026-109618, CVE-2026-109619)&lt;/li&gt;
+&lt;li&gt;Energy Engage V3.1SP1 vers:all/* (CVE-2026-109618, CVE-2026-109619)&lt;/li&gt;
+&lt;li&gt;Heliox Rapid vers:all/* ()Local Monitoring bt-monitoring-vm vers:intdot/&amp;lt;20261103 (CVE-2026-109618, CVE-2026-109619)&lt;/li&gt;
+&lt;li&gt;Spectrum Power 3 vers:all/* (CVE-2026-109619)&lt;/li&gt;
+&lt;li&gt;Spectrum Power 4 vers:all/*, vers:all/*, vers:all/* (CVE-2026-109618, CVE-2026-109619, CVE-2026-109618, CVE-2026-109619, CVE-2026-109618, CVE-2026-109619)&lt;/li&gt;
+&lt;li&gt;Spectrum Power 7 vers:all/* (CVE-2026-109618, CVE-2026-109619)&lt;/li&gt;
+&lt;li&gt;Spectrum Power TG vers:all/* (CVE-2026-109618, CVE-2026-109619)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="csaf-table"&gt;
+&lt;table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack" data-tablesaw-minimap&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th role="columnheader" data-tablesaw-priority="persist"&gt;CVSS&lt;/th&gt;
+&lt;th role="columnheader"&gt;Vendor&lt;/th&gt;
+&lt;th role="columnheader"&gt;Equipment&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;v3 9.8&lt;/td&gt;
+&lt;td&gt;Siemens&lt;/td&gt;
+&lt;td&gt;AMIS TS&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack" data-tablesaw-minimap&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th role="columnheader" data-tablesaw-priority="persist"&gt;1 Vulnerability&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Use After Free&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;h3&gt;Background&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Critical Infrastructure Sectors: &lt;/strong&gt;Energy&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Countries/Areas Deployed: &lt;/strong&gt;Worldwide&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Company Headquarters Location: &lt;/strong&gt;Germany&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+  <pubDate>Thu, 12 Nov 26 12:00:00 +0000</pubDate>
+    <dc:creator>CISA</dc:creator>
+    <guid isPermaLink="false">/node/25790</guid>
+    </item>
+<item>
+  <title>Siemens Industrial Edge Devices</title>
+  <link>https://www.cisa.gov/news-events/ics-advisories/icsa-26-295-17</link>
+  <description>&lt;p&gt;&lt;a href="https://github.com/cisagov/CSAF/blob/develop/csaf_files/OT/white/2026/icsa-26-295-17.json"&gt;&lt;strong&gt;View CSAF&lt;/strong&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;Summary&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;Siemens Industrial Edge Devices contain multiple path traversal vulnerabilities that could facilitate an authenticated remote attacker to access sensitive internal information. Siemens has released new versions for several affected products and recommends to update to the latest versions. Siemens is preparing further fixes and recommends specific mitigations for products where fixes are not or not yet available.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;The following versions of Siemens Industrial Edge Devices are affected:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Industrial Edge Cloud Device (IECD) vers:intdot/&amp;lt;1.28.1 (CVE-2026-44414)&lt;/li&gt;
+&lt;li&gt;Industrial Edge Own Device (IEOD) vers:intdot/&amp;lt;1.28.1 (CVE-2026-44414)&lt;/li&gt;
+&lt;li&gt;Industrial Edge Virtual Device (IEVD) vers:intdot/&amp;lt;1.28.1 (CVE-2026-44414)&lt;/li&gt;
+&lt;li&gt;SCALANCE LPE9413 (6GK5998-3GS01-2AC2) vers:all/* (CVE-2026-44414)&lt;/li&gt;
+&lt;li&gt;SCALANCE LPE9433 (6GK5998-3GS11-2AC2) vers:all/* (CVE-2026-44414)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1000 Unified Comfort Panel (6AV2128-3KB06-0AX1) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1000 Unified Comfort Panel hygienic (6AV2128-3KB40-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1000 Unified Comfort Panel hygienic neutral design (6AV2128-3KB70-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1000, Unified Comfort Panel neutral (6AV2128-3KB36-0AX1) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1200 Comfort Pro for stand (expandable, flange at the bottom) (6AV2128-3MB27-1BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1200 Comfort Pro for support arm (expandable, round tube) and extension unit (6AV2128-3MB27-0BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1200 Comfort Pro for support arm (not extendable, flange on top) (6AV2128-3MB27-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1200 Comfort Pro neutral design for stand (expandable, flange at the bottom) (6AV2128-3MB57-1BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1200 Comfort Pro neutral design for support arm (expandable, round tube) and extension (6AV2128-3MB57-0BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1200 Comfort Pro neutral design for support arm (not extendable, flange on top) (6AV2128-3MB57-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1200 Unified Comfort Panel (6AV2128-3MB06-0AX1) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1200 Unified Comfort Panel hygienic (6AV2128-3MB40-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1200 Unified Comfort Panel hygienic neutral design (6AV2128-3MB70-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1200 Unified Comfort Panel neutral design (6AV2128-3MB36-0AX1) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1500 Comfort Pro for stand (expandable, flange at the bottom) (6AV2128-3QB27-1BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1500 Comfort Pro for support arm (expandable, round tube) and extension unit (6AV2128-3QB27-0BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1500 Comfort Pro for support arm (not extendable, flange on top) (6AV2128-3QB27-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1500 Comfort Pro neutral design for stand (expandable, flange at the bottom) (6AV2128-3QB57-1BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1500 Comfort Pro neutral design for support arm (expandable, round tube) and extension (6AV2128-3QB57-0BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1500 Comfort Pro neutral design for support arm (not extendable, flange on top) (6AV2128-3QB57-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1500 Unified Comfort Panel (6AV2128-3QB06-0AX1) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1500 Unified Comfort Panel hygienic (6AV2128-3QB40-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1500 Unified Comfort Panel hygienic neutral design (6AV2128-3QB70-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1500 Unified Comfort Panel neutral design (6AV2128-3QB36-0AX1) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1900 Comfort Pro for stand (expandable, flange at the bottom) (6AV2128-3UB27-1BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1900 Comfort Pro for support arm (expandable, round tube) and extension unit (6AV2128-3UB27-0BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1900 Comfort Pro for support arm (not extendable, flange on top) (6AV2128-3UB27-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1900 Comfort Pro neutral design for stand (expandable, flange at the bottom) (6AV2128-3UB57-1BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1900 Comfort Pro neutral design for support arm (expandable, round tube) and extension (6AV2128-3UB57-0BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1900 Comfort Pro neutral design for support arm (not extendable, flange on top) (6AV2128-3UB57-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1900 Unified Comfort Panel (6AV2128-3UB06-0AX1) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1900 Unified Comfort Panel hygienic (6AV2128-3UB40-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1900 Unified Comfort Panel hygienic neutral design (6AV2128-3UB70-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP1900 Unified Comfort Panel neutral design (6AV2128-3UB36-0AX1) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP2200 Comfort Pro for stand (expandable, flange at the bottom) (6AV2128-3XB27-1BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP2200 Comfort Pro for support arm (expandable, round tube) and extension unit (6AV2128-3XB27-0BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP2200 Comfort Pro for support arm (not extendable, flange on top) (6AV2128-3XB27-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP2200 Comfort Pro neutral design for stand (expandable, flange at the bottom) (6AV2128-3XB57-1BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP2200 Comfort Pro neutral design for support arm (expandable, round tube) and extension (6AV2128-3XB57-0BX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP2200 Comfort Pro neutral design for support arm (not extendable, flange on top) (6AV2128-3XB57-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP2200 Unified Comfort Hygienic (6AV2128-3XB40-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP2200 Unified Comfort Hygienic neutral design (6AV2128-3XB70-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP2200 Unified Comfort Panel (6AV2128-3XB06-0AX1) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP2200 Unified Comfort Panel neutral design (6AV2128-3XB36-0AX1) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP700&amp;nbsp;Unified Comfort Panel (6AV2128-3GB06-0AX1) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP700 Unified Comfort Panel hygienic neutral design (6AV2128-3GB40-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP700 Unified Comfort Panel hygienic neutral design (6AV2128-3GB70-0AX0) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC HMI MTP700, Unified Comfort Panel neutral design (6AV2128-3GB36-0AX1) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIMATIC IoT2050 Advanced IED (6ES7647-0BW00-1YA2) vers:intdot/&amp;lt;1.28.1.2 (CVE-2026-44414)&lt;/li&gt;
+&lt;li&gt;SIMATIC IoT2050 SM IED (6ES7647-0CW00-1AA2) vers:intdot/&amp;lt;1.28.1.2 (CVE-2026-44414)&lt;/li&gt;
+&lt;li&gt;SIMATIC IPC BX-21A Industrial Edge Device vers:intdot/&amp;lt;1.28.1.2 (CVE-2026-44414)&lt;/li&gt;
+&lt;li&gt;SIMATIC IPC BX-39A Industrial Edge Device vers:intdot/&amp;lt;3.2.0.17 (CVE-2026-44414)&lt;/li&gt;
+&lt;li&gt;SIMATIC IPC BX-59A Industrial Edge Device vers:intdot/&amp;lt;3.2.0.17 (CVE-2026-44414)&lt;/li&gt;
+&lt;li&gt;SIMATIC IPC127E Industrial Edge Device vers:intdot/&amp;lt;3.2.0.17 (CVE-2026-44414)&lt;/li&gt;
+&lt;li&gt;SIMATIC IPC227E Industrial Edge Device vers:intdot/&amp;lt;3.2.0.17 (CVE-2026-44414)&lt;/li&gt;
+&lt;li&gt;SIMATIC IPC227G Industrial Edge Device vers:intdot/&amp;lt;3.2.0.17 (CVE-2026-44414)&lt;/li&gt;
+&lt;li&gt;SIMATIC IPC427E Industrial Edge Device vers:intdot/&amp;lt;3.2.0.17 (CVE-2026-44414)&lt;/li&gt;
+&lt;li&gt;SIMATIC IPC847E Industrial Edge Device vers:intdot/&amp;lt;3.2.0.17 (CVE-2026-44414)&lt;/li&gt;
+&lt;li&gt;SIPLUS HMI MTP1000 Unified Comfort (6AG1128-3KB06-4AX1) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIPLUS HMI MTP1200 Unified Comfort (6AG1128-3MB06-4AX1) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;li&gt;SIPLUS HMI MTP700 Unified Comfort (6AG1128-3GB06-4AX1) vers:all/* (CVE-2026-44415)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="csaf-table"&gt;
+&lt;table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack" data-tablesaw-minimap&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th role="columnheader" data-tablesaw-priority="persist"&gt;CVSS&lt;/th&gt;
+&lt;th role="columnheader"&gt;Vendor&lt;/th&gt;
+&lt;th role="columnheader"&gt;Equipment&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;v3 9.1&lt;/td&gt;
+&lt;td&gt;Siemens&lt;/td&gt;
+&lt;td&gt;Industrial Edge Cloud Device (IECD)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;table class="tablesaw tablesaw-stack" data-tablesaw-mode="stack" data-tablesaw-minimap&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th role="columnheader" data-tablesaw-priority="persist"&gt;1 Vulnerability&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Path Traversal: '.../...//'&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+&lt;h3&gt;Background&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Critical Infrastructure Sectors: &lt;/strong&gt;Critical Manufacturing, Transportation Systems, Energy, Healthcare and Public Health, Financial Services, Government Services and Facilities&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Countries/Areas Deployed: &lt;/strong&gt;Worldwide&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Company Headquarters Location: &lt;/strong&gt;Germany&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+  <pubDate>Thu, 22 Oct 26 12:00:00 +0000</pubDate>
+    <dc:creator>CISA</dc:creator>
+    <guid isPermaLink="false">/node/25699</guid>
+    </item>
+</channel>
+</rss>

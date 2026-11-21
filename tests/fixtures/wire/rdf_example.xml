@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://purl.org/rss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:sy="http://purl.org/rss/modules/syndication/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dwsyn="http://rss.example.net/syndication/dwsyn/">
+ <channel rdf:about="https://rss.example.net/syndication/feeds/rss-en-world.rdf">
+  <description>SYNTHETIC test feed: every headline here is invented.</description>
+  <link>https://www.example.net/en/</link>
+  <title>Example Wave | World</title>
+  <sy:updatePeriod>hourly</sy:updatePeriod>
+  <sy:updateFequency>4</sy:updateFequency>
+  <sy:updateBase>2026-11-20T05:30:00Z</sy:updateBase>
+  <dc:date>2026-11-20T05:30:00Z</dc:date>
+  <image rdf:resource="https://rss.example.net/images/logo.png"/>
+  <items>
+   <rdf:Seq>
+    <rdf:li rdf:resource="https://www.example.net/en/drone-strike-fuel-depot/a-1001?maca=en-rss-en-world-4025-rdf"/>
+    <rdf:li rdf:resource="https://www.example.net/en/drone-strike-power-plant/a-1002?maca=en-rss-en-world-4025-rdf"/>
+    <rdf:li rdf:resource="https://www.example.net/en/myanmar-junta-airstrike/a-1003?maca=en-rss-en-world-4025-rdf"/>
+   </rdf:Seq>
+  </items>
+ </channel>
+ <item rdf:about="https://www.example.net/en/drone-strike-fuel-depot/a-1001?maca=en-rss-en-world-4025-rdf">
+  <title>Drone strike hits fuel depot in Kharkiv region, officials say</title>
+  <link>https://www.example.net/en/drone-strike-fuel-depot/a-1001?maca=en-rss-en-world-4025-rdf</link>
+  <description>Firefighters battled flames for hours after the example overnight attack.</description>
+  <dc:date>2026-11-20T05:20:00Z</dc:date>
+  <dc:subject>Conflicts</dc:subject>
+  <dc:language>en</dc:language>
+  <dwsyn:contentID>1001</dwsyn:contentID>
+ </item>
+ <item rdf:about="https://www.example.net/en/drone-strike-power-plant/a-1002?maca=en-rss-en-world-4025-rdf">
+  <title>Drone strike hits power plant in Kharkiv region</title>
+  <link>https://www.example.net/en/drone-strike-power-plant/a-1002?maca=en-rss-en-world-4025-rdf</link>
+  <description>A second example attack, on a different target.</description>
+  <dc:date>2026-11-20T05:25:00Z</dc:date>
+  <dc:language>en</dc:language>
+ </item>
+ <item rdf:about="https://www.example.net/en/myanmar-junta-airstrike/a-1003?maca=en-rss-en-world-4025-rdf">
+  <title>Junta airstrike hits village in Sagaing</title>
+  <description>Residents say an example school was among the buildings damaged.</description>
+  <dc:date>2026-11-20T02:30:00+01:00</dc:date>
+  <dc:language>en</dc:language>
+ </item>
+</rdf:RDF>

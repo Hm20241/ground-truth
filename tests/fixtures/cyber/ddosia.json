@@ -1,0 +1,216 @@
+{
+    "targets": [
+        {
+            "target_id": "000000000000000000abc000",
+            "request_id": "000000000000000000def000",
+            "host": "www.example-ayto.es",
+            "ip": "192.0.2.10",
+            "type": "tcp",
+            "method": "syn",
+            "port": 443,
+            "use_ssl": true,
+            "path": "",
+            "body": {
+                "type": "str",
+                "value": ""
+            },
+            "headers": null
+        },
+        {
+            "target_id": "000000000000000000abc000",
+            "request_id": "000000000000000000def001",
+            "host": "www.example-ayto.es",
+            "ip": "192.0.2.10",
+            "type": "http",
+            "method": "GET",
+            "port": 443,
+            "use_ssl": true,
+            "path": "/search?q=$_1",
+            "body": {
+                "type": "str",
+                "value": ""
+            },
+            "headers": null
+        },
+        {
+            "target_id": "000000000000000000abc000",
+            "request_id": "000000000000000000def002",
+            "host": "www.example-ayto.es",
+            "ip": "192.0.2.10",
+            "type": "tcp",
+            "method": "syn",
+            "port": 443,
+            "use_ssl": true,
+            "path": "",
+            "body": {
+                "type": "str",
+                "value": ""
+            },
+            "headers": null
+        },
+        {
+            "target_id": "000000000000000000abc001",
+            "request_id": "000000000000000000def003",
+            "host": "sede.example.gob.es",
+            "ip": "192.0.2.11",
+            "type": "http",
+            "method": "GET",
+            "port": 443,
+            "use_ssl": true,
+            "path": "/search?q=$_1",
+            "body": {
+                "type": "str",
+                "value": ""
+            },
+            "headers": null
+        },
+        {
+            "target_id": "000000000000000000abc001",
+            "request_id": "000000000000000000def004",
+            "host": "www.example.eus",
+            "ip": "192.0.2.12",
+            "type": "tcp",
+            "method": "syn",
+            "port": 443,
+            "use_ssl": true,
+            "path": "",
+            "body": {
+                "type": "str",
+                "value": ""
+            },
+            "headers": null
+        },
+        {
+            "target_id": "000000000000000000abc001",
+            "request_id": "000000000000000000def005",
+            "host": "portal.example.gal",
+            "ip": "198.51.100.13",
+            "type": "http",
+            "method": "GET",
+            "port": 443,
+            "use_ssl": true,
+            "path": "/search?q=$_1",
+            "body": {
+                "type": "str",
+                "value": ""
+            },
+            "headers": null
+        },
+        {
+            "target_id": "000000000000000000abc002",
+            "request_id": "000000000000000000def006",
+            "host": "www.example-transit.com",
+            "ip": "198.51.100.14",
+            "type": "tcp",
+            "method": "syn",
+            "port": 443,
+            "use_ssl": true,
+            "path": "",
+            "body": {
+                "type": "str",
+                "value": ""
+            },
+            "headers": null
+        },
+        {
+            "target_id": "000000000000000000abc002",
+            "request_id": "000000000000000000def007",
+            "host": "tickets.example.co.uk",
+            "ip": "198.51.100.15",
+            "type": "http",
+            "method": "GET",
+            "port": 443,
+            "use_ssl": true,
+            "path": "/search?q=$_1",
+            "body": {
+                "type": "str",
+                "value": ""
+            },
+            "headers": null
+        },
+        {
+            "target_id": "000000000000000000abc002",
+            "request_id": "000000000000000000def008",
+            "host": "www.example.gov.pl",
+            "ip": "203.0.113.16",
+            "type": "tcp",
+            "method": "syn",
+            "port": 443,
+            "use_ssl": true,
+            "path": "",
+            "body": {
+                "type": "str",
+                "value": ""
+            },
+            "headers": null
+        },
+        {
+            "target_id": "000000000000000000abc003",
+            "request_id": "000000000000000000def009",
+            "host": "app.example.io",
+            "ip": "203.0.113.17",
+            "type": "http",
+            "method": "GET",
+            "port": 443,
+            "use_ssl": true,
+            "path": "/search?q=$_1",
+            "body": {
+                "type": "str",
+                "value": ""
+            },
+            "headers": null
+        },
+        {
+            "target_id": "000000000000000000abc003",
+            "request_id": "000000000000000000def00a",
+            "host": "192.0.2.99",
+            "ip": "192.0.2.99",
+            "type": "tcp",
+            "method": "syn",
+            "port": 443,
+            "use_ssl": true,
+            "path": "",
+            "body": {
+                "type": "str",
+                "value": ""
+            },
+            "headers": null
+        },
+        {
+            "target_id": "000000000000000000abc003",
+            "request_id": "000000000000000000def00b",
+            "host": "WWW.EXAMPLE-AYTO.ES.",
+            "ip": "192.0.2.10",
+            "type": "http",
+            "method": "GET",
+            "port": 443,
+            "use_ssl": true,
+            "path": "/search?q=$_1",
+            "body": {
+                "type": "str",
+                "value": ""
+            },
+            "headers": null
+        }
+    ],
+    "randoms": [
+        {
+            "name": "rnd1",
+            "id": "000000000000000000000123",
+            "digit": true,
+            "upper": false,
+            "lower": true,
+            "min": 5,
+            "max": 12
+        },
+        {
+            "name": "rnd2",
+            "id": "000000000000000000000124",
+            "digit": false,
+            "upper": true,
+            "lower": true,
+            "min": 3,
+            "max": 8
+        }
+    ]
+}

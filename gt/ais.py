@@ -1,4 +1,4 @@
-"""Live ship positions from AISStream.io (free key), sampled in short bursts. v1.1, 2026-11-19 (Ground Truth 0.9.0).
+"""Live ship positions from AISStream.io (free key), sampled in short bursts. v1.2, 2026-11-21 (Ground Truth 1.5.0).
 
 AISStream is a websocket feed. The standard library has no websocket client and the runtime image holds
 only Python, so this module speaks just enough RFC 6455 (TLS, handshake, framing, ping/pong) to read it.
@@ -24,6 +24,18 @@ the hour. Coverage is terrestrial receivers run by volunteers: thin far offshore
 * AISStream answered HTTP 429 to a second connection from the same account while another instance was connected (2026-11-19),
   so in practice one connection at a time, not the three its docs mention. Test runs must sample in the production instance's gap.
 
+1.2 (1.5.0), asked for: "show us military ships around the world":
+* The subscription is one world box instead of the ten watch boxes. AISStream cannot filter by ship type, so the
+  sample hears every ship it relays (measured 2026-11-21: 89 messages/s, 1,943 ships and 0.8 MB compressed in 25 s,
+  about 5x the watch-box sample) and keep() throws most of them away: a ship stays only if it is inside a watch box,
+  is military, or is already in the 3-hour store. The registry therefore stays the size it was.
+* Military means AIS ship type 35, or a navy name (WARSHIP / NAVY / NAVAL anywhere, or a navy prefix such as HMS,
+  HNLMS, USNS, FGS, ORP) on a ship whose type is not a civilian one (cargo, tanker, passenger, fishing, tug,
+  sailing, pleasure craft). Static messages carry AISStream's last known position in MetaData, so a ship that only
+  sent its type in a sample can still be placed.
+* Most warships switch AIS off at sea or send a generic name, so this shows the navies that transmit, mostly
+  near European and North American coasts, never a navy's whole fleet.
+
 The key is read from $AISSTREAM_API_KEY, else $GT_SEED/aisstream.key (container), else
 ~/.config/aisstream/key (the Mac). It is never logged.
 """
@@ -31,6 +43,7 @@ import base64
 import datetime as dt
 import json
 import os
+import re
 import socket
 import ssl
 import struct
@@ -38,6 +51,7 @@ import time
 import zlib
 
 HOST, PATH = "stream.aisstream.io", "/v0/stream"
+WORLD_BOX = [[-90, -180], [90, 180]]  # 1.2: one box, the whole world (see keep())
 SAMPLE_S = 60
 KEEP_H = 3
 MAX_MSGS = 60000  # safety stop for one sample
@@ -90,6 +104,30 @@ def ship_class(t):
     if t in (50, 51, 53, 54, 55, 58, 59):
         return "service"
     return "other"
+
+
+# 1.2: navy names. A prefix only counts on a ship whose AIS type is not a civilian one (CIVIL_TYPES).
+NAVY_WORD = re.compile(r"\b(?:WARSHIP|NAVY|NAVAL)\b")
+# Only prefixes no civilian name starts with: a 2026-11-21 world sample matched French "LE ..." boats and a Canadian
+# "HS ..." with the short ones (LE, HS, FS, JS, ITS, INS, KD ...), so those are left out.
+NAVY_PREFIX = re.compile(r"^(?:HMS|HNLMS|HDMS|HNOMS|KNM|ORP|USNS|USS|USCGC|RFA|FGS|ESPS|NRP|HMCS|HMAS|HMNZS|TCG|ROKS|ROCS|"
+                         r"HTMS|KRI|BRP|PNS|MHV|HSWMS)\s+[A-Z0-9]")
+CIVIL_TYPES = ("tanker", "cargo", "passenger", "fishing", "tug")
+
+
+def is_military(name, t):
+    """AIS type 35, or a navy name on a ship that does not say it is a civilian type."""
+    if t == 35:
+        return True
+    if not name or ship_class(t) in CIVIL_TYPES or t in (36, 37):
+        return False
+    n = name.upper()
+    return bool(NAVY_WORD.search(n) or NAVY_PREFIX.match(n))
+
+
+def vessel_class(v):
+    """ship_class() of a stored ship, with navy-named ships counted as military."""
+    return "military" if is_military(v.get("name"), v.get("type")) else ship_class(v.get("type"))
 
 
 def api_key():
@@ -320,13 +358,14 @@ def parse_static(rec, kind, body):
 STATIC_KINDS = ("ShipStaticData", "StaticDataReport")
 
 
-def sample(seconds=SAMPLE_S, boxes=None):
-    """Listen for `seconds`; returns ({mmsi: partial record}, stats)."""
+def sample(seconds=SAMPLE_S, boxes=None, world=True):
+    """Listen for `seconds`; returns ({mmsi: partial record}, stats). 1.2: the whole world unless world=False."""
     boxes = BOXES if boxes is None else boxes
     ws = WS(HOST, PATH)
     try:
         ws.send_text(json.dumps({"APIKey": api_key(),
-                                 "BoundingBoxes": [[[b[2], b[3]], [b[4], b[5]]] for b in boxes.values()],
+                                 "BoundingBoxes": [WORLD_BOX] if world else
+                                 [[[b[2], b[3]], [b[4], b[5]]] for b in boxes.values()],
                                  "FilterMessageTypes": ["PositionReport", "StandardClassBPositionReport"]
                                  + list(STATIC_KINDS)}))
         ws.s.settimeout(15)
@@ -358,6 +397,9 @@ def sample(seconds=SAMPLE_S, boxes=None):
             if kind in STATIC_KINDS:
                 n_static += 1
                 parse_static(rec, kind, body)
+                mla, mlo = meta.get("latitude"), meta.get("longitude")  # AISStream's last known position (1.2)
+                if isinstance(mla, (int, float)) and isinstance(mlo, (int, float)) and abs(mla) <= 90 and abs(mlo) <= 180:
+                    rec["mpos"] = [round(mla, 4), round(mlo, 4)]
                 continue
             lat, lon = body.get("Latitude", meta.get("latitude")), body.get("Longitude", meta.get("longitude"))
             if lat is None or lon is None or abs(lat) > 90 or abs(lon) > 180:
@@ -373,6 +415,21 @@ def sample(seconds=SAMPLE_S, boxes=None):
 
 
 # ---------- registry and merge ----------
+
+def keep(heard, vessels, reg):
+    """1.2: from a world sample keep a ship inside a watch box, a military ship anywhere, or one already stored.
+    Name and type come from this sample, else from the registry. Returns (kept, military_outside_boxes)."""
+    out, far_mil = {}, 0
+    for mmsi, r in heard.items():
+        pos = (r["lat"], r["lon"]) if r.get("lat") is not None else tuple(r["mpos"]) if r.get("mpos") else None
+        e = reg.get(mmsi) or {}
+        mil = is_military(r.get("name") or e.get("n"), r.get("type") or e.get("t"))
+        inbox = bool(pos and box_of(*pos))
+        if inbox or mil or mmsi in vessels:
+            r.pop("mpos", None)
+            out[mmsi] = r
+            far_mil += bool(mil and not inbox)
+    return out, far_mil
 
 # sample-record key -> registry key
 STATIC_KEYS = (("type", "t"), ("name", "n"), ("imo", "imo"), ("cs", "cs"), ("len", "len"), ("beam", "bm"),
@@ -453,7 +510,7 @@ def counts(vessels, now):
         c["ships_1h"] += 1
         if (v.get("sog") or 0) >= 1.0:
             c["underway"] += 1
-        cls = ship_class(v.get("type"))
+        cls = vessel_class(v)
         if cls != "unknown":
             c["typed"] += 1
         if cls in ("tanker", "cargo", "military"):

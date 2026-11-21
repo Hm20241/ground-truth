@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<alerts>
+<alert start="2026/05/01 09:00:00" end="2026/08/01 09:00:00" type="Bulletin Threat" href="https://www.dhs.gov/sites/default/files/ntas/alerts/test_expired.pdf">
+<summary><h2>Summary of Terrorism Threat to the United States</h2><p>Synthetic expired bulletin for the offline tests.</p></summary>
+<details><ul><li>Expired.</li></ul></details>
+<locations>
+<location>Nationwide</location>
+</locations>
+<sectors>
+<sector>All Sectors</sector>
+</sectors>
+<duration>This Bulletin will expire on August 1, 2026 at 9:00 AM ET</duration>
+</alert>
+<alert start="2026/11/19 09:00:00" end="" type="Elevated Alert" href="https://www.dhs.gov/ntas/advisory/test-elevated?ref=feed&amp;v=1">
+<summary><p>Synthetic elevated alert.<br>A credible threat&nbsp;against a test sector.<p>Unclosed paragraph &amp; an entity.</summary>
+<details><ul><li>Synthetic details.</ul></details>
+<locations>
+<location>Test City, Example State</location>
+<location>Second Test City</location>
+</locations>
+<sectors>
+<sector>Transportation</sector>
+<sector>Commercial Facilities</sector>
+</sectors>
+<duration>This Alert has no set end date.</duration>
+</alert>
+<alert start="2026/12/01 00:00:00" end="2026/12/15 00:00:00" type="Imminent Alert" href="https://www.dhs.gov/ntas/advisory/test-upcoming">
+<summary><p>Synthetic alert that has not started yet.</p></summary>
+<locations><location>Nationwide</location></locations>
+<sectors><sector>All Sectors</sector></sectors>
+<duration>Two weeks.</duration>
+</alert>
+</alerts>

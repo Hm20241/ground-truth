@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SYNTHETIC: the live Azure status feed was an empty channel on 2026-11-21; invented incidents, real channel shape -->
+<rss version="2.0" xmlns:a10="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Azure Status</title>
+    <link>https://azure.status.microsoft/en-us/status/</link>
+    <description>Azure Status</description>
+    <language>en-US</language>
+    <lastBuildDate>Sat, 21 Nov 2026 04:40:00 Z</lastBuildDate>
+    <item>
+      <guid isPermaLink="false">https://azure.status.microsoft/en-us/status/history/?trackingId=SYN1-AAA</guid>
+      <link>https://azure.status.microsoft/en-us/status/history/?trackingId=SYN1-AAA</link>
+      <title>Active - Virtual Machines - East US 2</title>
+      <description>&lt;p&gt;&lt;strong&gt;Impact Statement:&lt;/strong&gt; Starting at 02:10 UTC on 21 Nov 2026, a subset of customers using Virtual Machines in East US 2 may experience connection failures.&lt;/p&gt;</description>
+      <pubDate>Sat, 21 Nov 2026 02:40:00 Z</pubDate>
+    </item>
+    <item>
+      <guid isPermaLink="false">https://azure.status.microsoft/en-us/status/history/?trackingId=SYN1-AAA</guid>
+      <link>https://azure.status.microsoft/en-us/status/history/?trackingId=SYN1-AAA</link>
+      <title>Update - Virtual Machines - East US 2</title>
+      <description>&lt;p&gt;Engineers have identified a storage scale unit issue and are applying mitigation. The issue is not yet resolved.&lt;/p&gt;</description>
+      <pubDate>Sat, 21 Nov 2026 04:10:00 Z</pubDate>
+    </item>
+    <item>
+      <guid isPermaLink="false">https://azure.status.microsoft/en-us/status/history/?trackingId=SYN2-BBB</guid>
+      <link>https://azure.status.microsoft/en-us/status/history/?trackingId=SYN2-BBB</link>
+      <title>Mitigated - Azure Front Door - West Europe and northeurope</title>
+      <description>&lt;p&gt;Between 21:00 and 22:30 UTC on 20 Nov 2026 customers saw intermittent timeouts. This issue is now mitigated.&lt;/p&gt;</description>
+      <pubDate>Fri, 20 Nov 2026 22:45:00 Z</pubDate>
+    </item>
+    <item>
+      <guid isPermaLink="false">https://azure.status.microsoft/en-us/status/history/?trackingId=SYN3-CCC</guid>
+      <link>https://azure.status.microsoft/en-us/status/history/?trackingId=SYN3-CCC</link>
+      <title>Planned maintenance - Azure SQL Database - UK South</title>
+      <description>&lt;p&gt;Planned maintenance will start on 25 Nov 2026 at 01:00 UTC.&lt;/p&gt;</description>
+      <pubDate>Sat, 21 Nov 2026 01:00:00 Z</pubDate>
+    </item>
+  </channel>
+</rss>

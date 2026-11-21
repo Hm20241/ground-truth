@@ -1,0 +1,238 @@
+{
+ "page": {
+  "id": "yh6f0r4529hb",
+  "name": "Cloudflare Status",
+  "url": "https://www.cloudflarestatus.com",
+  "time_zone": "Etc/UTC",
+  "updated_at": "2026-11-21T04:34:24.353Z"
+ },
+ "status": {
+  "indicator": "minor",
+  "description": "Partially Degraded Service"
+ },
+ "components": [
+  {
+   "id": "1km35smx8p41",
+   "name": "Cloudflare Sites and Services",
+   "status": "degraded_performance",
+   "group": true,
+   "group_id": null
+  },
+  {
+   "id": "4l01sk5cdn5c",
+   "name": "North America",
+   "status": "partial_outage",
+   "group": true,
+   "group_id": null
+  },
+  {
+   "id": "5wnz34mhfhrk",
+   "name": "CDN/Cache",
+   "status": "operational",
+   "group": false,
+   "group_id": "1km35smx8p41"
+  },
+  {
+   "id": "xm3cq0t85y10",
+   "name": "Always Online",
+   "status": "operational",
+   "group": false,
+   "group_id": "1km35smx8p41"
+  },
+  {
+   "id": "3t0npclljyyg",
+   "name": "Ashburn, United States - (IAD)",
+   "status": "operational",
+   "group": false,
+   "group_id": "4l01sk5cdn5c"
+  },
+  {
+   "id": "57ctn3f2qsyj",
+   "name": "Amsterdam, Netherlands - (AMS)",
+   "status": "operational",
+   "group": false,
+   "group_id": "zqxhg7y54vy8"
+  },
+  {
+   "id": "y12kn5nkvb44",
+   "name": "Amman, Jordan - (AMM)",
+   "status": "operational",
+   "group": false,
+   "group_id": "m3639x4txd08"
+  },
+  {
+   "id": "xjfk3l4dykrs",
+   "name": "Ahmedabad, India - (AMD)",
+   "status": "partial_outage",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "fs7l9rdk9kq5",
+   "name": "Albuquerque, United States - (ABQ)",
+   "status": "partial_outage",
+   "group": false,
+   "group_id": "4l01sk5cdn5c"
+  },
+  {
+   "id": "2htqrtyxmmtr",
+   "name": "Arica, Chile - (ARI)",
+   "status": "partial_outage",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "6vll3w5p50f9",
+   "name": "Belo Horizonte, Brazil - (CNF)",
+   "status": "under_maintenance",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "171wlzvlxttk",
+   "name": "Bogotá, Colombia - (BOG)",
+   "status": "under_maintenance",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  }
+ ],
+ "incidents": [
+  {
+   "id": "oz6to8yacrxe",
+   "name": "Network Performance Issues in Washington, DC datacenter (IAD)",
+   "status": "monitoring",
+   "impact": "minor",
+   "created_at": "2026-11-20T20:35:16.792Z",
+   "updated_at": "2026-11-20T20:37:07.915Z",
+   "monitoring_at": null,
+   "resolved_at": null,
+   "started_at": "2026-11-20T20:35:16.792Z",
+   "shortlink": "https://www.cloudflarestatus.com/incidents/oz6to8yacrxe",
+   "components": [
+    {
+     "id": "4n0gb0kh02gf",
+     "name": "Network",
+     "status": "degraded_performance"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "5lesitxwv1f6",
+     "status": "monitoring",
+     "body": "A fix has been implemented and we are monitoring the results.",
+     "created_at": "2026-11-20T20:36:41.663Z",
+     "display_at": "2026-11-20T20:36:41.663Z"
+    },
+    {
+     "id": "p9ofsztt91tw",
+     "status": "investigating",
+     "body": "Cloudflare is investigating issues with network performance in Washington, DC datacenter (IAD). We are working to analyze and mitigate this problem. More updates to follow shortly.",
+     "created_at": "2026-11-20T20:35:16.792Z",
+     "display_at": "2026-11-20T20:35:16.792Z"
+    }
+   ]
+  },
+  {
+   "id": "0ocqieaifg7h",
+   "name": "Changes to Cloudflare Workers are not producing Event Subscription events",
+   "status": "identified",
+   "impact": "minor",
+   "created_at": "2026-11-10T01:53:58.905Z",
+   "updated_at": "2026-11-11T05:05:06.331Z",
+   "monitoring_at": null,
+   "resolved_at": null,
+   "started_at": "2026-11-10T01:53:58.905Z",
+   "shortlink": "https://www.cloudflarestatus.com/incidents/0ocqieaifg7h",
+   "components": [
+    {
+     "id": "57srcl8zcn7c",
+     "name": "Workers",
+     "status": "degraded_performance"
+    },
+    {
+     "id": "3z7cmdfch5kb",
+     "name": "Queues",
+     "status": "degraded_performance"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "tsd2wb2nx1mq",
+     "status": "identified",
+     "body": "The issue has been identified and a fix is being implemented.",
+     "created_at": "2026-11-11T05:05:06.331Z",
+     "display_at": "2026-11-11T05:05:06.331Z"
+    },
+    {
+     "id": "rxfxlvk6bnk3",
+     "status": "investigating",
+     "body": "Changes to Cloudflare Workers are temporarily not producing Event Subscription events. We have intentionally disabled this feature due to an on-going issue. We are actively working to restore it, but this, regrettably, may take a while. Changes to Workers themselves are working normally. Already dep...",
+     "created_at": "2026-11-10T01:53:58.905Z",
+     "display_at": "2026-11-10T01:53:58.905Z"
+    }
+   ]
+  }
+ ],
+ "scheduled_maintenances": [
+  {
+   "id": "7pkfbb4o5shs",
+   "name": "BRU (Brussels) on 2026-11-23",
+   "status": "scheduled",
+   "impact": "maintenance",
+   "created_at": "2026-11-20T11:05:54.937Z",
+   "updated_at": "2026-11-20T11:05:54.937Z",
+   "monitoring_at": null,
+   "resolved_at": null,
+   "started_at": "2026-11-23T02:00:00.000Z",
+   "shortlink": "https://www.cloudflarestatus.com/incidents/7pkfbb4o5shs",
+   "components": [
+    {
+     "id": "925lp8vyg095",
+     "name": "Brussels, Belgium - (BRU)",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "8g5mncgojw32",
+     "status": "scheduled",
+     "body": "We will be performing scheduled maintenance in BRU (Brussels) datacenter on 2026-11-23 between 02:00 and 08:00 UTC.\n\nTraffic might be re-routed from this location, hence there is a possibility of a slight increase in latency during this maintenance window for end-users in the affected region. For PN...",
+     "created_at": "2026-11-20T11:05:54.937Z",
+     "display_at": "2026-11-20T11:05:54.937Z"
+    }
+   ],
+   "scheduled_for": "2026-11-23T02:00:00.000Z",
+   "scheduled_until": "2026-11-23T08:00:00.000Z"
+  },
+  {
+   "id": "p1vf7kgmytds",
+   "name": "LIM (Lima) on 2026-11-23",
+   "status": "scheduled",
+   "impact": "maintenance",
+   "created_at": "2026-11-20T10:18:34.642Z",
+   "updated_at": "2026-11-20T10:18:34.642Z",
+   "monitoring_at": null,
+   "resolved_at": null,
+   "started_at": "2026-11-23T06:00:00.000Z",
+   "shortlink": "https://www.cloudflarestatus.com/incidents/p1vf7kgmytds",
+   "components": [
+    {
+     "id": "bnjvsmmllkb9",
+     "name": "Lima, Peru - (LIM)",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "fh46ubu6fkpd",
+     "status": "scheduled",
+     "body": "We will be performing scheduled maintenance in LIM (Lima) datacenter on 2026-11-23 between 06:00 and 12:00 UTC.\n\nTraffic might be re-routed from this location, hence there is a possibility of a slight increase in latency during this maintenance window for end-users in the affected region. For PNI /...",
+     "created_at": "2026-11-20T10:18:34.642Z",
+     "display_at": "2026-11-20T10:18:34.642Z"
+    }
+   ],
+   "scheduled_for": "2026-11-23T06:00:00.000Z",
+   "scheduled_until": "2026-11-23T12:00:00.000Z"
+  }
+ ]
+}

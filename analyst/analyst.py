@@ -42,7 +42,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-ANALYST_VERSION = "1.5"
+ANALYST_VERSION = "1.5.1"
 PROMPT_VERSION = "ev1/pic3"
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONF_DIR = os.path.expanduser("~/.config/ground-truth")
@@ -59,7 +59,7 @@ CFG = {
     "lookback_h": 48, "picture_max_lines": 140, "timeout_s": 900,
     # 1.5: translation, asked for: "if a feed item is in another language please translate to english"
     "translate_model": "claude-haiku-5-5", "translate_effort": "low", "translate_max": 40,
-    "translate_feeds": ["telegram", "wire"],
+    "translate_feeds": ["telegram", "wire", "power"],  # 1.5.1 (GT 1.5.3): power, for Ukrenergo and the energy ministry
 }
 
 TRANSLATE_SYSTEM = (

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.3 (2026-11-21): outage layers for power, cell networks, websites and AI / cloud (self-hosted only)
+- **New modules:** `gt/services.py` and `gt/disruption.py`, plus the page extension `web/ext/outages.js`.
+- **Four separate map layers,** each with its own Feed chip:
+  - **Power outages:** US county outages from ODIN, Ukraine's grid operator and energy ministry, Taiwan's supply light, South Africa's load-shedding stage and California grid emergencies.
+  - **Cell / mobile networks:** mobile-network disruption posts from NetBlocks and Cloudflare Radar, and Russia's regional mobile-internet shutdowns.
+  - **Websites / online services:** official status pages.
+  - **AI, cloud and datacenters:** official status pages, Cloudflare PoP incidents and datacenter incident headlines.
+- **Also new:** an Outages tab, KPIs and source credits.
+- **Not on this copy:** none of these sources has a clear licence to republish, so all four feeds run on self-hosted copies only. Here the layers stay empty and the Outages tab says "Not on this copy".
+- **Downdetector is not used:** it has no free API, and its terms forbid automated access.
+
 ## 1.5.2 (2026-11-21): "--GitHub" in the GitHub Pages tab title
 - On GitHub Pages (any `*.github.io` host) the tab and window title reads "Ground Truth --GitHub", so this copy is easy to tell apart from a self-hosted one. A self-hosted copy keeps "Ground Truth".
 

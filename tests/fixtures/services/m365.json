@@ -1,0 +1,35 @@
+[
+ {
+  "ServiceDisplayName": "Microsoft 365 (Consumer)",
+  "ServiceWorkloadName": "M365Consumer",
+  "Id": null,
+  "AuthoredDateTime": "0001-01-01T00:00:00+00:00",
+  "InternalDateTime": "0001-01-01T00:00:00+00:00",
+  "LastUpdatedTime": "2026-11-21T04:50:00.3913094+00:00",
+  "Title": "",
+  "Message": "",
+  "Status": "Operational"
+ },
+ {
+  "ServiceDisplayName": "Microsoft Copilot",
+  "ServiceWorkloadName": "CopilotConsumer",
+  "Id": null,
+  "AuthoredDateTime": "0001-01-01T00:00:00+00:00",
+  "InternalDateTime": "0001-01-01T00:00:00+00:00",
+  "LastUpdatedTime": "2026-11-21T04:50:00.391311+00:00",
+  "Title": "",
+  "Message": "",
+  "Status": "Operational"
+ },
+ {
+  "ServiceDisplayName": "Microsoft Lists",
+  "ServiceWorkloadName": "ConsumerList",
+  "Id": null,
+  "AuthoredDateTime": "0001-01-01T00:00:00+00:00",
+  "InternalDateTime": "0001-01-01T00:00:00+00:00",
+  "LastUpdatedTime": "2026-11-21T04:50:00.391311+00:00",
+  "Title": "",
+  "Message": "",
+  "Status": "Operational"
+ }
+]

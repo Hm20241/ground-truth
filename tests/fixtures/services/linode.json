@@ -1,0 +1,161 @@
+{
+ "page": {
+  "id": "8dn0wstr1chc",
+  "name": "Linode",
+  "url": "https://status.linode.com",
+  "time_zone": "Etc/UTC",
+  "updated_at": "2026-11-21T02:39:01.810Z"
+ },
+ "incidents": [
+  {
+   "id": "hgq6wzfbdr71",
+   "name": "Service Issue - Linode Kubernetes Engine",
+   "status": "monitoring",
+   "impact": "minor",
+   "created_at": "2026-11-20T08:27:59.645Z",
+   "updated_at": "2026-11-20T10:12:14.167Z",
+   "monitoring_at": "2026-11-20T10:12:13.312Z",
+   "resolved_at": null,
+   "started_at": "2026-11-20T08:27:59.635Z",
+   "shortlink": "https://stspg.io/z5hhd4vz7jfv",
+   "components": [
+    {
+     "id": "43zk807gj6fx",
+     "name": "US-ORD (Chicago)",
+     "status": "operational"
+    },
+    {
+     "id": "5lw6b06mjfww",
+     "name": "US-SEA (Seattle)",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "xddx3sqlx0fc",
+     "status": "monitoring",
+     "body": "At this time we have been able to correct the issues affecting the LKE service. We will be monitoring this to ensure that it remains stable. If you continue to experience problems, please <a href=\"https://cloud.linode.com/support/tickets\">open a Support ticket</a> for assistance.",
+     "created_at": "2026-11-20T10:12:13.312Z",
+     "display_at": "2026-11-20T10:12:13.312Z"
+    },
+    {
+     "id": "m8smyvsf03sr",
+     "status": "identified",
+     "body": "Our team has identified the issue affecting the LKE service. We are working quickly to implement a fix, and we will provide an update as soon as the solution is in place.",
+     "created_at": "2026-11-20T08:53:40.025Z",
+     "display_at": "2026-11-20T08:53:40.025Z"
+    }
+   ]
+  },
+  {
+   "id": "7fr6bqbwkjkn",
+   "name": "Connectivity Issue between ID-CGK (Jakarta) and SG-SIN-2 (Singapore 2)",
+   "status": "postmortem",
+   "impact": "minor",
+   "created_at": "2026-10-25T13:54:31.881Z",
+   "updated_at": "2026-11-19T13:59:19.373Z",
+   "monitoring_at": "2026-10-25T16:12:03.804Z",
+   "resolved_at": "2026-11-16T18:00:10.701Z",
+   "started_at": "2026-10-25T13:54:31.868Z",
+   "shortlink": "https://stspg.io/d4fdnv39hb27",
+   "components": [
+    {
+     "id": "knknlr4ljq5l",
+     "name": "ID-CGK (Jakarta)",
+     "status": "operational"
+    },
+    {
+     "id": "wv0j73xx50p7",
+     "name": "SG-SIN-2 (Singapore 2)",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "v65vtlnjfy5w",
+     "status": "postmortem",
+     "body": "Starting around 07:00 UTC on October 24, 2026, an issue affecting connectivity between our ID-CGK \\(Jakarta\\) and SG-SIN-2 \\(Singapore 2\\) was identified. The investigation revealed that the issue was caused by an undersea cable cut affecting the international link capacity, which would have resulte...",
+     "created_at": "2026-11-19T13:58:42.401Z",
+     "display_at": null
+    },
+    {
+     "id": "7y3s7lv4g0xy",
+     "status": "resolved",
+     "body": "We haven’t observed any additional connectivity issues in our ID-CGK (Jakarta) and SG-SIN-2 (Singapore 2) data centers, and will now consider this incident resolved. If you continue to experience problems, please <a href=\"https://cloud.linode.com/support/tickets\">open a Support ticket</a> for assist...",
+     "created_at": "2026-11-16T18:00:10.701Z",
+     "display_at": "2026-11-16T18:00:10.701Z"
+    }
+   ]
+  },
+  {
+   "id": "d5ksyyk5x9w5",
+   "name": "Service Issue - Block Storage (BR-GRU)",
+   "status": "monitoring",
+   "impact": "none",
+   "created_at": "2026-10-28T20:17:01.527Z",
+   "updated_at": "2026-10-28T20:18:36.316Z",
+   "monitoring_at": "2026-10-28T20:18:35.420Z",
+   "resolved_at": null,
+   "started_at": "2026-10-28T20:17:01.515Z",
+   "shortlink": "https://stspg.io/kwfn0ylk0rpt",
+   "components": [
+    {
+     "id": "2hcqzsvbw280",
+     "name": "BR-GRU (São Paulo) Block Storage",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "c6gjy44zm9n6",
+     "status": "monitoring",
+     "body": "A fix has been implemented and we are monitoring the results.",
+     "created_at": "2026-10-28T20:18:35.420Z",
+     "display_at": "2026-10-28T20:18:35.420Z"
+    },
+    {
+     "id": "kvtxxbj8vvcm",
+     "status": "investigating",
+     "body": "Our team is investigating an issue affecting the Block Storage service in our BR-GRU (São Paulo) data center. During this time, Block Storage volume creation, deletion and cloning may fail. We will share additional updates as we have more information.",
+     "created_at": "2026-10-28T20:17:01.597Z",
+     "display_at": "2026-10-28T20:17:01.597Z"
+    }
+   ]
+  },
+  {
+   "id": "k95n77rlncr6",
+   "name": "Maintenance - Akamai Cloud Login Service",
+   "status": "resolved",
+   "impact": "maintenance",
+   "created_at": "2026-10-15T17:15:19.184Z",
+   "updated_at": "2026-10-16T12:20:25.885Z",
+   "monitoring_at": null,
+   "resolved_at": "2026-10-16T12:20:25.062Z",
+   "started_at": "2026-10-15T17:15:19.175Z",
+   "shortlink": "https://stspg.io/8vmn4d52jm69",
+   "components": [
+    {
+     "id": "61mfhwczrxzt",
+     "name": "Cloud Manager and API",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "bj1mjpsgt8sw",
+     "status": "resolved",
+     "body": "The maintenance has been completed. New customer signup and account creation are fully restored.",
+     "created_at": "2026-10-16T12:20:25.062Z",
+     "display_at": "2026-10-16T12:20:25.062Z"
+    },
+    {
+     "id": "v49qdvw1r367",
+     "status": "investigating",
+     "body": "We are performing maintenance on the Akamai Cloud Login service. During this maintenance, new customer signup and account creation are temporarily disabled. Existing customers accounts are not affected and will be able to log in normally.",
+     "created_at": "2026-10-15T17:15:19.301Z",
+     "display_at": "2026-10-15T17:15:19.301Z"
+    }
+   ]
+  }
+ ]
+}

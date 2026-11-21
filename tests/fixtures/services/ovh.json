@@ -1,0 +1,109 @@
+{
+ "page": {
+  "id": "6j41kzyhcr9g",
+  "name": "Public Cloud",
+  "url": "https://public-cloud.status-ovhcloud.com",
+  "time_zone": "Etc/UTC",
+  "updated_at": "2026-11-21T00:36:04.658Z"
+ },
+ "incidents": [
+  {
+   "id": "zp90ftxrmf5d",
+   "name": "[US-WEST-LZ-LAX][LocalZones] - VPS Incident Notification",
+   "status": "resolved",
+   "impact": "none",
+   "created_at": "2026-11-20T19:48:15.000Z",
+   "updated_at": "2026-11-20T21:03:58.752Z",
+   "monitoring_at": null,
+   "resolved_at": "2026-11-20T19:48:15.000Z",
+   "started_at": "2026-11-20T19:48:15.000Z",
+   "shortlink": "https://stspg.io/wpgnl8c26ljd",
+   "components": [
+    {
+     "id": "v9rk418ntc8x",
+     "name": "US-WEST-LZ-LAX",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "6x6d91mh3pt7",
+     "status": "resolved",
+     "body": "We had an incident on our Virtual Private Servers offer which has now been resolved.\n\nHere are some supplementary details :\n\n<b>Start time :</b> 20/11/2026 08:18 UTC\n<b>End time :</b> 20/11/2026 18:53 UTC\n<b>Impacted Service(s) :</b> Some VPS in the Los Angeles Local Zone experienced partial connect...",
+     "created_at": "2026-11-20T19:48:15.656Z",
+     "display_at": "2026-11-20T19:48:15.000Z"
+    }
+   ]
+  },
+  {
+   "id": "5mplv9fgbqyp",
+   "name": "[US-WEST-OR][Storage] - Cloud Archive incident notification",
+   "status": "resolved",
+   "impact": "major",
+   "created_at": "2026-11-19T20:23:09.575Z",
+   "updated_at": "2026-11-20T13:12:29.715Z",
+   "monitoring_at": "2026-11-19T21:57:00.742Z",
+   "resolved_at": "2026-11-20T13:12:29.695Z",
+   "started_at": "2026-11-19T20:23:09.562Z",
+   "shortlink": "https://stspg.io/1y8c3wy0q5jc",
+   "components": [
+    {
+     "id": "tl0tpq835qrw",
+     "name": "US-WEST-OR",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "x0zr435flzbn",
+     "status": "resolved",
+     "body": "We would like to inform you that the incident affecting our Cloud Archive offering in the US-WEST-OR region has now been resolved.\n\nPlease find the details of this incident below :\n\n<b>Start time :</b> 19/11/2026 16:30 UTC\n<b>End time :</b> 19/11/2026 22:00 UTC\n<b>Impacted Service(s) :</b> The Cloud...",
+     "created_at": "2026-11-20T13:12:29.695Z",
+     "display_at": "2026-11-20T13:12:29.695Z"
+    },
+    {
+     "id": "yzz77s69n92l",
+     "status": "identified",
+     "body": "We are currently experiencing an incident affecting our Cloud Archive offering in the US-WEST-OR region. The root cause has been identified.\n\nPlease find the details of this incident below :\n\n<b>Start time :</b> 19/11/2026 16:30 UTC\n<b>Impacted Service(s) :</b> The Cloud Archive service is experienc...",
+     "created_at": "2026-11-19T22:27:58.075Z",
+     "display_at": "2026-11-19T22:27:58.075Z"
+    }
+   ]
+  },
+  {
+   "id": "kssy04t4y2ds",
+   "name": "[GLOBAL][AI & Machine Learning] - AI Endpoint Incident Notification",
+   "status": "resolved",
+   "impact": "major",
+   "created_at": "2026-11-20T06:53:59.691Z",
+   "updated_at": "2026-11-20T12:19:10.977Z",
+   "monitoring_at": "2026-11-20T08:27:43.716Z",
+   "resolved_at": "2026-11-20T12:19:10.952Z",
+   "started_at": "2026-11-20T06:53:59.684Z",
+   "shortlink": "https://stspg.io/vlkf6x66jncd",
+   "components": [
+    {
+     "id": "rfggwhvc8t41",
+     "name": "AI & Machine Learning || AI Endpoint",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "xwq6s74lktgg",
+     "status": "resolved",
+     "body": "We would like to inform you that the incident affecting our AI & Machine Learning offering has now been resolved.\n\nPlease find the details of this incident below :\n\n<b>Start time :</b> 20/11/2026 06:25 UTC\n<b>End time :</b> 20/11/2026 07:12 UTC\n<b>Impacted Service(s) :</b> AI Endpoints service was t...",
+     "created_at": "2026-11-20T12:19:10.952Z",
+     "display_at": "2026-11-20T12:19:10.952Z"
+    },
+    {
+     "id": "gb4z25thym12",
+     "status": "monitoring",
+     "body": "We would like to inform you that our service has been fully restored as of 20/11/2026 07:12 UTC. Monitoring is still in place to ensure long-term stability.\n\nPlease find the details of this incident below :\n\n<b>Start time :</b> 20/11/2026 06:25 UTC\n<b>Impacted Service(s) :</b> AI Endpoints service w...",
+     "created_at": "2026-11-20T08:27:43.716Z",
+     "display_at": "2026-11-20T08:27:43.716Z"
+    }
+   ]
+  }
+ ]
+}

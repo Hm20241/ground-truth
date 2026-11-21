@@ -1,0 +1,7 @@
+{"_note": "SYNTHETIC: Slack api/v2.0.0/current with one active incident (the live body had none); fields from Slack's API docs",
+ "status": "active", "date_created": "2026-11-20T20:20:00-08:00", "date_updated": "2026-11-21T04:45:00Z",
+ "active_incidents": [{"id": 9999901, "date_created": "2026-11-21T04:20:00Z", "date_updated": "2026-11-21T04:45:00Z",
+   "title": "Some users may have trouble loading messages", "type": "outage", "status": "active",
+   "url": "https://slack-status.com/2026-11/syn9999901", "services": ["Messaging", "Connectivity"],
+   "notes": [{"date_created": "2026-11-21T04:20:00Z", "body": "<p>We're investigating.</p>"},
+             {"date_created": "2026-11-21T04:45:00Z", "body": "<p>We've <strong>identified</strong> the cause.</p>"}]}]}

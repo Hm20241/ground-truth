@@ -1,0 +1,36 @@
+{
+ "page": {
+  "id": "01J450868FGGA564RC27Y7G43S",
+  "name": "Lambda GPU Cloud",
+  "url": "https://status.lambda.com/",
+  "updated_at": "2026-11-18T15:34:41Z"
+ },
+ "incidents": [
+  {
+   "id": "01M7QGAQ7ZAP614BK0FGD2SACC",
+   "name": "Power event impacting us-southeast-1 connectivity",
+   "status": "resolved",
+   "impact": "none",
+   "created_at": "2026-11-18T14:17:48Z",
+   "updated_at": "2026-11-18T15:34:41Z",
+   "resolved_at": "2026-11-18T15:34:41Z",
+   "components": [],
+   "incident_updates": [
+    {
+     "id": "01M7QMQGCCC28JT2DJP6C5KTFP",
+     "status": "resolved",
+     "body": "Severity Level: Medium\n\nPower has been restored to the affected equipment in us-southeast-1, and the facility work that caused the power event has been completed. Network connectivity and our cloud management services in this region have recovered, and our teams have confirmed that the underlying in...",
+     "created_at": "2026-11-18T15:34:41Z",
+     "display_at": "2026-11-18T15:34:41Z"
+    },
+    {
+     "id": "01M7QGAQ7ZKK5WCVWQ4P8FHDQP",
+     "status": "investigating",
+     "body": "Severity Level: High\n\nWe’re currently investigating a potential issue with our On-Demand Cloud instances in our us-southeast-1 data center. Users may experience loss of network connectivity to running instances and may be unable to launch, terminate, or manage instances in this location.\n\nOur teams...",
+     "created_at": "2026-11-18T14:17:48Z",
+     "display_at": "2026-11-18T14:17:48Z"
+    }
+   ]
+  }
+ ]
+}

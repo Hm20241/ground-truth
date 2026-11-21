@@ -1,0 +1,74 @@
+[
+ {
+  "id": "B5V4MfnVp97nxoTYbxdX",
+  "number": "9353823205405529898",
+  "begin": "2026-09-18T05:00:00+00:00",
+  "created": "2026-09-22T21:38:51+00:00",
+  "end": "2026-09-24T18:00:00+00:00",
+  "modified": "2026-09-25T00:04:37+00:00",
+  "status_impact": "SERVICE_INFORMATION",
+  "severity": "low",
+  "service_key": "prPt2Yra2CbGsbEm9cpC",
+  "service_name": "Gmail",
+  "uri": "incidents/B5V4MfnVp97nxoTYbxdX",
+  "external_desc": "**Title:**\nGmail Android App users on the latest Gmail Android release may experience issues accessing their inbox.\n**Description:**\nOur engineering team has identified the root cause and is actively working on mitigating the issue.\nWe will provide more information by Tuesday, 2026-09-22 18:00 PDT....",
+  "affected_products": [
+   {
+    "title": "Gmail",
+    "id": "prPt2Yra2CbGsbEm9cpC"
+   }
+  ],
+  "most_recent_update": {
+   "created": "2026-09-25T00:04:24+00:00",
+   "modified": "2026-09-25T00:04:37+00:00",
+   "when": "2026-09-25T00:04:24+00:00",
+   "text": "**summary**\nGmail Android App users on the previous Gmail Android release may have experienced issues accessing their inbox.\n**Description**\nThe issue with Gmail Android App has been resolved for all affected users as of Thursday, 2026-09-24 11:00 PDT.\nWe thank you for your patience while we worked...",
+   "status": "AVAILABLE"
+  },
+  "updates": [
+   {
+    "created": "2026-09-25T00:04:24+00:00",
+    "modified": "2026-09-25T00:04:37+00:00",
+    "when": "2026-09-25T00:04:24+00:00",
+    "text": "**summary**\nGmail Android App users on the previous Gmail Android release may have experienced issues accessing their inbox.\n**Description**\nThe issue with Gmail Android App has been resolved for all...",
+    "status": "AVAILABLE"
+   }
+  ]
+ },
+ {
+  "id": "fJ4691Pe2g9KsTbP8g5F",
+  "number": "11425782758836097339",
+  "begin": "2026-09-11T13:00:00+00:00",
+  "created": "2026-09-11T20:45:19+00:00",
+  "end": "2026-09-11T20:22:00+00:00",
+  "modified": "2026-09-11T20:45:42+00:00",
+  "status_impact": "SERVICE_INFORMATION",
+  "severity": "low",
+  "service_key": "npdyhgECDJ6tB66MxXyo",
+  "service_name": "Gemini",
+  "uri": "incidents/fJ4691Pe2g9KsTbP8g5F",
+  "external_desc": "**Summary:**\nMitigated intermittent elevated error rates with Gemini 3.1 Pro models on Gemini Web and Gemini App.\n**Description:**\nBetween 6:00 PDT and 13:22 PDT on 11 September 2026, a subset of Gemini users may have experienced elevated error rates with Gemini 3.1 Pro models on Gemini Web and Gemi...",
+  "affected_products": [
+   {
+    "title": "Gemini",
+    "id": "npdyhgECDJ6tB66MxXyo"
+   }
+  ],
+  "most_recent_update": {
+   "created": "2026-09-11T20:45:19+00:00",
+   "modified": "2026-09-11T20:45:42+00:00",
+   "when": "2026-09-11T20:45:19+00:00",
+   "text": "**Summary:**\nMitigated intermittent elevated error rates with Gemini 3.1 Pro models on Gemini Web and Gemini App.\n**Description:**\nBetween 6:00 PDT and 13:22 PDT on 11 September 2026, a subset of Gemini users may have experienced elevated error rates with Gemini 3.1 Pro models on Gemini Web and Gemi...",
+   "status": "AVAILABLE"
+  },
+  "updates": [
+   {
+    "created": "2026-09-11T20:45:19+00:00",
+    "modified": "2026-09-11T20:45:42+00:00",
+    "when": "2026-09-11T20:45:19+00:00",
+    "text": "**Summary:**\nMitigated intermittent elevated error rates with Gemini 3.1 Pro models on Gemini Web and Gemini App.\n**Description:**\nBetween 6:00 PDT and 13:22 PDT on 11 September 2026, a subset of Gemi...",
+    "status": "AVAILABLE"
+   }
+  ]
+ }
+]

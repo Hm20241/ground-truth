@@ -1,0 +1,136 @@
+{
+ "page": {
+  "id": "kctbh9vrtdwd",
+  "name": "GitHub",
+  "url": "https://www.githubstatus.com",
+  "time_zone": "Etc/UTC",
+  "updated_at": "2026-11-21T02:39:10.060Z"
+ },
+ "incidents": [
+  {
+   "id": "gp7nhc88bwv9",
+   "name": "Degraded availability for GPT-6 Luna in Copilot",
+   "status": "resolved",
+   "impact": "minor",
+   "created_at": "2026-11-19T15:56:02.730Z",
+   "updated_at": "2026-11-19T16:37:00.895Z",
+   "monitoring_at": "2026-11-19T16:28:40.567Z",
+   "resolved_at": "2026-11-19T16:37:00.866Z",
+   "started_at": "2026-11-19T15:56:02.723Z",
+   "shortlink": "https://stspg.io/vv0kzmyd9wqs",
+   "components": [
+    {
+     "id": "cnnb39dkkk82",
+     "name": "Copilot AI Model Providers",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "fc125jpg79qj",
+     "status": "resolved",
+     "body": "This incident has been resolved. Thank you for your patience and understanding as we addressed this issue. A detailed root cause analysis will be shared as soon as it is available.",
+     "created_at": "2026-11-19T16:37:00.866Z",
+     "display_at": "2026-11-19T16:37:00.866Z"
+    },
+    {
+     "id": "2f264whc30xv",
+     "status": "monitoring",
+     "body": "The degradation affecting Copilot AI Model Providers has been mitigated. We are monitoring to ensure stability.",
+     "created_at": "2026-11-19T16:28:40.567Z",
+     "display_at": "2026-11-19T16:28:40.567Z"
+    }
+   ]
+  },
+  {
+   "id": "2zfqmghmg3s3",
+   "name": "Incident with Pull Requests",
+   "status": "resolved",
+   "impact": "minor",
+   "created_at": "2026-11-16T11:59:40.900Z",
+   "updated_at": "2026-11-20T18:50:41.400Z",
+   "monitoring_at": "2026-11-16T16:07:32.376Z",
+   "resolved_at": "2026-11-16T16:26:26.775Z",
+   "started_at": "2026-11-16T11:59:40.892Z",
+   "shortlink": "https://stspg.io/ljtn69jlt087",
+   "components": [
+    {
+     "id": "hhtssxt0f5v2",
+     "name": "Pull Requests",
+     "status": "operational"
+    },
+    {
+     "id": "br0l2tvcx85d",
+     "name": "Actions",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "c4z3tyvgvlwh",
+     "status": "resolved",
+     "body": "On November 16, 2026, between 09:30 and 15:55 UTC, some pull request merges on GitHub timed out. On average, 2.9% of merge attempts timed out, with a peak of 7.1% at 15:17 UTC. Some GitHub Actions workflow runs triggered by pull requests were also delayed. Git operations such as push and fetch staye...",
+     "created_at": "2026-11-16T16:26:26.775Z",
+     "display_at": "2026-11-16T16:26:26.775Z"
+    },
+    {
+     "id": "zgr9xhmwbtjb",
+     "status": "monitoring",
+     "body": "We’ve mitigated the issue affecting pull request merges and Actions workflow start times by reducing load on affected systems. Pull Requests and Actions have recovered, and we’re continuing to monitor their performance.",
+     "created_at": "2026-11-16T16:16:07.322Z",
+     "display_at": "2026-11-16T16:16:07.322Z"
+    }
+   ]
+  },
+  {
+   "id": "dvy0t3mvh1lg",
+   "name": "Impact across multiple GitHub products including Actions, Pages, and Copilot products.",
+   "status": "resolved",
+   "impact": "critical",
+   "created_at": "2026-11-11T20:48:12.265Z",
+   "updated_at": "2026-11-20T18:14:41.562Z",
+   "monitoring_at": "2026-11-11T21:07:24.649Z",
+   "resolved_at": "2026-11-11T21:21:39.473Z",
+   "started_at": "2026-11-11T20:48:12.260Z",
+   "shortlink": "https://stspg.io/jdjlq5zjyl48",
+   "components": [
+    {
+     "id": "4230lsnqdsld",
+     "name": "Webhooks",
+     "status": "operational"
+    },
+    {
+     "id": "br0l2tvcx85d",
+     "name": "Actions",
+     "status": "operational"
+    },
+    {
+     "id": "vg70hn9s2tyj",
+     "name": "Pages",
+     "status": "operational"
+    },
+    {
+     "id": "pjmpxvq2cmr2",
+     "name": "Copilot",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "m9q28dm1dj31",
+     "status": "resolved",
+     "body": "On November 11, 2026, from 20:05 to 21:02 UTC, customers experienced delayed or failed Actions workflow starts, webhook errors and delivery delays, slower GitHub Apps API requests, and reduced availability of Copilot features, including Code Review. GitHub Pages builds were also delayed.<br /><br />...",
+     "created_at": "2026-11-11T21:21:39.473Z",
+     "display_at": "2026-11-11T21:21:39.473Z"
+    },
+    {
+     "id": "z5pb9077yx4s",
+     "status": "monitoring",
+     "body": "The backlog of Actions jobs has been fully processed. We’re observing full recovery across all impacted services.",
+     "created_at": "2026-11-11T21:21:32.087Z",
+     "display_at": "2026-11-11T21:21:32.087Z"
+    }
+   ]
+  }
+ ]
+}

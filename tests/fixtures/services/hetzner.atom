@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+  <feed xmlns="http://www.w3.org/2005/Atom">
+      <title>Hetzner Online GmbH - Status-Webseite</title>
+      <id>https://status.hetzner.com/</id>
+      <link href="https://status.hetzner.com/en.atom" rel="self" type="application/atom+xml" />
+      <link href="https://status.hetzner.com" rel="alternate" type="text/html" />
+      <icon>https://status.hetzner.com/favicon.ico</icon>
+      <updated>2026-11-20T14:56:11+00:00</updated>
+      <author>
+        <name>Hetzner Online GmbH</name>
+      </author>
+      
+  <entry>
+    <id>https://status.hetzner.com/2e715748-fddd-427b-a07b-b34a5a9edee3/0</id>
+    <updated>2026-06-12T09:26:02+00:00</updated>
+    <link href="https://status.hetzner.com/incident/2e715748-fddd-427b-a07b-b34a5a9edee3" />
+    <title>Phishing emails stealing logins and credit card data</title>
+    <category term="General"/>
+    
+  <content type="xhtml">
+    <div xmlns="http://www.w3.org/1999/xhtml">
+      <p>Start: 2024-07-05T06:00:00+00:00</p>
+      
+      <p> Phishing is a serious digital security threat, which causes billions of dollars in damages every year. It’s a risk that both everyday users and companies should not underestimate.
+
+There are currently phishing emails circulating in the name of Hetzner.
+
+You can recognise these emails by the following features:
+
+Sense of urgency:
+
+Be careful about any emails with subject lines that ask you to do something urgently, for example, subject likes, “Last reminder: accept the new data protection policies”, “Urgent: renew your domain xyz or it will be locked”, or “Your contract will end soon”.
+
+Fake sender:
+
+Look out for emails with fake sender names like “HETZNER”, “HetznerSupportTeam”, “Hetzner Online GmbH”. The sender is also fake if the email address does not end with “@hetzner.com”.
+
+Links that look real:
+
+In the email texts, there are links that look real at first, but that will take you to fake Hetzner login pages. These fake login pages will try to get you to enter your Hetzner login details or your credit card details so they can steal them.
+
+If you think an email is fake, do NOT open the email at all. And if you accidentally do open the email, do NOT click on any links. If you get an email like this, delete it immediately.
+
+If you already entered your username and/or password on site that you think was fake, you should immediately change your Hetzner password at https://accounts.hetzner.com.
+
+To better protect your account against hackers, we strongly recommend that you activate two-factor authentication (2FA) for your Hetzner Account: https://docs.hetzner.com/accounts-panel/accounts/two-factor-authentication/
+
+Please do not call our telephone support about phishing-related issues. Instead, write to us at [address removed].
+
+You can see a collection of phishing emails that we know about here: https://docs.hetzner.com/general/others/phishing-email-collection
+</p>
+      
+    </div>
+  </content>
+  
+  </entry>
+<entry>
+    <id>https://status.hetzner.com/302a2b8d-443d-46e5-a196-b115d11e58ae/0</id>
+    <updated>2026-11-09T12:12:14+00:00</updated>
+    <link href="https://status.hetzner.com/incident/302a2b8d-443d-46e5-a196-b115d11e58ae" />
+    <title>Replacement of power supply components and UPS in NBG1-DC2</title>
+    <category term="NBG1-DC2"/>
+    
+  <content type="xhtml">
+    <div xmlns="http://www.w3.org/1999/xhtml">
+      <p>Start: 2026-11-24T05:00:00+00:00</p>
+      <p>Estimated end: 2026-11-24T17:00:00+00:00</p>
+      <p>During this time, technicians will be upgrading various power supply components, including the UPS system in NBG1-DC2 . The work should not negatively affect our server systems.
+
+You can see which data center your server is located in by doing a trace route (for example, by using https://dnstools.ws/).</p>
+      
+    </div>
+  </content>
+  
+  </entry>
+<entry>
+    <id>https://status.hetzner.com/5538b885-8fe5-42ad-98f7-7f788a8af426/7</id>
+    <updated>2026-11-19T13:36:45+00:00</updated>
+    <link href="https://status.hetzner.com/incident/5538b885-8fe5-42ad-98f7-7f788a8af426" />
+    <title>Object Storage in location fsn1 partially degraded</title>
+    <category term="Object Storage"/>
+    
+  <content type="xhtml">
+    <div xmlns="http://www.w3.org/1999/xhtml">
+      <p>Start: 2026-11-14T00:40:27+00:00</p>
+      
+      <p>Object Storage service in location fsn1 is currently only partially available. Requests to some buckets may fail or time out. We are currently investigating the issue.</p>
+      
+    <strong>Monitoring</strong>
+    <small>2026-11-19T13:36:45+00:00</small>
+    <p>We have fixed the error.
+
+We are monitoring the systems closely.</p>
+    <strong>Investigating</strong>
+    <small>2026-11-19T13:14:14+00:00</small>
+    <p>We are observing elevated error levels and are investigating again. </p>
+    <strong>Monitoring</strong>
+    <small>2026-11-15T07:42:54+00:00</small>
+    <p>We have fixed the error.
+
+We are monitoring the systems closely.
+</p>
+    <strong>Investigating</strong>
+    <small>2026-11-15T07:24:51+00:00</small>
+    <p>We are observing elevated error levels and are investigating again. </p>
+    <strong>Monitoring</strong>
+    <small>2026-11-15T04:49:07+00:00</small>
+    <p>We have fixed the error.
+
+We are monitoring the systems closely.
+</p>
+    <strong>Investigating</strong>
+    <small>2026-11-15T02:20:37+00:00</small>
+    <p>We are observing elevated error levels and are investigating again. </p>
+    <strong>Monitoring</strong>
+    <small>2026-11-14T03:13:17+00:00</small>
+    <p>We have fixed the error.
+
+We are monitoring the systems closely.
+</p>
+    </div>
+  </content>
+  
+  </entry>
+<entry>
+    <id>https://status.hetzner.com/e6d41459-0475-4de3-9ddc-4b970f82d882/0</id>
+    <updated>2026-11-17T15:24:38+00:00</updated>
+    <link href="https://status.hetzner.com/incident/e6d41459-0475-4de3-9ddc-4b970f82d882" />
+    <title>Maintenance work on Object Storage in NBG</title>
+    <category term="Object Storage"/>
+    
+  <content type="xhtml">
+    <div xmlns="http://www.w3.org/1999/xhtml">
+      <p>Start: 2026-12-02T11:00:00+00:00</p>
+      <p>Ends on: 2026-12-02T23:00:00+00:00</p>
+      <p>We will perform planed maintenance work on our Object Storage. During this time, short connection interruptions may occur.</p>
+      
+    </div>
+  </content>
+  
+  </entry>
+<entry>
+    <id>https://status.hetzner.com/b009f3fc-8508-48b3-877f-dcaada10e7bc/0</id>
+    <updated>2026-11-19T10:39:47+00:00</updated>
+    <link href="https://status.hetzner.com/incident/b009f3fc-8508-48b3-877f-dcaada10e7bc" />
+    <title>Object Storage HEL: Creation of new buckets temporarily unavailable</title>
+    <category term="Object Storage"/>
+    
+  <content type="xhtml">
+    <div xmlns="http://www.w3.org/1999/xhtml">
+      <p>Start: 2026-11-18T14:32:08+00:00</p>
+      
+      <p>Due to strong growth in demand at our HEL location, it will temporarily not be possible to create new buckets at this location starting 19 November 2026, at 10:00 CET. Existing buckets are not affected and remain fully available.
+
+We are already expanding capacity in HEL and expect the expansion to be completed in about three weeks. We will post an update here as soon as new buckets can be created again.
+
+In the meantime, please use our FSN or NBG locations to create new buckets.
+
+We appreciate your understanding.</p>
+      
+    </div>
+  </content>
+  
+  </entry>
+<entry>
+    <id>https://status.hetzner.com/c846961f-000c-4209-89bc-43a8b8a36876/0</id>
+    <updated>2026-11-20T14:56:11+00:00</updated>
+    <link href="https://status.hetzner.com/incident/c846961f-000c-4209-89bc-43a8b8a36876" />
+    <title>Urgent maintenance on Object Storage in HEL+FSN</title>
+    <category term="Object Storage"/>
+    
+  <content type="xhtml">
+    <div xmlns="http://www.w3.org/1999/xhtml">
+      <p>Start: 2026-11-23T12:00:00+00:00</p>
+      <p>Ends on: 2026-11-23T20:00:00+00:00</p>
+      <p>To ensure the stability and performance of our Object Storage in Helsinki (HEL) and Falkenstein (FSN), we are carrying out urgent maintenance work.
+
+During the maintenance, brief connection interruptions may occur. We apologize for any inconvenience and will provide an update once the work has been completed.</p>
+      
+    </div>
+  </content>
+  
+  </entry>
+
+  </feed>

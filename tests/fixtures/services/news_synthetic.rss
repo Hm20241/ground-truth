@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SYNTHETIC datacenter-news RSS: invented headlines and example.test links; clock fixed at 2026-11-21T05:00:00Z -->
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<channel><title>Synthetic DC news</title><link>https://news.example.test/</link><description>test</description>
+<item><title>Fire at data center in Frankfurt knocks services offline</title><link>https://news.example.test/fire-frankfurt</link>
+ <description>&lt;p&gt;A blaze in a &lt;b&gt;battery room&lt;/b&gt; forced an evacuation.&lt;/p&gt;</description><pubDate>Sat, 21 Nov 2026 03:00:00 +0000</pubDate></item>
+<item><title>Power outage hits colocation facility in Singapore</title><link>https://news.example.test/power-sg</link>
+ <pubDate>Fri, 20 Nov 2026 22:00:00 +0000</pubDate></item>
+<item><title>Cooling failure takes down cloud region</title><link>https://news.example.test/cooling</link>
+ <pubDate>Fri, 20 Nov 2026 12:00:00 GMT</pubDate></item>
+<item><title>Explosion reported at data center site in Texas</title><link>https://news.example.test/future</link>
+ <pubDate>Tue, 24 Nov 2026 12:00:00 GMT</pubDate></item>
+<item><title>Operator acquires rival after last year's outage</title><link>https://news.example.test/deal</link>
+ <pubDate>Fri, 20 Nov 2026 10:00:00 GMT</pubDate></item>
+<item><title>Opinion: why outages keep happening</title><link>https://news.example.test/opinion</link>
+ <pubDate>Fri, 20 Nov 2026 09:00:00 GMT</pubDate></item>
+<item><title>Data center fire safety summit</title><link>https://news.example.test/event</link>
+ <dc:date>2026-11-20T09:00:00Z</dc:date></item>
+<item><title>Flooding forces evacuation of data hall in Jakarta, Indonesia</title><link>https://news.example.test/flood-jkt</link>
+ <pubDate>Fri, 20 Nov 2026 08:00:00 GMT</pubDate></item>
+<item><title>Data center fire in Paris</title><link>https://news.example.test/old-paris</link>
+ <pubDate>Sun, 15 Nov 2026 08:00:00 GMT</pubDate></item>
+<item><title>New data center campus plans unveiled</title><link>https://news.example.test/campus</link>
+ <pubDate>Fri, 20 Nov 2026 07:00:00 GMT</pubDate></item>
+</channel></rss>

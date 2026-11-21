@@ -1,0 +1,452 @@
+{
+ "outage": [
+  {
+   "MRID": "3b9fd06b-2be9-3da5-88ac-8e0e3af30e64",
+   "actualPeriod": null,
+   "cause": null,
+   "causeKind": null,
+   "communityDescriptor": "39095",
+   "customersRestored": null,
+   "estimatedPeriod": null,
+   "estimatedRestorationTime": null,
+   "incident": null,
+   "metersAffected": 5410,
+   "mrid": "3b9fd06b-2be9-3da5-88ac-8e0e3af30e64",
+   "names": [
+    {
+     "name": "THE TOLEDO EDISON CO",
+     "nameType": "UtilityName",
+     "nameTypeAuthority": "EIA"
+    },
+    {
+     "name": "18997",
+     "nameType": "UtilityId",
+     "nameTypeAuthority": "EIA"
+    }
+   ],
+   "originalCustomersServed": null,
+   "originalMetersAffected": null,
+   "outageArea": null,
+   "outageKind": null,
+   "reportedStartTime": null,
+   "statusKind": null,
+   "utilityDisclaimer": null
+  },
+  {
+   "MRID": "c63b6cee-54af-3378-aea5-99b486ca7297",
+   "actualPeriod": null,
+   "cause": null,
+   "causeKind": null,
+   "communityDescriptor": "48201",
+   "customersRestored": null,
+   "estimatedPeriod": null,
+   "estimatedRestorationTime": null,
+   "incident": null,
+   "metersAffected": 1192,
+   "mrid": "c63b6cee-54af-3378-aea5-99b486ca7297",
+   "names": [
+    {
+     "name": "CENTERPOINT ENERGY",
+     "nameType": "UtilityName",
+     "nameTypeAuthority": "EIA"
+    },
+    {
+     "name": "8901",
+     "nameType": "UtilityId",
+     "nameTypeAuthority": "EIA"
+    }
+   ],
+   "originalCustomersServed": null,
+   "originalMetersAffected": null,
+   "outageArea": null,
+   "outageKind": null,
+   "reportedStartTime": null,
+   "statusKind": null,
+   "utilityDisclaimer": null
+  },
+  {
+   "MRID": "c3a2f759-c10a-3307-be67-4d8911052d1d",
+   "actualPeriod": null,
+   "cause": null,
+   "causeKind": null,
+   "communityDescriptor": "06037",
+   "customersRestored": null,
+   "estimatedPeriod": null,
+   "estimatedRestorationTime": null,
+   "incident": null,
+   "metersAffected": 532,
+   "mrid": "c3a2f759-c10a-3307-be67-4d8911052d1d",
+   "names": [
+    {
+     "name": "SOUTHERN CALIFORNIA EDISON CO",
+     "nameType": "UtilityName",
+     "nameTypeAuthority": "EIA"
+    },
+    {
+     "name": "17609",
+     "nameType": "UtilityId",
+     "nameTypeAuthority": "EIA"
+    }
+   ],
+   "originalCustomersServed": null,
+   "originalMetersAffected": null,
+   "outageArea": null,
+   "outageKind": null,
+   "reportedStartTime": null,
+   "statusKind": null,
+   "utilityDisclaimer": null
+  },
+  {
+   "MRID": "c006d24e-67ee-3f03-b53a-37bf9ab71ff0",
+   "actualPeriod": null,
+   "cause": null,
+   "causeKind": null,
+   "communityDescriptor": "36025",
+   "customersRestored": null,
+   "estimatedPeriod": null,
+   "estimatedRestorationTime": null,
+   "incident": null,
+   "metersAffected": 439,
+   "mrid": "c006d24e-67ee-3f03-b53a-37bf9ab71ff0",
+   "names": [
+    {
+     "name": "AVANGRID",
+     "nameType": "UtilityName",
+     "nameTypeAuthority": "EIA"
+    },
+    {
+     "name": "14349",
+     "nameType": "UtilityId",
+     "nameTypeAuthority": "EIA"
+    }
+   ],
+   "originalCustomersServed": null,
+   "originalMetersAffected": null,
+   "outageArea": null,
+   "outageKind": null,
+   "reportedStartTime": null,
+   "statusKind": null,
+   "utilityDisclaimer": null
+  },
+  {
+   "MRID": "376f2cd0-6a6a-3986-a384-f80395c16f0e",
+   "actualPeriod": null,
+   "cause": null,
+   "causeKind": null,
+   "communityDescriptor": "25027",
+   "customersRestored": null,
+   "estimatedPeriod": null,
+   "estimatedRestorationTime": null,
+   "incident": null,
+   "metersAffected": 245,
+   "mrid": "376f2cd0-6a6a-3986-a384-f80395c16f0e",
+   "names": [
+    {
+     "name": "NATIONAL GRID",
+     "nameType": "UtilityName",
+     "nameTypeAuthority": "EIA"
+    },
+    {
+     "name": "11804",
+     "nameType": "UtilityId",
+     "nameTypeAuthority": "EIA"
+    }
+   ],
+   "originalCustomersServed": null,
+   "originalMetersAffected": null,
+   "outageArea": null,
+   "outageKind": null,
+   "reportedStartTime": null,
+   "statusKind": null,
+   "utilityDisclaimer": null
+  },
+  {
+   "MRID": "60f7c0bc-3185-38ff-8f66-bd2cd916198e",
+   "actualPeriod": null,
+   "cause": null,
+   "causeKind": null,
+   "communityDescriptor": "39007",
+   "customersRestored": null,
+   "estimatedPeriod": null,
+   "estimatedRestorationTime": null,
+   "incident": null,
+   "metersAffected": 170,
+   "mrid": "60f7c0bc-3185-38ff-8f66-bd2cd916198e",
+   "names": [
+    {
+     "name": "CLEVELAND ELECTRIC ILLUM CO",
+     "nameType": "UtilityName",
+     "nameTypeAuthority": "EIA"
+    },
+    {
+     "name": "3755",
+     "nameType": "UtilityId",
+     "nameTypeAuthority": "EIA"
+    }
+   ],
+   "originalCustomersServed": null,
+   "originalMetersAffected": null,
+   "outageArea": null,
+   "outageKind": null,
+   "reportedStartTime": null,
+   "statusKind": null,
+   "utilityDisclaimer": null
+  },
+  {
+   "MRID": "2adcb9d4-3ca0-3778-ac0c-61fbc497026d",
+   "actualPeriod": null,
+   "cause": null,
+   "causeKind": null,
+   "communityDescriptor": "19181",
+   "customersRestored": null,
+   "estimatedPeriod": null,
+   "estimatedRestorationTime": null,
+   "incident": null,
+   "metersAffected": 70,
+   "mrid": "2adcb9d4-3ca0-3778-ac0c-61fbc497026d",
+   "names": [
+    {
+     "name": "MIDAMERICAN ENERGY CO",
+     "nameType": "UtilityName",
+     "nameTypeAuthority": "EIA"
+    },
+    {
+     "name": "12341",
+     "nameType": "UtilityId",
+     "nameTypeAuthority": "EIA"
+    }
+   ],
+   "originalCustomersServed": null,
+   "originalMetersAffected": null,
+   "outageArea": null,
+   "outageKind": null,
+   "reportedStartTime": null,
+   "statusKind": null,
+   "utilityDisclaimer": null
+  },
+  {
+   "MRID": "cd38e4c1-617d-3227-94f4-35279730b52c",
+   "actualPeriod": null,
+   "cause": null,
+   "causeKind": null,
+   "communityDescriptor": "25017",
+   "customersRestored": null,
+   "estimatedPeriod": null,
+   "estimatedRestorationTime": null,
+   "incident": null,
+   "metersAffected": 68,
+   "mrid": "cd38e4c1-617d-3227-94f4-35279730b52c",
+   "names": [
+    {
+     "name": "NATIONAL GRID",
+     "nameType": "UtilityName",
+     "nameTypeAuthority": "EIA"
+    },
+    {
+     "name": "11804",
+     "nameType": "UtilityId",
+     "nameTypeAuthority": "EIA"
+    }
+   ],
+   "originalCustomersServed": null,
+   "originalMetersAffected": null,
+   "outageArea": null,
+   "outageKind": null,
+   "reportedStartTime": null,
+   "statusKind": null,
+   "utilityDisclaimer": null
+  },
+  {
+   "MRID": "97f83251-9d9b-334f-9674-ad7a65476963",
+   "actualPeriod": null,
+   "cause": null,
+   "causeKind": null,
+   "communityDescriptor": "49035",
+   "customersRestored": null,
+   "estimatedPeriod": null,
+   "estimatedRestorationTime": null,
+   "incident": null,
+   "metersAffected": 53,
+   "mrid": "97f83251-9d9b-334f-9674-ad7a65476963",
+   "names": [
+    {
+     "name": "PACIFICORP",
+     "nameType": "UtilityName",
+     "nameTypeAuthority": "EIA"
+    },
+    {
+     "name": "14354",
+     "nameType": "UtilityId",
+     "nameTypeAuthority": "EIA"
+    }
+   ],
+   "originalCustomersServed": null,
+   "originalMetersAffected": null,
+   "outageArea": null,
+   "outageKind": null,
+   "reportedStartTime": null,
+   "statusKind": null,
+   "utilityDisclaimer": null
+  },
+  {
+   "MRID": "c7f56ee9-8e14-3e48-b1dc-c47b1ced5773",
+   "actualPeriod": null,
+   "cause": null,
+   "causeKind": null,
+   "communityDescriptor": "06065",
+   "customersRestored": null,
+   "estimatedPeriod": null,
+   "estimatedRestorationTime": null,
+   "incident": null,
+   "metersAffected": 35,
+   "mrid": "c7f56ee9-8e14-3e48-b1dc-c47b1ced5773",
+   "names": [
+    {
+     "name": "SOUTHERN CALIFORNIA EDISON CO",
+     "nameType": "UtilityName",
+     "nameTypeAuthority": "EIA"
+    },
+    {
+     "name": "17609",
+     "nameType": "UtilityId",
+     "nameTypeAuthority": "EIA"
+    }
+   ],
+   "originalCustomersServed": null,
+   "originalMetersAffected": null,
+   "outageArea": null,
+   "outageKind": null,
+   "reportedStartTime": null,
+   "statusKind": null,
+   "utilityDisclaimer": null
+  },
+  {
+   "MRID": "0902ef8d-872b-3704-8855-8b147f42c063",
+   "actualPeriod": null,
+   "cause": null,
+   "causeKind": null,
+   "communityDescriptor": "47089",
+   "customersRestored": null,
+   "estimatedPeriod": null,
+   "estimatedRestorationTime": null,
+   "incident": null,
+   "metersAffected": 32,
+   "mrid": "0902ef8d-872b-3704-8855-8b147f42c063",
+   "names": [
+    {
+     "name": "CITY OF NEWPORT",
+     "nameType": "UtilityName",
+     "nameTypeAuthority": "EIA"
+    },
+    {
+     "name": "13550",
+     "nameType": "UtilityId",
+     "nameTypeAuthority": "EIA"
+    }
+   ],
+   "originalCustomersServed": null,
+   "originalMetersAffected": null,
+   "outageArea": null,
+   "outageKind": null,
+   "reportedStartTime": null,
+   "statusKind": null,
+   "utilityDisclaimer": null
+  },
+  {
+   "MRID": "0191b7c1-e7a4-39f3-9a1a-6739a2ab20f4",
+   "actualPeriod": null,
+   "cause": null,
+   "causeKind": null,
+   "communityDescriptor": "04019",
+   "customersRestored": null,
+   "estimatedPeriod": null,
+   "estimatedRestorationTime": null,
+   "incident": null,
+   "metersAffected": 8,
+   "mrid": "0191b7c1-e7a4-39f3-9a1a-6739a2ab20f4",
+   "names": [
+    {
+     "name": "TRICO ELECTRIC COOPERATIVE INC",
+     "nameType": "UtilityName",
+     "nameTypeAuthority": "EIA"
+    },
+    {
+     "name": "19189",
+     "nameType": "UtilityId",
+     "nameTypeAuthority": "EIA"
+    }
+   ],
+   "originalCustomersServed": null,
+   "originalMetersAffected": null,
+   "outageArea": null,
+   "outageKind": null,
+   "reportedStartTime": null,
+   "statusKind": null,
+   "utilityDisclaimer": null
+  },
+  {
+   "MRID": "1247803d-37f2-3e41-9fc7-167ce2f3ad04",
+   "actualPeriod": null,
+   "cause": null,
+   "causeKind": null,
+   "communityDescriptor": "22033",
+   "customersRestored": null,
+   "estimatedPeriod": null,
+   "estimatedRestorationTime": null,
+   "incident": null,
+   "metersAffected": 16,
+   "mrid": "1247803d-37f2-3e41-9fc7-167ce2f3ad04",
+   "names": [
+    {
+     "name": "DIXIE ELECTRIC MEMBERSHIP CORP",
+     "nameType": "UtilityName",
+     "nameTypeAuthority": "EIA"
+    },
+    {
+     "name": "5202",
+     "nameType": "UtilityId",
+     "nameTypeAuthority": "EIA"
+    }
+   ],
+   "originalCustomersServed": null,
+   "originalMetersAffected": null,
+   "outageArea": null,
+   "outageKind": null,
+   "reportedStartTime": null,
+   "statusKind": null,
+   "utilityDisclaimer": null
+  },
+  {
+   "MRID": "125c6fe0-d9e4-35ad-9661-95efa3d9381b",
+   "actualPeriod": null,
+   "cause": null,
+   "causeKind": null,
+   "communityDescriptor": "42091",
+   "customersRestored": null,
+   "estimatedPeriod": null,
+   "estimatedRestorationTime": null,
+   "incident": null,
+   "metersAffected": 9,
+   "mrid": "125c6fe0-d9e4-35ad-9661-95efa3d9381b",
+   "names": [
+    {
+     "name": "METROPOLITAN EDISON CO",
+     "nameType": "UtilityName",
+     "nameTypeAuthority": "EIA"
+    },
+    {
+     "name": "12390",
+     "nameType": "UtilityId",
+     "nameTypeAuthority": "EIA"
+    }
+   ],
+   "originalCustomersServed": null,
+   "originalMetersAffected": null,
+   "outageArea": null,
+   "outageKind": null,
+   "reportedStartTime": null,
+   "statusKind": null,
+   "utilityDisclaimer": null
+  }
+ ]
+}

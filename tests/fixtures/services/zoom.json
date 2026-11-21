@@ -1,0 +1,171 @@
+{
+ "page": {
+  "id": "14qjgk812kgk",
+  "name": "Zoom",
+  "url": "https://www.zoomstatus.com",
+  "time_zone": "America/Los_Angeles",
+  "updated_at": "2026-11-20T18:39:05.797-08:00"
+ },
+ "incidents": [
+  {
+   "id": "xvsknch85ynp",
+   "name": "Service Degradation for a subset of users affecting outbound Zoom Phone calls in Australia.",
+   "status": "resolved",
+   "impact": "none",
+   "created_at": "2026-11-20T12:30:33.071-08:00",
+   "updated_at": "2026-11-20T12:42:51.926-08:00",
+   "monitoring_at": "2026-11-20T12:30:33.145-08:00",
+   "resolved_at": "2026-11-20T12:42:51.895-08:00",
+   "started_at": "2026-11-20T12:30:33.059-08:00",
+   "shortlink": "https://stspg.io/mjlsmmz5zyqx",
+   "components": [
+    {
+     "id": "xf8s6w88yqg6",
+     "name": "Calling (Inbound/Outbound)",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "1q4mz1qwgykb",
+     "status": "resolved",
+     "body": "This incident has been resolved.",
+     "created_at": "2026-11-20T12:42:51.895-08:00",
+     "display_at": "2026-11-20T12:42:51.895-08:00"
+    },
+    {
+     "id": "1h8hr4262swb",
+     "status": "monitoring",
+     "body": "On 11/20/2026, Between 18:26 UTC to 19:22 UTC, a subset of users may have experienced issues with outbound Zoom Phone calls in Australia. \nThis incident has been resolved and the affected services have been restored.",
+     "created_at": "2026-11-20T12:30:33.145-08:00",
+     "display_at": "2026-11-20T12:30:33.145-08:00"
+    }
+   ]
+  },
+  {
+   "id": "sqkvklmrf6j3",
+   "name": "Service degradation affecting multiple services in the US region",
+   "status": "resolved",
+   "impact": "none",
+   "created_at": "2026-11-19T03:55:57.926-08:00",
+   "updated_at": "2026-11-19T04:33:38.265-08:00",
+   "monitoring_at": "2026-11-19T03:55:58.023-08:00",
+   "resolved_at": "2026-11-19T04:33:38.242-08:00",
+   "started_at": "2026-11-19T03:55:57.907-08:00",
+   "shortlink": "https://stspg.io/9kfmcm788fwb",
+   "components": [
+    {
+     "id": "8gftm750nwzm",
+     "name": "Web Portal",
+     "status": "operational"
+    },
+    {
+     "id": "503cqbhcpvzx",
+     "name": "Web Client",
+     "status": "operational"
+    },
+    {
+     "id": "rsh1v3gbhtsy",
+     "name": "Zoom AI",
+     "status": "operational"
+    },
+    {
+     "id": "gtf6dl08hrk1",
+     "name": "Zoom Whiteboard",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "9hdfnlkwqs29",
+     "status": "resolved",
+     "body": "This incident has been resolved and the affected services have been restored.",
+     "created_at": "2026-11-19T04:33:38.242-08:00",
+     "display_at": "2026-11-19T04:33:38.242-08:00"
+    },
+    {
+     "id": "f05n40btg58n",
+     "status": "monitoring",
+     "body": "On 11/19/2026, Between 09:24 UTC to 11:09 UTC Users may have experienced intermittent issues with Zoom services in the US region.\n \nThis incident has been resolved and the affected services have been restored.",
+     "created_at": "2026-11-19T03:55:58.023-08:00",
+     "display_at": "2026-11-19T03:55:58.023-08:00"
+    }
+   ]
+  },
+  {
+   "id": "lp3mxbjmc84k",
+   "name": "Service Degradation Affecting Subset of Users using Zoom Phone Calls in Europe Region.",
+   "status": "resolved",
+   "impact": "none",
+   "created_at": "2026-11-17T23:05:38.214-08:00",
+   "updated_at": "2026-11-17T23:18:27.206-08:00",
+   "monitoring_at": "2026-11-17T23:05:38.283-08:00",
+   "resolved_at": "2026-11-17T23:18:27.177-08:00",
+   "started_at": "2026-11-17T23:05:38.202-08:00",
+   "shortlink": "https://stspg.io/7qt58lxd9qll",
+   "components": [
+    {
+     "id": "hx06zxqdrsxl",
+     "name": "Calling (Inbound/Outbound)",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "108pzp7sd8x0",
+     "status": "resolved",
+     "body": "This incident has been resolved and the affected services have been restored.",
+     "created_at": "2026-11-17T23:18:27.177-08:00",
+     "display_at": "2026-11-17T23:18:27.177-08:00"
+    },
+    {
+     "id": "sw7bkg2j7plh",
+     "status": "monitoring",
+     "body": "On November 18, 2026, between 01:32 UTC to 03:37 UTC subset of users might have experienced inbound and outbound call issues using Zoom Phone services in Europe. The issue has been successfully resolved. \n\nOur team will continue to monitor the situation closely and keep you informed of any further d...",
+     "created_at": "2026-11-17T23:05:38.283-08:00",
+     "display_at": "2026-11-17T23:05:38.283-08:00"
+    }
+   ]
+  },
+  {
+   "id": "5xcd1035bxmw",
+   "name": "Service Degradation Affecting Zoom Phone in the EU01 cluster.",
+   "status": "resolved",
+   "impact": "maintenance",
+   "created_at": "2026-09-29T18:07:06.856-07:00",
+   "updated_at": "2026-09-29T18:20:41.795-07:00",
+   "monitoring_at": "2026-09-29T18:07:06.947-07:00",
+   "resolved_at": "2026-09-29T18:20:41.771-07:00",
+   "started_at": "2026-09-29T18:07:06.693-07:00",
+   "shortlink": "https://stspg.io/9pzhzmf13rs4",
+   "components": [
+    {
+     "id": "773zkp1jzkgl",
+     "name": "Zoom Phone",
+     "status": "operational"
+    },
+    {
+     "id": "hx06zxqdrsxl",
+     "name": "Calling (Inbound/Outbound)",
+     "status": "operational"
+    }
+   ],
+   "incident_updates": [
+    {
+     "id": "003ffpmtg558",
+     "status": "resolved",
+     "body": "This incident has been resolved.",
+     "created_at": "2026-09-29T18:20:41.771-07:00",
+     "display_at": "2026-09-29T18:20:41.771-07:00"
+    },
+    {
+     "id": "z3vxdnjd4srw",
+     "status": "monitoring",
+     "body": "On 09/29/2026 - 09/30/2026, Between 21:08 UTC to 00:44 UTC, A subset of users may have experienced issues with Zoom Phone in the EU01 cluster.\n\nThis incident has been resolved and the affected services have been restored.",
+     "created_at": "2026-09-29T18:07:06.947-07:00",
+     "display_at": "2026-09-29T18:07:06.947-07:00"
+    }
+   ]
+  }
+ ]
+}

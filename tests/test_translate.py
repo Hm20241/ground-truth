@@ -26,7 +26,8 @@ def check(cond, msg):
 
 
 NOW = 1795300000
-check(translate.VERSION == "1.0" and translate.FEEDS == ("wire", "telegram"), "version and the feeds it serves")
+check(translate.VERSION == "1.1" and translate.FEEDS == ("wire", "telegram", "power") and translate.RECLASSIFY == ("wire", "telegram"),
+      "version and the feeds it serves (1.1: power too; only wire and telegram are reclassified)")
 check(wire.CACHE.startswith(TMP), "the store lives in the feeds' cache folder (GT_DATA)")
 
 feed = {"count": 4, "items": [
@@ -78,10 +79,20 @@ for bad in (None, {"items": []}, "x"):
         pass
 check(True, "a non-list body raises ValueError (the server answers 400)")
 check(translate.apply(None) is None and translate.apply({"x": 1}) == {"x": 1}, "apply() leaves odd data alone")
+# 1.1 (GT 1.5.3): the power feed is translated too, but its items keep their own tags (no keyword reclassification)
+translate.store([{"id": "power:ukrenergo:1", "from": "uk", "title": "Emergency power cuts"}], {"model": "m"},
+                now=NOW + translate.KEEP_S + 20)
+pw = {"count": 1, "items": [{"id": "power:ukrenergo:1", "lang": "uk", "title": "Аварійні відключення", "tags": ["emergency"]}]}
+po = translate.apply(pw, "power")["items"][0]
+check(po["title"] == "Emergency power cuts" and po["tags"] == ["emergency"] and "category" not in po,
+      "power feed: English title, its own tags kept, no category added: %s" % po)
+translate.store([{"id": "wire:x:1", "from": "uk", "title": "Missile strike on Kyiv"}], {"model": "m"}, now=NOW + translate.KEEP_S + 20)
+wo = translate.apply({"items": [{"id": "wire:x:1", "lang": "uk", "title": "Удар", "category": "other", "tags": []}]}, "wire")["items"][0]
+check(wo["category"] != "other", "wire feed: still reclassified from the English title: %s" % wo.get("category"))
 check(set(translate.stats()) == {"version", "kept", "newest"}, "stats()")
 
 src = open(os.path.join(ROOT, "server.py"), encoding="utf-8").read()
-check('"/api/translations"' in src and "translate.apply(s.get(\"data\"))" in src and "translate.store(" in src,
+check('"/api/translations"' in src and "translate.apply(s.get(\"data\"), m.group(1))" in src and "translate.store(" in src,
       "server.py: POST /api/translations (token-gated with the analyst's) and English feeds on GET")
 an = open(os.path.join(ROOT, "analyst", "analyst.py"), encoding="utf-8").read()
 check('"translate_model": "claude-haiku-5-5"' in an and '"translate.lock"' in an and '"--tools", ""' in an,

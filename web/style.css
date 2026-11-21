@@ -557,3 +557,18 @@ button.clock:focus-visible, #tzchips .chip:focus-visible { outline: 2px solid va
   font: 600 11px/16px var(--sans); white-space: nowrap; cursor: pointer; }
 .feed .vm:hover, .feed .vm:focus-visible { border-color: #9cc7ff; color: #fff; background: rgba(156, 199, 255, .1); outline: none; }
 @media (pointer: coarse) { .feed .vm { min-height: 36px; padding: 0 12px; border-radius: 18px; } }
+
+/* 1.5.3: outage layers (ext/outages.js): popup badges, the Outages tab's grid rows, status board and region chips */
+.pop .ou-b { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 6px; }
+.pop .ou-also { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+.ou-kv { display: grid; gap: 7px; font-size: 11.5px; overflow-wrap: anywhere; }
+.ou-kv .ou-k { color: var(--muted); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+.ou-board { margin: 4px 0 2px; }
+.ou-board a.chip { color: var(--text); text-decoration: none; }
+.ou-board a.chip:hover, .ou-board a.chip:focus-visible { border-color: var(--muted) !important; outline: none; }
+.ou-board span.chip, .ou-regs .chip { cursor: default; }
+.ou-regs { margin-top: 6px; }
+.ou-pops { margin-top: 8px; }
+.ou-act li .t { font-weight: 500; overflow-wrap: anywhere; }
+.ou-act li .t a { color: inherit; }
+.ou-act li.nl { cursor: default; }

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:lab="https://labradorcms.com/ns/rss">
+<channel>
+    <title>www.theregister.com - Articles</title>
+    <link>https://www.theregister.com</link>
+    <description>Articles from www.theregister.com</description>
+
+    <item>
+  <title>REIT move? Blackstone joint venture buys AWS campuses to lease back to the cloud giant</title>
+  <link>https://www.theregister.com/on-prem/2026/11/17/reit-move-blackstone-joint-venture-buys-aws-campuses-to-lease-back-to-the-cloud-giant/5310355</link>
+  <pubDate>Tue, 17 Nov 2026 13:31:00 +0100</pubDate>
+  <guid isPermaLink="true">https://www.theregister.com/a/5310355</guid>
+</item>
+<item>
+  <title>Techie rigged off-spec fan near flammable liquid and an exposed motherboard, then left it to run for days</title>
+  <link>https://www.theregister.com/on-prem/2026/11/16/techie-rigged-off-spec-fan-near-flammable-liquid-and-an-exposed-motherboard-then-left-it-to-run-for-days/5309601</link>
+  <pubDate>Mon, 16 Nov 2026 07:37:00 +0100</pubDate>
+  <guid isPermaLink="true">https://www.theregister.com/a/5309601</guid>
+</item>
+</channel>
+</rss>

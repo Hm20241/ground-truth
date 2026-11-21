@@ -1,4 +1,5 @@
-"""English translations of non-English Feed items. v1.0, 2026-11-21 (Ground Truth 1.5.0).
+"""English translations of non-English Feed items. v1.1, 2026-11-21 (Ground Truth 1.5.0; 1.1, 1.5.3: the `power`
+feed too, for Ukrenergo and the Ministry of Energy, which post in Ukrainian).
 
 Asked for: "if a feed item is in another language please translate to english". The server does not translate.
 A scheduled job (`analyst/analyst.py translate`, every 5 min, on the analyst's machine) reads feed/telegram
@@ -24,8 +25,9 @@ import time
 
 from . import mymaps, wire
 
-VERSION = "1.0"
-FEEDS = ("wire", "telegram")
+VERSION = "1.1"
+FEEDS = ("wire", "telegram", "power")
+RECLASSIFY = ("wire", "telegram")   # 1.1: only these get their category worked out again from the English
 KEEP_S = 7 * 86400
 MAX = 6000
 MAX_POST = 200
@@ -103,8 +105,10 @@ def store(items, run=None, now=None):
         return {"stored": ok, "rejected": bad, "total": len(st)}
 
 
-def apply(data):
-    """A feed's data dict -> the same with its translated items in English (a copy; the cached result is untouched)."""
+def apply(data, feed=None):
+    """A feed's data dict -> the same with its translated items in English (a copy; the cached result is untouched).
+    1.1: `feed` names the feed; outside RECLASSIFY an item keeps its own category and tags (the power feed's tags,
+    such as "emergency" or "schedule", are not the keyword classifier's)."""
     if not isinstance(data, dict) or not isinstance(data.get("items"), list):
         return data
     with _LOCK:
@@ -120,7 +124,7 @@ def apply(data):
         cat, tags = mymaps.classify(tr["t"], None)
         new = dict(it, title=tr["t"], title_orig=it.get("title"), translated={"from": tr.get("from") or it.get("lang"),
                                                                                "by": tr.get("by") or "model"})
-        if cat != "other" or it.get("category") in (None, "other"):
+        if (feed is None or feed in RECLASSIFY) and (cat != "other" or it.get("category") in (None, "other")):
             new["category"], new["tags"] = cat, tags
         if it.get("summary"):
             new["summary_orig"] = it["summary"]

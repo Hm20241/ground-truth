@@ -690,7 +690,7 @@ class Handler(SimpleHTTPRequestHandler):
             m = re.fullmatch(r"/api/feed/([a-z]+)", path)
             if m and m.group(1) in STATE:
                 s = STATE[m.group(1)]
-                data = translate.apply(s.get("data")) if m.group(1) in translate.FEEDS else s.get("data")  # 1.5.0
+                data = translate.apply(s.get("data"), m.group(1)) if m.group(1) in translate.FEEDS else s.get("data")  # 1.5.0; 1.5.3 feed
                 return self._json({"ok": s.get("ok"), "at": s.get("at"), "error": s.get("error"), "data": data},
                                   cache="no-store")
             return self._json({"error": "not found"}, 404)

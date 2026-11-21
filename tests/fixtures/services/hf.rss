@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Status updates | Hugging Face</title>
+    <description>Incidents and maintenance reported on status page for Hugging Face</description>
+    <link>https://status.huggingface.co/</link>
+    <image>
+      <url>https://d1lppblt9t2x15.cloudfront.net/logos/d32f5c39b694f3e64d29fc2c9b988cdd.png</url>
+      <title>Status updates | Hugging Face</title>
+      <link>https://status.huggingface.co/</link>
+    </image>
+    <language>en</language>
+    <atom:link rel="self" type="application/rss+xml" href="https://status.huggingface.co/feed"/>
+    <item>
+      <title>Degraded performance - AWS CDN (Singapore)</title>
+      <link>https://status.huggingface.co/incident/1124142</link>
+      <pubDate>Fri, 13 Nov 2026 08:46:00 -0000</pubDate>
+      <guid isPermaLink="false">https://status.huggingface.co/incident/1124142#e44877adce5ca9d528ba72616a164186da5ffda9dabd2c49f126ff3040f9d7d1</guid>
+      <category>Incident</category>
+      <description>The issue affecting download performance on the AWS CDN in the Singapore region has been resolved. Performance has been back to normal since 08:46 UTC. We apologize for the inconvenience.</description>
+    </item>
+<item>
+      <title>Degraded performance - AWS CDN (Singapore)</title>
+      <link>https://status.huggingface.co/incident/1124142</link>
+      <pubDate>Fri, 13 Nov 2026 06:30:00 -0000</pubDate>
+      <guid isPermaLink="false">https://status.huggingface.co/incident/1124142#02e68ab04f7bdf74cdec16b691253fcc3705a8888c81b03eb80a26de3cce1e76</guid>
+      <category>Incident</category>
+      <description>We are investigating degraded performance on the AWS CDN in the Singapore region since 06:30 UTC. Downloads of files that are not yet cached may be slower than usual. Error rates remain low. We will share an update as soon as we know more.</description>
+    </item>
+<item>
+      <title>Maintenance: Scheduled maintenance: Inference Endpoints (H200)</title>
+      <link>https://status.huggingface.co/maintenance/1083838</link>
+      <pubDate>Wed, 07 Oct 2026 12:30:39 -0000</pubDate>
+      <guid isPermaLink="false">https://status.huggingface.co/incident/1083838#9559706030ac79bc030d5ba37c205a2538935dd36dbd48b27a5d485dc1870c99</guid>
+      <category>Maintenance</category>
+      <description>Maintenance completed</description>
+    </item>
+<item>
+      <title>Maintenance: Scheduled maintenance: Inference Endpoints (H200)</title>
+      <link>https://status.huggingface.co/maintenance/1083838</link>
+      <pubDate>Wed, 07 Oct 2026 07:33:39 -0000</pubDate>
+      <guid isPermaLink="false">https://status.huggingface.co/incident/1083838#49869702f56628d788eccbde90569110acbf03de96dd8f1318d76793fa5e6856</guid>
+      <category>Maintenance</category>
+      <description>We're performing infrastructure maintenance on H200 Inference Endpoints today until around 12:30 UTC. Creating new H200 endpoints may be temporarily limited.</description>
+    </item>
+<item>
+      <title>Hub unavailable</title>
+      <link>https://status.huggingface.co/incident/965809</link>
+      <pubDate>Thu, 16 Jul 2026 10:07:00 -0000</pubDate>
+      <guid isPermaLink="false">https://status.huggingface.co/incident/965809#b33f5802e3613a882f2d167d3f6d1c03b511b5fec1ca250bd476b7e51565dfc2</guid>
+      <category>Incident</category>
+      <description>Services are back to nominal operations.
+
+Root cause confirmed to global Amazon Web Services outage.</description>
+    </item>
+<item>
+      <title>Hub unavailable</title>
+      <link>https://status.huggingface.co/incident/965809</link>
+      <pubDate>Thu, 16 Jul 2026 08:43:00 -0000</pubDate>
+      <guid isPermaLink="false">https://status.huggingface.co/incident/965809#7d71d08267d20e2f629de3aa3124d0021a9c77c6be06e35127c24632a5263eaf</guid>
+      <category>Incident</category>
+      <description>We are mitigating the issue, and services are coming back up.</description>
+    </item>
+<item>
+      <title>Hub unavailable</title>
+      <link>https://status.huggingface.co/incident/965809</link>
+      <pubDate>Thu, 16 Jul 2026 08:30:00 -0000</pubDate>
+      <guid isPermaLink="false">https://status.huggingface.co/incident/965809#0919c39dac7b1f7b249915f67b2f66e8d24807425aac6809155748fedbe2c804</guid>
+      <category>Incident</category>
+      <description>Hugging Face platform is unavailable from most regions in the world due following a global outage from Amazon Web Services. We are working on a mitigation.</description>
+    </item>
+  </channel>
+</rss>

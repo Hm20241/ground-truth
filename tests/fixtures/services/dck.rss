@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xml:base="https://www.datacenterknowledge.com"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:atom="http://www.w3.org/2005/Atom"
+    xmlns:media="http://search.yahoo.com/mrss/"
+    xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>datacenterknowledge</title>
+        <link>https://www.datacenterknowledge.com</link>
+        <description>Public RSS feed</description>
+                <language>en</language>
+        <atom:link href="https://www.datacenterknowledge.com/feeds/rss.xml" rel="self" type="application/rss+xml" />
+                 <item>
+  <title><![CDATA[Melbourne Overtakes Sydney in Australia’s Data Center Pipeline]]></title>
+  <link><![CDATA[https://www.datacenterknowledge.com/data-center-site-selection/melbourne-overtakes-sydney-in-australia-s-data-center-pipeline]]></link>
+  <pubDate>Fri, 20 Nov 2026 18:22:22 GMT</pubDate>
+  <guid isPermaLink="false"><![CDATA[https://www.datacenterknowledge.com/data-center-site-selection/melbourne-overtakes-sydney-in-australia-s-data-center-pipeline]]></guid>
+</item>
+<item>
+  <title><![CDATA[AI Workloads Hit by Power-Quality Issues at Data Centers]]></title>
+  <link><![CDATA[https://www.datacenterknowledge.com/energy-power-supply/ai-workloads-hit-by-power-quality-issues-at-data-centers]]></link>
+  <pubDate>Thu, 19 Nov 2026 10:00:00 GMT</pubDate>
+  <guid isPermaLink="false"><![CDATA[https://www.datacenterknowledge.com/energy-power-supply/ai-workloads-hit-by-power-quality-issues-at-data-centers]]></guid>
+</item>
+<item>
+  <title><![CDATA[Data Center World Middle East]]></title>
+  <link><![CDATA[https://www.datacenterknowledge.com/events/data-center-world-middle-east]]></link>
+  <dc:date>2026-11-17T12:00:00.000Z</dc:date>
+  <guid isPermaLink="false"><![CDATA[https://www.datacenterknowledge.com/events/data-center-world-middle-east]]></guid>
+</item>    </channel>
+</rss>

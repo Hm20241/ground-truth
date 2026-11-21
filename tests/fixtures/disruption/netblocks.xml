@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:webfeeds="http://webfeeds.org/rss/1.0" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>NetBlocks</title>
+    <description>Public posts from NetBlocks</description>
+    <link>https://mastodon.social/@netblocks</link>
+    
+    <lastBuildDate>Fri, 20 Nov 2026 11:36:23 +0000</lastBuildDate>
+    
+    <generator>Mastodon v5.0.0-nightly.2026-11-20</generator>
+    <item>
+      <guid isPermaLink="true">https://mastodon.social/@netblocks/117648561523218056</guid>
+      <link>https://mastodon.social/@netblocks/117648561523218056</link>
+      <pubDate>Fri, 20 Nov 2026 11:36:23 +0000</pubDate>
+      <description>&lt;p&gt;⚠️ Confirmed: Metrics show declines in internet connectivity across much of &lt;a href="https://mastodon.social/tags/Ukraine" class="mention hashtag" rel="tag"&gt;#&lt;span&gt;Ukraine&lt;/span&gt;&lt;/a&gt;. The disruptions correspond to power outages amid a wave of deadly Russian drone and missile strikes this morning, described by witnesses as one of the most powerful such attacks in recent memory&lt;/p&gt;</description>
+      <media:content url="https://files.mastodon.social/media_attachments/files/117/648/520/159/801/152/original/bad7a5e7dbbff8d8.png" type="image/png" fileSize="209545" medium="image">
+        <media:rating scheme="urn:simple">nonadult</media:rating>
+        <media:description type="plain">Graph from NetBlocks showing network connectivity by region in Ukraine from November 19, 2026, to November 20, 2026. The y-axis represents normalized connectivity from 0% to 100%, and the x-axis represents dates and times. The graph indicates connectivity disruptions in multiple regions starting on the morning of November 20 (Ukraine time). The disruptions correspond to power outages following Russian missile and drone attacks targeting energy infrastructure. The chart has a dark background and includes the NetBlocks logo in the lower left corner with the Mapping Internet Freedom slogan, and connectivity lines for each region are color-coded.</media:description>
+        <media:thumbnail url="https://files.mastodon.social/media_attachments/files/117/648/520/159/801/152/small/bad7a5e7dbbff8d8.png"/>
+      </media:content>
+      <category>ukraine</category>
+    </item><item>
+      <guid isPermaLink="true">https://mastodon.social/@netblocks/117638591820168020</guid>
+      <link>https://mastodon.social/@netblocks/117638591820168020</link>
+      <pubDate>Wed, 18 Nov 2026 17:20:58 +0000</pubDate>
+      <description>&lt;p&gt;⚠️ Confirmed: Network data show a decline in internet connectivity in &lt;a href="https://mastodon.social/tags/Pakistan" class="mention hashtag" rel="tag"&gt;#&lt;span&gt;Pakistan&lt;/span&gt;&lt;/a&gt; resulting in slow service. The incident is consistent with a fault on the SMW5 international subsea cable system with operators now attempting to establish alternative routes.&lt;/p&gt;</description>
+      <media:content url="https://files.mastodon.social/media_attachments/files/117/638/555/770/287/282/original/008791dded632e00.png" type="image/png" fileSize="259734" medium="image">
+        <media:rating scheme="urn:simple">nonadult</media:rating>
+        <media:description type="plain">Graph from NetBlocks showing network connectivity by provider in Pakistan from November 16, 2026, to November 18, 2026. The y-axis represents normalized connectivity from 0% to 100%, and the x-axis represents dates and times. The graph indicates connectivity disruptions in multiple providers starting on the afternoon of November 18 (Pakistan time). The incident corresponds to internet outages due to a fault on SMW5 subsea cable. The chart has a dark background and includes the NetBlocks logo in the lower left corner with the Mapping Internet Freedom slogan, and connectivity lines for each provider are color-coded.  KK Networks (Pvt) Ltd., AS136969 (35% / 35%), Multinet Broadband, AS135523 (36% / 36%), GERRYS INFORMATION TECHNOLOGY PVT LTD., AS23750 (37% / 37%), Optix Pakistan (Pvt.) Limited, AS136384 (37% / 37%), Multinet Pakistan Pvt. Ltd., AS9260 (38% / 38%), Special Communication Organization, AS18053 (39% / 39%), Z COM NETWORKS, AS152605 (36% / 39%), LINKdotNET Telecom Limited, AS23966 (40% / 40%), Broadband ISP, FTTH and Cable Service Provider, AS38713 (38% / 40%), Login.Me (Pvt) Ltd, AS131471 (41% / 41%), Nasstec Airnet Networks Private Limited, AS142647 (33% / 41%), IX Peering for Mobilink and Link Direct International, AS58470 (42% / 42%), PMCL /LDI IP TRANSIT, AS45669 (36% / 42%), SKY TELECOM, AS55453 (41% / 43%), Vision telecom Private limited, AS133495 (37% / 44%), Autonomous System Number for Nexlinx, AS17563 (47% / 47%), 141-143 Maulana Shaukat Ali Road, AS55501 (50% / 50%), Trans World Enterprise Services (Private) Limited, AS135407 (51% / 51%), FIBERISH (PVT) LTD, AS141342 (37% / 51%), National WiMAX/IMS environment, AS38264 (56% / 56%), NetSol Connect, AS17539 (58% / 58%), PERN AS Content Service Provider, Islamabad, Pakistan, AS45773 (60% / 60%), SHARP TELECOM (PRIVATE) LIMITED, AS9387 (60% / 63%), Transworld Associates (Pvt.) Ltd., AS38193 (66% / 66%), CMPak Limited, AS138423 (67% / 67%), Nayatel (Pvt) Ltd, AS23674 (72% / 75%)</media:description>
+        <media:thumbnail url="https://files.mastodon.social/media_attachments/files/117/638/555/770/287/282/small/008791dded632e00.png"/>
+      </media:content>
+      <category>pakistan</category>
+    </item><item>
+      <guid isPermaLink="true">https://mastodon.social/@netblocks/117633187340763324</guid>
+      <link>https://mastodon.social/@netblocks/117633187340763324</link>
+      <pubDate>Tue, 17 Nov 2026 18:26:32 +0000</pubDate>
+      <description>&lt;p&gt;ℹ️ Note: Apple services including the App Store and iCloud are experiencing international outages at the present time; incident not related to country-level internet restrictions or filtering &lt;a href="https://mastodon.social/tags/AppleDown" class="mention hashtag" rel="tag"&gt;#&lt;span&gt;AppleDown&lt;/span&gt;&lt;/a&gt; &lt;a href="https://mastodon.social/tags/iCloudDown" class="mention hashtag" rel="tag"&gt;#&lt;span&gt;iCloudDown&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;</description>
+      <media:content url="https://files.mastodon.social/media_attachments/files/117/633/183/605/328/805/original/135c8e8be24b7c3e.png" type="image/png" fileSize="1055678" medium="image">
+        <media:rating scheme="urn:simple">nonadult</media:rating>
+        <media:description type="plain">Screenshot of Apple's System Status page on November 17, 2026, showing the operational status of Apple services in three columns. Green circles indicate available services, yellow diamonds indicate issues, and red triangles indicate outages. The App Store, Apple Music, and AppleCare on Device are marked as experiencing outages, while iCloud Account &amp; Sign In is marked as experiencing an issue. Volume Purchase Program is listed as having a resolved outage. Most other Apple services, including iCloud Drive, iMessage, FaceTime, Apple Pay, Siri, and Apple TV, are marked as available. The page has a white background and was last updated at 6:22 PM UTC.</media:description>
+        <media:thumbnail url="https://files.mastodon.social/media_attachments/files/117/633/183/605/328/805/small/135c8e8be24b7c3e.png"/>
+      </media:content>
+      <category>AppleDown</category>
+      <category>iclouddown</category>
+    </item><item>
+      <guid isPermaLink="true">https://mastodon.social/@netblocks/117633182602976044</guid>
+      <link>https://mastodon.social/@netblocks/117633182602976044</link>
+      <pubDate>Tue, 17 Nov 2026 18:25:20 +0000</pubDate>
+      <description>&lt;p&gt;⚠️ Confirmed: Metrics show restrictions to Telegram on multiple internet providers in &lt;a href="https://mastodon.social/tags/Iraq" class="mention hashtag" rel="tag"&gt;#&lt;span&gt;Iraq&lt;/span&gt;&lt;/a&gt; and &lt;a href="https://mastodon.social/tags/Jordan" class="mention hashtag" rel="tag"&gt;#&lt;span&gt;Jordan&lt;/span&gt;&lt;/a&gt;; the measure comes amid heightened security concerns in both countries, with authorities citing the spread of extremist content, incitement and threats to national security.&lt;/p&gt;</description>
+      <media:content url="https://files.mastodon.social/media_attachments/files/117/627/261/962/403/440/original/0318a761cef8a494.jpeg" type="image/jpeg" fileSize="92620" medium="image">
+        <media:rating scheme="urn:simple">nonadult</media:rating>
+        <media:description type="plain">Chart from NetBlocks showing platform feature restrictions by ISP in Iraq and Jordan from on November 16, 2026. The data indicates internet restrictions affecting streaming platform Telegram. Access issues are observed across major ISPs such as Asiacell, Zain and Orange with services down to 0%.</media:description>
+        <media:thumbnail url="https://files.mastodon.social/media_attachments/files/117/627/261/962/403/440/small/0318a761cef8a494.jpeg"/>
+      </media:content>
+      <category>iraq</category>
+      <category>jordan</category>
+    </item><item>
+      <guid isPermaLink="true">https://mastodon.social/@netblocks/117553064744478662</guid>
+      <link>https://mastodon.social/@netblocks/117553064744478662</link>
+      <pubDate>Tue, 03 Nov 2026 14:50:18 +0000</pubDate>
+      <description>&lt;p&gt;⚠️ Confirmed: Metrics show a significant decline in internet connectivity in parts of occupied Crimea with high impact to Sevastopol, corresponding to power outages after Ukrainian drone attacks target energy infrastructure 🔌&lt;/p&gt;</description>
+      <media:content url="https://files.mastodon.social/media_attachments/files/117/553/033/852/714/107/original/932220576b07c5e8.png" type="image/png" fileSize="192231" medium="image">
+        <media:rating scheme="urn:simple">nonadult</media:rating>
+        <media:description type="plain">Graph from NetBlocks showing network connectivity by region in Ukraine from October 29, 2026, to November 3, 2026. The y-axis represents normalized connectivity from 0% to 100%, and the x-axis represents dates and times. Two colour-coded lines represent connectivity in Sevastopol City and Crimea, remaining relatively stable at around 90–100% until November 2. On November 2, Sevastopol City experiences significant fluctuations, with connectivity repeatedly falling to around 35–50% before partially recovering. On the early morning of November 3, connectivity drops sharply again, reaching near zero in Sevastopol City and approximately 45% across Crimea, with limited recovery observed. The disruption corresponds to power outages following Ukrainian drone attacks targeting energy infrastructure. The chart has a dark background and includes the NetBlocks logo in the lower left corner with the Mapping Internet Freedom slogan. Sevastopol City (0% / 0%) and Crimea (43% / 47%)</media:description>
+        <media:thumbnail url="https://files.mastodon.social/media_attachments/files/117/553/033/852/714/107/small/932220576b07c5e8.png"/>
+      </media:content>
+    </item><item>
+      <guid isPermaLink="true">https://mastodon.social/@netblocks/117546784770403528</guid>
+      <link>https://mastodon.social/@netblocks/117546784770403528</link>
+      <pubDate>Mon, 02 Nov 2026 12:13:13 +0000</pubDate>
+      <description>&lt;p&gt;ℹ️ Confirmed: A power outage has knocked out internet connectivity across much of La Palma, Canary Islands; the losses in service are attributed to severe storms and lightning, with near-total recovery now evident 🔌&lt;/p&gt;</description>
+      <media:content url="https://files.mastodon.social/media_attachments/files/117/546/755/176/493/210/original/2662b34e51454539.png" type="image/png" fileSize="144269" medium="image">
+        <media:rating scheme="urn:simple">nonadult</media:rating>
+        <media:description type="plain">Graph from NetBlocks showing network connectivity by region in Spain from October 23, 2026, to November 2, 2026. The y-axis represents normalized connectivity from 0% to 100%, and the x-axis represents dates. The graph indicates connectivity remaining stable in La Palma, Canary Islands throughout most of the period, before dropping on the early morning of November 2 (Spain time). The disruption corresponds to power outages due to swevere storms. Near-total recovery is now visible. The chart has a dark background and includes the NetBlocks logo in the lower left corner with the Mapping Internet Freedom slogan, and connectivity lines for each municipality are color-coded. Breña Alta (0% / 58%), El Paso (0% / 100%), Breña Baja (3% / 100%), Los Llanos de Aridane (13% / 89%) and Santa Cruz de La Palma (22% / 99%), respectively.</media:description>
+        <media:thumbnail url="https://files.mastodon.social/media_attachments/files/117/546/755/176/493/210/small/2662b34e51454539.png"/>
+      </media:content>
+    </item><item>
+      <guid isPermaLink="true">https://mastodon.social/@netblocks/117459385064329291</guid>
+      <link>https://mastodon.social/@netblocks/117459385064329291</link>
+      <pubDate>Sun, 18 Oct 2026 01:46:20 +0000</pubDate>
+      <description>&lt;p&gt;⚠️ Confirmed: Russian social media network VK (VKontakte) is currently experiencing a major disruption, with metrics showing connectivity at 56% of ordinary levels. The incident comes amid reports of a Ukrainian drone attack in the vicinity of its St. Petersburg data center&lt;/p&gt;</description>
+      <media:content url="https://files.mastodon.social/media_attachments/files/117/459/368/670/859/891/original/6b524eb4264c639e.png" type="image/png" fileSize="134648" medium="image">
+        <media:rating scheme="urn:simple">nonadult</media:rating>
+        <media:description type="plain">Graph from NetBlocks showing network connectivity by provider in Russia from October 5, 2026, to October 18, 2026. The y-axis represents normalized connectivity from 0% to 100%, and the x-axis represents dates and times. A green line represents Russian social network LLC VK's (AS47541) connectivity remaining stable throughout most of the period, before dropping on the early morning of October 18 (Russia time). The disruption corresponds to a power outage following Ukranian drone attacks targeting datacenters.The minimum and current connectivity levels are shown as 56% and 56%, respectively. The chart has a dark background with a red circle highlighting the decline at the end of the period, and includes the NetBlocks logo in the lower left corner with the Mapping Internet Freedom slogan.</media:description>
+        <media:thumbnail url="https://files.mastodon.social/media_attachments/files/117/459/368/670/859/891/small/6b524eb4264c639e.png"/>
+      </media:content>
+    </item><item>
+      <guid isPermaLink="true">https://mastodon.social/@netblocks/117458574184965539</guid>
+      <link>https://mastodon.social/@netblocks/117458574184965539</link>
+      <pubDate>Sat, 17 Oct 2026 22:20:07 +0000</pubDate>
+      <description>&lt;p&gt;⚠️ Confirmed: Live network data show a significant reduction in internet connectivity across the US territory of &lt;a href="https://mastodon.social/tags/Guam" class="mention hashtag" rel="tag"&gt;#&lt;span&gt;Guam&lt;/span&gt;&lt;/a&gt; corresponding to power outages as Category 4-equivalent Super Typhoon &lt;a href="https://mastodon.social/tags/Champi" class="mention hashtag" rel="tag"&gt;#&lt;span&gt;Champi&lt;/span&gt;&lt;/a&gt; passes the island; observed connectivity is now down to 41% of ordinary levels&lt;/p&gt;</description>
+      <media:content url="https://files.mastodon.social/media_attachments/files/117/458/505/000/522/898/original/55c1ed5025cace45.png" type="image/png" fileSize="155491" medium="image">
+        <media:rating scheme="urn:simple">nonadult</media:rating>
+        <media:description type="plain">Graph from NetBlocks showing network connectivity in Guam from October 9, 2026, to October 17 2026. The y-axis represents normalized connectivity from 0% to 100%, and the x-axis represents dates. A green line represents Guam's connectivity, remaining stable throughout most of the period, before dropping sharply on the evening of October 17 (UTC Time zone). The disruption corresponds to power outages due to the passing of Super Typhoon Champi. The minimum and current connectivity levels are shown as 41% and 41%, respectively. The chart has a dark background with a red circle highlighting the decline at the end of the period, and the NetBlocks logo in the lower left corner with the Mapping Internet Freedom slogan.</media:description>
+        <media:thumbnail url="https://files.mastodon.social/media_attachments/files/117/458/505/000/522/898/small/55c1ed5025cace45.png"/>
+      </media:content>
+      <category>guam</category>
+      <category>champi</category>
+    </item>
+  </channel>
+</rss>

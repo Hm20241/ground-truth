@@ -1,0 +1,8 @@
+[{"_note": "SYNTHETIC non-operational row (every live row was Operational on 2026-11-21); real key names",
+  "ServiceDisplayName": "Outlook.com", "ServiceWorkloadName": "Outlook.com", "Id": "EX9999901",
+  "AuthoredDateTime": "2026-11-21T04:00:00+00:00", "InternalDateTime": "2026-11-21T04:00:00+00:00",
+  "LastUpdatedTime": "2026-11-21T04:50:00.3913094+00:00", "Title": "Users may be unable to access Outlook.com",
+  "Message": "We're investigating reports that users can't sign in.", "Status": "ServiceInterruption"},
+ {"ServiceDisplayName": "Teams", "ServiceWorkloadName": "Teams", "Id": null, "AuthoredDateTime": "0001-01-01T00:00:00+00:00",
+  "InternalDateTime": "0001-01-01T00:00:00+00:00", "LastUpdatedTime": "2026-11-21T04:50:00.3913094+00:00", "Title": "",
+  "Message": "", "Status": "Operational"}]

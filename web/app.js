@@ -30,7 +30,8 @@
    stream and the post-text button.
    1.5.1: a date-only Feed row never sorts into the future (dayAt): a source ahead of the page's zone (Taiwan MND) can
    name a day that has not begun here yet.
-   1.5.2: on the GitHub Pages copy the tab and window title read "Ground Truth --GitHub". */
+   1.5.2: on the GitHub Pages copy the tab and window title read "Ground Truth --GitHub".
+   1.5.3: Feed groups Power, Web, AI / cloud and Cell for the outage layers (ext/outages.js). */
 (() => {
   "use strict";
   const THEATRES = {
@@ -1103,13 +1104,14 @@
     map: ["Map pins", "#e4e7ea"], wire: ["Wire", "#cbd5e1"], telegram: ["Telegram", "#7dd3fc"], official: ["Official", "#818cf8"],
     alerts: ["Alerts", "#fde047"], maritime: ["Maritime", "#38bdf8"], hazards: ["Hazards", "#f2853d"], airspace: ["Airspace", "#93c5fd"],
     cyber: ["Cyber", "#2dd4bf"], internet: ["Internet", "#5eead4"],
+    power: ["Power", "#f59e0b"], web: ["Web", "#a78bfa"], cloud: ["AI / cloud", "#f472b6"], cell: ["Cell", "#4ade80"],
   };
   const STREAMS = [], FEED_STEP = 300, DAY = 86400000;
   let feedLimit = FEED_STEP, feedRows = [], feedTimer = null, feedPins = [];
   const feedOff = new Set((() => { try { return JSON.parse(localStorage.getItem("gt-feed-off") || "[]"); } catch (err) { return []; } })());
   // country -> [theatre, lon, lat, name], from tools/build_theatres.py (the server's own placement rule)
   let TH = { a3: {}, a2: {}, names: {} };
-  fetch("geo/theatres.json?v=1.5.2").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
+  fetch("geo/theatres.json?v=1.5.3").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
   function country(k) {
     if (!k) return null;
     const s = String(k).trim(), u0 = s.toUpperCase();  // ISO-3, ISO-2, or a name ("Côte d’Ivoire", "Mexico Travel Advisory")

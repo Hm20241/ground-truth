@@ -1,0 +1,25 @@
+{
+ "CurrentEventsCount": 1,
+ "UpcommingEventsCount": 0,
+ "InEffectEventsCount": 1,
+ "CurrentEvents": [
+  {
+   "EventId": 4321,
+   "EventType": "EEA 2",
+   "EventTypeColor": "#E15241",
+   "InEffect": true,
+   "StartDateTime_PT": "2026-08-20T16:00:00",
+   "EndDateTime_PT": "2026-08-20T21:00:00",
+   "EventMessages": [
+    {
+     "MessageID": 9876,
+     "MessageType": "Notice",
+     "PostDate_PT": "2026-08-20T15:45:00",
+     "MessageBody": "<p>The ISO has declared an <b>Energy Emergency Alert 2</b> effective 4 p.m. to 9 p.m.</p>",
+     "MessageDisclaimer": null
+    }
+   ]
+  }
+ ],
+ "UpcomingEvents": []
+}

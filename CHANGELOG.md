@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.4 (2026-11-21): Cloudflare Radar API outage records on the power and cell layers (self-hosted only)
+- **Two new sources in `gt/disruption.py` 1.1:** the Cloudflare Radar API's outage annotations and its traffic anomalies, each polled every 15 minutes and shared by the power and cell feeds.
+  - Power cuts go on the power layer, mobile-network outages on the cell layer, and the rest in the Internet list. Single-service (PLATFORM) records are left out for now.
+  - Each record is pinned at its Ukrainian oblast or Russian region where Radar names one, else at its country. Severity follows Radar's scope (nationwide, regional, one network).
+  - Radar's own social posts that repeat an annotation are dropped.
+- **Needs a free Cloudflare API token** with Account > Radar > Read. `tools/cfradar-key.sh` saves it, hidden, to `~/.config/cloudflare/radar_token`; a container reads `$GT_SEED/cfradar.key`. Without one, both sources say "not configured" and the feeds carry on.
+- **Popups name the link:** "Radar Outage Center", "Radar traffic page" or "Cloudflare's post".
+- **Not on this copy:** Radar data is CC BY-NC 4.0, and the power and cell feeds stay on self-hosted copies only.
+
 ## 1.5.3 (2026-11-21): outage layers for power, cell networks, websites and AI / cloud (self-hosted only)
 - **New modules:** `gt/services.py` and `gt/disruption.py`, plus the page extension `web/ext/outages.js`.
 - **Four separate map layers,** each with its own Feed chip:

@@ -1,6 +1,14 @@
-"""Offline tests for 1.5.3: the power and cell-network layers (gt/disruption.py, feeds `power` and `cellular`).
-Sockets are blocked; nothing touches the network. Fixtures in tests/fixtures/disruption/, all fetched once on
-2026-11-20/21 and trimmed, except the four marked SYNTHETIC:
+"""Offline tests for 1.5.3 / 1.5.4: the power and cell-network layers (gt/disruption.py 1.1, feeds `power` and
+`cellular`). Sockets are blocked; nothing touches the network, and a fake Radar token is set before the import, so the
+real one is never read. Fixtures in tests/fixtures/disruption/, all fetched once on 2026-11-20/21 and trimmed, except
+the five marked SYNTHETIC:
+  radar_outages.json   Cloudflare Radar /annotations/outages (12 weeks): 11 of 59 annotations (power, mobile, internet,
+                       a government shutdown, one without a description, one PLATFORM whose 300+ entities / origins
+                       are cut to 2 each); Radar data is CC BY-NC 4.0
+  radar_anomalies.json Cloudflare Radar /traffic_anomalies (4 weeks): 9 of 35 (unverified, linked to an annotation,
+                       mobile operators, a fixed network, a country, a cloud region)
+  radar_outages_synthetic.json   SYNTHETIC: six of those annotations with new ids (9001-9006) and times moved into
+                       the test's window, one given an internal (*.cfdata.org) link
   odin_cty.json        ODIN county view (odi?format=JSON&view=county): 14 of 77 rows, incl. the three counties at 500+
   odin_map.json        ODIN county map (odi/map?scale=COUNTY): 3 of 75 entries (Lucas OH, Los Angeles CA, Montgomery
                        PA); Harris TX is left out on purpose (a county over the threshold that has no geometry yet)
@@ -35,6 +43,9 @@ PROJ = os.path.dirname(HERE)
 FX = os.path.join(HERE, "fixtures", "disruption")
 TMP = tempfile.mkdtemp()
 os.environ["GT_DATA"] = TMP
+os.environ["GT_SEED"] = TMP                       # no cfradar.key there
+FAKE_TOKEN = "test-token-not-real-0123456789"
+os.environ["CF_RADAR_TOKEN"] = FAKE_TOKEN         # the real ~/.config file is never read by these tests
 sys.path.insert(0, PROJ)
 
 
@@ -75,7 +86,8 @@ UE_PAGE, ME_PAGE = telegram.PAGE % "Ukrenergo", telegram.PAGE % "energyofukraine
 URLS = {ds.ODIN_URL: "odin_cty.json", ds.ODIN_MAP_URL: "odin_map.json", ds.NETBLOCKS_URL: "netblocks.xml",
         ds.CFRADAR_URL: "cfradar.xml", ds.TAIPOWER_URL: "taipower.json", ds.ESKOM_URL: "eskom.txt",
         ds.CAISO_URL: "caiso.json", ds.MONITOR_RU_URL: "monitor_ru.json", UE_PAGE: "ukrenergo.html",
-        ME_PAGE: "minenergo.html"}
+        ME_PAGE: "minenergo.html", ds.RADAR_OUTAGES_URL: "radar_outages.json",
+        ds.RADAR_ANOMALIES_URL: "radar_anomalies.json"}
 ETAGS = {ds.TAIPOWER_URL: '"tp-1"'}
 NOW = dt.datetime(2026, 11, 21, 9, 0, tzinfo=dt.timezone.utc)
 NT = int(NOW.timestamp())
@@ -364,7 +376,7 @@ check(all(set(s) == SRC for s in p1["sources"] + c1["sources"]) and
       [s["name"] for s in c1["sources"]] == list(ds.FEED_SOURCES["cellular"]), "sources rows: keys and order")
 check(all(s["ok"] and s["error"] is None and s["checked"] == ISO(NT) for s in p1["sources"] + c1["sources"]),
       "all sources ok")
-check(p1["version"] == c1["version"] == "1.0" and p1["fetched_at"] == ISO(NT) and p1["public_ok"] is False and
+check(p1["version"] == c1["version"] == "1.1" and p1["fetched_at"] == ISO(NT) and p1["public_ok"] is False and
       c1["non_commercial"] is True and p1["count"] == len(p1["items"]) and p1["trimmed"] == 0,
       "version, fetched_at, count, trimmed, flags")
 check(all(i["ts_ms"] <= NT * 1000 for i in ALL_ITEMS) and
@@ -469,14 +481,158 @@ check(set(ru) == {"date", "shutdown_regions", "whitelist_regions", "regions"} an
       ru["shutdown_regions"] == 66 and ru["whitelist_regions"] == 65 and len(ru["regions"]) == 66 and
       all(set(r) == {"code", "name", "shutdown", "whitelist"} for r in ru["regions"]) and
       {r["code"]: r["name"] for r in ru["regions"]}.get("RU-ALT") == "Altai Krai", "russia extra (English names)")
-check([i["source"] for i in c1["internet"]] == ["cfradar", "netblocks"] and
-      all("internet" in i["tags"] and i["kind"] == "post" for i in c1["internet"]) and
+check([i["source"] for i in c1["internet"]] == ["radar_anomalies", "radar_outages", "radar_outages", "netblocks"] and
+      [i["id"].rsplit(":", 1)[1] for i in c1["internet"]][1:3] == ["1751", "1752"] and
+      all("internet" in i["tags"] and i["kind"] == ("post" if i["source"] == "netblocks" else "outage")
+          for i in c1["internet"]) and
       not any(f["properties"]["pid"] in {i["id"] for i in c1["internet"]} for f in c1["geojson"]["features"]),
-      "internet list: Salt and Pakistan, not on the cell layer")
+      "internet list: Radar's Congo anomaly, Pakistan and Salt annotations, NetBlocks' Pakistan post; not on the map")
+check(not any(i["source"] == "cfradar" for i in c1["internet"]),
+      "Radar's own Bluesky post on Salt is dropped: it repeats annotation 1752")
 check(not any(i["kind"] == "post" for i in c1["items"]), "no mobile post inside 72 h in the real fixtures")
-check({s["name"]: s["n"] for s in c1["sources"]} == {"netblocks": 1, "cfradar": 1, "monitor_ru": 1},
-      "cellular source rows count the internet posts too")
-check("66 regions" in c1["summary"] and "Internet" in c1["summary"], "cellular summary")
+check({s["name"]: s["n"] for s in c1["sources"]} == {"radar_outages": 2, "radar_anomalies": 2, "netblocks": 1,
+                                                     "cfradar": 0, "monitor_ru": 1},
+      "cellular source rows count the internet items too")
+check("66 regions" in c1["summary"] and "Internet" in c1["summary"] and "CELCOMNET-AP" in c1["summary"],
+      "cellular summary (with Radar's Celcom anomaly)")
+
+# ---------------- Cloudflare Radar API (disruption 1.1, Ground Truth 1.5.4) ----------------
+
+A = {a["id"]: a for a in ds.parse_radar_outages(RAW["radar_outages.json"])}
+X = {(x.get("asn") or {}).get("asn") or (x.get("loc") or {}).get("cc") or x["type"]: x
+     for x in ds.parse_radar_anomalies(RAW["radar_anomalies.json"])}
+check(len(A) == 11 and len(X) == 9, "Radar parsers: 11 annotations, 9 anomalies")
+check(A["1748"]["start"] == T(2026, 11, 8, 3, 15) and A["1748"]["end"] == T(2026, 11, 8, 21) and
+      A["1748"]["cause"] == "POWER_OUTAGE" and A["1748"]["type"] == "REGIONAL" and A["1748"]["loc"] == ["UA"] and
+      A["1748"]["geo"] == ["Dnipropetrovsk, Ukraine"] and A["1730"]["desc"] == "" and
+      A["1752"]["asns"] == [{"asn": 15796, "name": "SALT-CH", "cc": "CH"}], "parse_radar_outages: fields")
+check({k: ds.radar_class(a) for k, a in A.items()} ==
+      {"1752": "internet", "1751": "internet", "1749": None, "1748": "power", "1747": "mobile", "1744": "power",
+       "1742": "power", "1731": "mobile", "1730": "internet", "1724": "power", "1687": "internet"},
+      "radar_class: power by cause or wording, mobile by wording, PLATFORM left out, the rest internet")
+check([ds._radar_sev(A[k]) for k in ("1751", "1748", "1731", "1752", "1730")] ==
+      ["critical", "major", "major", "major", "minor"],
+      "Radar severity: nationwide critical, regional major, network by wording")
+
+
+def ann_item(k, feed="power"):
+    a = A[k]
+    its = ds.radar_outage_items(feed, {k: a}, (a["end"] or a["start"]) + 600)
+    return its[0] if its else None
+
+
+i48, i44, i42, i30, i87 = (ann_item(k) for k in ("1748", "1744", "1742", "1730", "1687"))
+check(i48["place"] == "oblast" and i48["regions"] == ["UA-12"] and i48["cc"] == ["UKR"] and
+      i48["_places"][0]["ll"] == REG["UA-12"]["ll"] and i44["regions"] == ["UA-18"] and i44["where"] == "Zhytomyr",
+      "Radar places: oblasts from the region entities (Dnipropetrovsk) or the description (Zhytomyr)")
+check(i42["where"] == "Peru (Tumbes, Piura, Lambayeque)" and i42["place"] == "country" and i42["cc"] == ["PER"],
+      "Radar places: other countries' regions named, pinned at the country")
+check(i30["title"] == "Military action: internet outage in DON-FTTH (AS41039), Russia" and
+      i30["url"] == ds.RADAR_CENTER and "Networks: DON-FTTH (AS41039)." in i30["summary"],
+      "Radar: no description -> a title from cause and network; the Outage Center link")
+check(i87["kind"] == "shutdown" and i87["title"] == "Exam shutdown (Iraq)" and "government-directed" in i87["summary"],
+      "Radar: a government-directed one is a shutdown; a terse title gets its place")
+check(i48["url"].startswith("https://x.com/CloudflareRadar/status/") and
+      ds._radar_link("https://jira.cfdata.org/browse/X-1") is None and ds._radar_link("http://example.com/") is None,
+      "Radar links: the annotation's public post; never an internal or plain-http link")
+check(ds._net("izzi telecom (AS28548)", 28548) == "izzi telecom (AS28548)" and
+      ds._net("SALT-CH", 15796) == "SALT-CH (AS15796)", "network names carry their AS number once")
+check({k: ds.anomaly_class(x) for k, x in X.items()} ==
+      {"GF": None, "CG": "internet", 15796: None, "PK": None, 10030: "mobile", 15378: "mobile", 16345: "mobile",
+       "ORIGIN": None, 28548: "internet"},
+      "anomaly_class: unverified / annotated / cloud-region skipped; mobile operators by network name")
+an = {x["id"]: x for x in X.values()}
+ai = {i["title"]: i for i in ds.radar_anomaly_items("cellular", an, NT, ("mobile", "internet"))}
+cel, cg = ai["Traffic anomaly on CELCOMNET-AP (AS10030), Malaysia"], ai["Traffic anomaly across Congo"]
+check(cel["active"] and cel["end_ms"] is None and cel["severity"] == "minor" and cel["cc"] == ["MYS"] and
+      cel["url"] == "https://radar.cloudflare.com/traffic/as10030" and "mobile" in cel["tags"] and
+      not cg["active"] and cg["severity"] == "major" and cg["url"] == "https://radar.cloudflare.com/traffic/cg" and
+      "no cause given" in cg["summary"], "anomaly items: network / country, links to Radar's traffic pages")
+
+# the token: only in the Authorization header, only to the Radar API, never stored or shown
+reset()
+log = []
+p0 = ds.power(now=NOW, fetch=fake(log=log))
+c0 = ds.cellular(now=NOW, fetch=fake(log=log))
+U = urls(log)
+auth = [(u, h.get("Authorization")) for u, h in log if "Authorization" in h]
+check(U.count(ds.RADAR_OUTAGES_URL) == 1 and U.count(ds.RADAR_ANOMALIES_URL) == 1,
+      "one fetch of each Radar endpoint serves both feeds")
+check(sorted(u for u, _a in auth) == sorted([ds.RADAR_OUTAGES_URL, ds.RADAR_ANOMALIES_URL]) and
+      all(a == "Bearer " + FAKE_TOKEN for _u, a in auth) and
+      all(u.startswith("https://api.cloudflare.com/client/v4/radar/") for u, _a in auth),
+      "the token goes only to api.cloudflare.com, in the Authorization header")
+check(FAKE_TOKEN not in json.dumps(state()) and FAKE_TOKEN not in json.dumps([p0, c0]),
+      "the token is never stored in the state or shown in a feed")
+
+# synthetic: annotations inside the window
+reset()
+over = {ds.RADAR_OUTAGES_URL: RAW["radar_outages_synthetic.json"]}
+p3, c3 = ds.power(now=NOW, fetch=fake(over=over)), ds.cellular(now=NOW, fetch=fake(over=over))
+P3, C3 = by_id(p3), by_id(c3)
+r1, r4 = P3["power:radar_outages:9001"], P3["power:radar_outages:9004"]
+check(r1["active"] and r1["status"] == "in effect" and r1["end_ms"] is None and r1["severity"] == "major" and
+      r1["start_ms"] == r1["ts_ms"] == T(2026, 11, 21, 3, 15) * 1000 and r1["kind"] == "outage" and
+      r1["tags"] == ["radar", "power", "power-outage"] and r1["provider"] == "Cloudflare Radar" and
+      [f["geometry"]["coordinates"] for f in feats(p3, r1["id"])] == [REG["UA-12"]["ll"]],
+      "power: an open Radar power annotation is active, on the map at its oblast")
+check(not r4["active"] and r4["status"] == "resolved" and r4["severity"] == "critical" and
+      r4["ts_ms"] == r4["end_ms"] == T(2026, 11, 20, 17) * 1000 and r4["url"] == ds.RADAR_CENTER and
+      r4["where"].startswith("Sri Lanka ("), "power: an ended nationwide one, its internal link replaced")
+check("Cloudflare Radar: 2 internet outages caused by power cuts in 72 h, 1 still in effect" in p3["summary"],
+      "power summary counts Radar's power outages")
+check(C3["cellular:radar_outages:9002"]["active"] and C3["cellular:radar_outages:9002"]["severity"] == "major" and
+      C3["cellular:radar_outages:9002"]["cc"] == ["FRA"] and "mobile" in C3["cellular:radar_outages:9002"]["tags"],
+      "cellular: Radar's mobile-core outage (Orange) is on the cell layer")
+net3 = {i["id"]: i for i in c3["internet"]}
+check(net3["cellular:radar_outages:9003"]["kind"] == "shutdown" and
+      net3["cellular:radar_outages:9005"]["active"] and
+      net3["cellular:radar_outages:9005"]["end_ms"] == T(2026, 11, 21, 12) * 1000,
+      "internet list: the exam shutdown, and an outage whose recorded end is still ahead (active)")
+ids3 = set(P3) | set(C3) | set(net3)
+check(not any(k.endswith(":9006") for k in ids3) and "power:radar_outages:9002" not in P3 and
+      "cellular:radar_outages:9001" not in C3 and "cellular:radar_outages:9001" not in net3,
+      "PLATFORM left out; each annotation in one class only")
+
+# no token: both Radar sources say so, the feeds carry on, and it never counts as a failure in a row
+reset()
+real_tok, ds.radar_token = ds.radar_token, lambda: None
+log = []
+p4 = ds.power(now=NOW, fetch=fake(log=log))
+c4 = ds.cellular(now=NOW, fetch=fake(log=log))
+ds.radar_token = real_tok
+rows4 = {s["name"]: s for s in c4["sources"]}
+check(ds.RADAR_OUTAGES_URL not in urls(log) and ds.RADAR_ANOMALIES_URL not in urls(log) and
+      rows4["radar_outages"]["error"].startswith("not configured") and not rows4["radar_outages"]["ok"] and
+      rows4["radar_anomalies"]["error"].startswith("not configured") and rows4["monitor_ru"]["ok"] and
+      rows4["netblocks"]["ok"] and ds.NETBLOCKS_URL in urls(log),
+      "no token: 'not configured', nothing sent, and the other sources still run")
+check([i["source"] for i in c4["internet"]] == ["cfradar", "netblocks"] and
+      not any(i["source"].startswith("radar_") for i in p4["items"] + c4["items"]),
+      "no Radar data: Radar's Bluesky post on Salt is kept (nothing to drop it against)")
+reset()
+ds.radar_token = lambda: None
+log = []
+ds.power(now=NOW, fetch=fake(log=log, fail=(ds.ESKOM_URL, ds.CAISO_URL)))
+ds.radar_token = real_tok
+check(ds.NETBLOCKS_URL in urls(log),
+      "'not configured' is not a failure in a row: two failures, no token, and NetBlocks is still fetched")
+
+# HTTP 401 and Radar's own error answer: the source fails alone, the token never in the error
+reset()
+p5 = ds.power(now=NOW, fetch=fake(fail={ds.RADAR_OUTAGES_URL: 401}))
+e5 = {s["name"]: s for s in p5["sources"]}["radar_outages"]
+check(not e5["ok"] and "401" in e5["error"] and FAKE_TOKEN not in e5["error"] and p5["us"] is not None,
+      "Radar 401: that source fails, the feed is built, the token not in the error")
+reset()
+bad = b'{"success":false,"errors":[{"code":10000,"message":"Authentication error"}],"messages":[],"result":null}'
+c6 = ds.cellular(now=NOW, fetch=fake(over={ds.RADAR_ANOMALIES_URL: bad}))
+e6 = {s["name"]: s for s in c6["sources"]}["radar_anomalies"]
+check(not e6["ok"] and "Authentication error" in e6["error"], "Radar's error answer is shown on the row")
+# back to the state scenario 1 left, for the cadence checks below
+reset()
+ds.power(now=NOW, fetch=fake())
+ds.cellular(now=NOW, fetch=fake())
 
 # ---------------- cadence, conditional GET, stable ids, ODIN start / end ----------------
 
@@ -592,7 +748,7 @@ row = {s["name"]: s for s in pf["sources"] + cf["sources"]}
 check(not row["taipower"]["ok"] and "OSError" in row["taipower"]["error"] and row["taipower"]["good"] is None and
       pf["grid"]["taipower"] is None and pf["grid"]["eskom"] is not None and pf["count"] > 0,
       "a failing source only marks its row (Taipower)")
-check(not row["monitor_ru"]["ok"] and cf["russia"] is None and len(cf["internet"]) == 2,
+check(not row["monitor_ru"]["ok"] and cf["russia"] is None and len(cf["internet"]) == 4,
       "monitor-ru failing leaves the cellular feed working")
 reset()
 log = []
@@ -607,7 +763,8 @@ reset()
 check(raises(lambda: ds.cellular(now=NOW, fetch=fake(fail=tuple(URLS))), RuntimeError, "no source has answered"),
       "cellular raises when no source has ever answered")
 ds.cellular(now=NT + 2000, fetch=fake())    # past the 30 min retry of every source
-cc2 = ds.cellular(now=NT + 20000, fetch=fake(fail=tuple(URLS)))
+ds.cellular(now=NT + 20000, fetch=fake(fail=tuple(URLS)))   # stops after 3 in a row (both Radar, NetBlocks)
+cc2 = ds.cellular(now=NT + 20001, fetch=fake(fail=tuple(URLS)))   # then the other two
 check(cc2["russia"] is not None and not any(s["ok"] for s in cc2["sources"]) and
       all(s["good"] for s in cc2["sources"]), "after one success, an all-failing poll serves the cached data")
 reset()

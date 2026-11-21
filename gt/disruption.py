@@ -1,4 +1,7 @@
-"""Power and cell-network disruption layers. v1.0, 2026-11-21 (Ground Truth 1.5.3).
+"""Power and cell-network disruption layers. v1.1, 2026-11-21 (Ground Truth 1.5.4; v1.0 came with 1.5.3).
+
+1.1 adds Cloudflare Radar's own API (radar_outages, radar_anomalies below; a free read-only token) next to its
+Bluesky posts.
 
 Two feeds (FEEDS at the bottom), both called every 300 s, built to the shared 1.5.3 outage-layer contract (the same
 item shape, window, caps and GeoJSON as gt/services.py). Each source has its own cadence and cached state in
@@ -24,6 +27,27 @@ source sends validators (Taipower does). One lock covers both feeds: they share 
   NetBlocks posts default to internet. Places: Ukrainian oblasts and Russian federal subjects named in English (from
   web/geo/alert-regions.json, plus a few spellings) -> one point per subject; else country hashtags; else
   gt/placer.py's strongest country, at its centroid from web/geo/theatres.json. Title = the first sentence or line.
+* radar_outages, every 15 min (1.1): Cloudflare Radar's outage annotations (GET /radar/annotations/outages, the last
+  28 days), the curated record behind its Outage Center: cause, scope (nationwide / regional / network), start, end,
+  countries, networks (ASNs) and, for some, regions (GeoNames entities). One fetch serves both feeds. Each annotation
+  is classified (radar_class()): cause POWER_OUTAGE, or a description naming power / the grid -> a `power` item;
+  a description naming mobile networks -> a `cellular` item; anything else -> the `cellular` feed's `internet`
+  list (a government-directed one is kind "shutdown"); PLATFORM ones (cloud services such as Microsoft 365) are
+  left out here. Active while it has no end, or its end is still ahead. Severity: nationwide critical, regional
+  major, a single network major when the wording says so (significant, complete, near-total ...), else minor.
+  Places: Ukrainian oblasts / Russian subjects in the region entities or the description; else the countries it
+  lists (or its networks' countries; else gt/placer.py on the description), at their centroids. The link is the
+  annotation's own post when it has a public one, else Radar's Outage Center. A Bluesky post from cfradar that
+  repeats an annotation (a shared country, posted from 6 h before its start to 24 h after its end) is dropped.
+* radar_anomalies, every 15 min (1.1): Radar's automatically detected traffic anomalies (GET /radar/traffic_anomalies,
+  the last 7 days). Kept: status VERIFIED or TP (the confirmed states seen in the data), not linked to an annotation
+  (that one already counts), for a country or a network. An anomaly on a known mobile operator's network (Tele2 / T2,
+  Beeline, MegaFon, MTS, Celcom, ...; by its network name) -> a `cellular` item; the rest -> the `internet` list.
+  Cloud-region (ORIGIN) anomalies are left out here. Country ones major, network ones minor; placed at the country.
+  The token: $CF_RADAR_TOKEN, else $GT_SEED/cfradar.key (the host's read-only seed mount, written by
+  deploy/stage.py from tools/cfradar-key.sh's ~/.config/cloudflare/radar_token), else that file. It goes only to
+  api.cloudflare.com in the Authorization header and is never logged or stored. Without one, both sources show
+  "not configured" and the feeds carry on without them.
 * ukrenergo, minenergo, each at most every 10 min: the public t.me/s previews of NEC Ukrenergo and the Ministry of
   Energy of Ukraine, read with gt/telegram.py's _get / parse_page / tidy. Posts in Ukrainian (lang "uk"; the
   translation job adds English). Kept: posts about outages or supply (знеструм-, відключен-, енерго- /
@@ -58,7 +82,8 @@ event id, the grid episode's start).
 
 Terms: ODIN and CAISO are US public data; Taipower is under Taiwan's Open Government Data Licence (attribution
 required); NetBlocks, Cloudflare Radar and the Telegram channels are their own posts, shown as short text with a
-link back; Eskom has no stated licence; monitor-ru is an undocumented endpoint. So PUBLIC_OK is False for both feeds
+link back; Cloudflare Radar's API data is CC BY-NC 4.0 (attribution, non-commercial); Eskom has no stated licence;
+monitor-ru is an undocumented endpoint. So PUBLIC_OK is False for both feeds
 (kept private in v1, Taipower included) and NON_COMMERCIAL is True (never for the trading agent).
 """
 import datetime as dt
@@ -72,9 +97,9 @@ import time
 import urllib.error
 import urllib.request
 
-from . import placer, telegram, wire
+from . import geo, placer, telegram, wire
 
-VERSION = "1.0"
+VERSION = "1.1"
 UA = "GroundTruth/1.5 (personal non-commercial OSINT dashboard)"
 TIMEOUT = 15
 MAX_BODY = 8 * 1024 * 1024
@@ -87,6 +112,11 @@ TAIPOWER_URL = "https://service.taipower.com.tw/data/opendata/apply/file/d006020
 ESKOM_URL = "https://loadshedding.eskom.co.za/LoadShedding/GetStatus"
 CAISO_URL = "https://wwwmobile.caiso.com/TodaysOutlookApi/api/EmergencyNotices/v2/ActiveEvents"
 MONITOR_RU_URL = "https://monitor-ru.net/api/shutdown_map_report?n=1"
+RADAR_API = "https://api.cloudflare.com/client/v4/radar"
+RADAR_OUTAGES_URL = RADAR_API + "/annotations/outages?dateRange=28d&limit=200&format=json"
+RADAR_ANOMALIES_URL = RADAR_API + "/traffic_anomalies?dateRange=7d&limit=200&format=json"
+RADAR_CENTER = "https://radar.cloudflare.com/outage-center"
+RADAR_TRAFFIC = "https://radar.cloudflare.com/traffic/%s"     # "as15378" or a lower-case ISO 3166-1 alpha-2 code
 TG_CHANNELS = {"ukrenergo": "Ukrenergo", "minenergo": "energyofukraine"}
 
 LINK = {"odin": "https://odin.ornl.gov/", "taipower": "https://www.taipower.com.tw/",
@@ -104,16 +134,21 @@ SOURCES = {
     "eskom": ("Eskom load shedding", "Eskom", 1800, 900, 30),
     "caiso": ("CAISO grid notices", "CAISO", 600, 300, 30),
     "monitor_ru": ("Na Svyazi «Монитор рунета»", "Na Svyazi", 10800, 1800, 30),
+    "radar_outages": ("Cloudflare Radar outage annotations", "Cloudflare Radar", 900, 450, 30),
+    "radar_anomalies": ("Cloudflare Radar traffic anomalies", "Cloudflare Radar", 900, 450, 30),
 }
-FEED_SOURCES = {"power": ("odin", "taipower", "eskom", "caiso", "netblocks", "cfradar", "ukrenergo", "minenergo"),
-                "cellular": ("netblocks", "cfradar", "monitor_ru")}
+FEED_SOURCES = {"power": ("odin", "taipower", "eskom", "caiso", "radar_outages", "netblocks", "cfradar", "ukrenergo",
+                          "minenergo"),
+                "cellular": ("radar_outages", "radar_anomalies", "netblocks", "cfradar", "monitor_ru")}
 BACKOFF = 3600            # s after a 403 / 429
 
 ATTRIBUTION = {
     "power": ("ODIN, Oak Ridge National Laboratory / US Department of Energy (participating utilities only); NEC "
               "Ukrenergo and the Ministry of Energy of Ukraine (public Telegram channels); Taiwan Power Company "
-              "(Open Government Data License, version 1.0); Eskom; California ISO; NetBlocks; Cloudflare Radar"),
-    "cellular": "NetBlocks; Cloudflare Radar; Na Svyazi «Монитор рунета» (monitor-ru.net)",
+              "(Open Government Data License, version 1.0); Eskom; California ISO; NetBlocks; Cloudflare Radar "
+              "(outage annotations: CC BY-NC 4.0)"),
+    "cellular": ("Cloudflare Radar (outage annotations and traffic anomalies: CC BY-NC 4.0); NetBlocks; Na Svyazi "
+                 "«Монитор рунета» (monitor-ru.net)"),
 }
 NOTE = {
     "power": ("Power outages and grid stress, each source on its own cadence. US: ODIN county outages (participating "
@@ -121,14 +156,19 @@ NOTE = {
               "ending when it falls below. Ukraine: Ukrenergo and Ministry of Energy posts (Ukrainian; tagged "
               "emergency / schedule / restored; oblasts read from the text). Taiwan: Taipower's forecast peak-reserve "
               "light (an item when not green). South Africa: Eskom's load-shedding stage (an item from stage 1). "
-              "California: CAISO's active grid emergency notices. Elsewhere: NetBlocks and Cloudflare Radar posts that "
-              "name power, blackouts or the grid. Posts count as active for 6 h (a Ukrainian schedule post until the "
-              "end of the day it covers). Last 72 h plus anything still active."),
-    "cellular": ("Cell / mobile network disruptions: NetBlocks (Mastodon) and Cloudflare Radar (Bluesky) posts that name "
-                 "mobile, cellular, 3G/4G/5G or a mobile operator (power-related posts go to the power layer; other "
-                 "internet disruptions go to the `internet` list, not on this layer), and Na Svyazi's «Монитор "
-                 "рунета» daily map of Russia's regional mobile-internet shutdowns and whitelists (only approved sites "
-                 "work), one point per region. Posts count as active for 6 h. Last 72 h plus anything still active."),
+              "California: CAISO's active grid emergency notices. Worldwide: Cloudflare Radar's outage annotations "
+              "caused by power cuts (active until Radar records an end), and NetBlocks and Cloudflare Radar posts that "
+              "name power, blackouts or the grid (a Radar post that repeats an annotation is dropped). Posts count as "
+              "active for 6 h (a Ukrainian schedule post until the end of the day it covers). Last 72 h plus anything "
+              "still active."),
+    "cellular": ("Cell / mobile network disruptions: Cloudflare Radar's outage annotations that name mobile networks and "
+                 "its confirmed traffic anomalies on known mobile operators' networks; NetBlocks (Mastodon) and "
+                 "Cloudflare Radar (Bluesky) posts that name mobile, cellular, 3G/4G/5G or a mobile operator "
+                 "(power-related ones go to the power layer; other internet disruptions, Radar's included, go to the "
+                 "`internet` list, not on this layer); and Na Svyazi's «Монитор рунета» daily map of Russia's regional "
+                 "mobile-internet shutdowns and whitelists (only approved sites work), one point per region. Posts "
+                 "count as active for 6 h, Radar items until Radar records an end. Last 72 h plus anything still "
+                 "active."),
 }
 NON_COMMERCIAL = {"power": True, "cellular": True}
 PUBLIC_OK = {"power": False, "cellular": False}   # v1: private, Taipower's open licence included
@@ -312,6 +352,28 @@ def _fetch(url, headers=None):
         if e.code == 304:
             return 304, dict((e.headers or {}).items()), b""
         raise
+
+
+class NotConfigured(RuntimeError):
+    """A source that needs a key nobody has set: shown on its row, never counted as a failure in a row."""
+
+
+def radar_token():
+    """The Cloudflare Radar API token, or None: $CF_RADAR_TOKEN, else $GT_SEED/cfradar.key, else
+    ~/.config/cloudflare/radar_token. Never logged."""
+    k = (os.environ.get("CF_RADAR_TOKEN") or "").strip()
+    if k:
+        return k
+    for p in (os.path.join(os.environ.get("GT_SEED") or "/seed", "cfradar.key"),
+              os.path.expanduser("~/.config/cloudflare/radar_token")):
+        try:
+            with open(p, encoding="utf-8") as fh:
+                k = fh.read().strip()
+            if k:
+                return k
+        except OSError:
+            pass
+    return None
 
 
 def _now(now):
@@ -829,6 +891,84 @@ def parse_monitor_ru(body):
     return out
 
 
+def _radar_result(body, key):
+    d = json.loads(body)
+    if not isinstance(d, dict) or not d.get("success") or not isinstance(d.get("result"), dict) or \
+            not isinstance(d["result"].get(key), list):
+        errs = "; ".join(str(e.get("message") or "") for e in (d.get("errors") or []) if isinstance(e, dict)) \
+            if isinstance(d, dict) else ""
+        raise ValueError("Cloudflare Radar: unexpected response" + (" (%s)" % _clip(errs, 120) if errs else ""))
+    return [x for x in d["result"][key] if isinstance(x, dict)]
+
+
+def _a2(code):
+    code = str(code or "").strip().upper()
+    return code if re.match(r"^[A-Z]{2}$", code) else None
+
+
+def _radar_link(url):
+    """The annotation's own public post, else None (internal hosts such as *.cfdata.org are never linked)."""
+    m = re.match(r"^https://([A-Za-z0-9.-]+)(?:[/?#]|$)", str(url or "").strip())
+    if not m or m.group(1).lower().endswith("cfdata.org") or len(url) > 500:
+        return None
+    return url.strip()
+
+
+def parse_radar_outages(body):
+    """/radar/annotations/outages -> annotations {"id", "start", "end", "cause", "type", "desc", "url", "loc": [a2],
+    "loc_names": {a2: name}, "asns": [{"asn", "name", "cc"}], "geo": [entity names]}; rows without an id or start
+    are skipped."""
+    out = []
+    for a in _radar_result(body, "annotations"):
+        aid, start = str(a.get("id") or "").strip(), wire.parse_time(str(a.get("startDate") or ""))
+        if not re.match(r"^\d{1,12}$", aid) or start is None:
+            continue
+        o = a.get("outage") if isinstance(a.get("outage"), dict) else {}
+        desc = re.sub(r"\s+", " ", str(a.get("description") or "")).strip()
+        loc = [c for c in (_a2(x) for x in a.get("locations") or []) if c]
+        names = {_a2(x.get("code")): str(x.get("name") or "").strip() for x in a.get("locationsDetails") or []
+                 if isinstance(x, dict) and _a2(x.get("code"))}
+        asns = []
+        for x in a.get("asnsDetails") or []:
+            if isinstance(x, dict) and re.match(r"^\d{1,10}$", str(x.get("asn") or "")):
+                lc = x.get("location") if isinstance(x.get("location"), dict) else {}
+                asns.append({"asn": int(x["asn"]), "name": _clip(x.get("name"), 80), "cc": _a2(lc.get("code"))})
+                if _a2(lc.get("code")) and lc.get("name"):
+                    names.setdefault(_a2(lc.get("code")), str(lc["name"]).strip())
+        geo_names = [_clip(e.get("entityName"), 80) for e in a.get("entities") or []
+                     if isinstance(e, dict) and e.get("entityType") == "GEOLOCATION" and e.get("entityName")]
+        out.append({"id": aid, "start": start, "end": wire.parse_time(str(a.get("endDate") or "")),
+                    "cause": str(o.get("outageCause") or "UNKNOWN").upper(),
+                    "type": str(o.get("outageType") or "").upper() or None,
+                    "desc": "" if desc in ("-", "") else desc[:1200], "url": _radar_link(a.get("linkedUrl")),
+                    "loc": loc, "loc_names": names, "asns": asns[:12], "geo": geo_names[:12]})
+    return out
+
+
+def parse_radar_anomalies(body):
+    """/radar/traffic_anomalies -> {"id" (uuid), "start", "end", "status", "type" (LOCATION / AS / ORIGIN),
+    "loc": {"cc", "name"} | None, "asn": {"asn", "name", "cc", "country"} | None, "outage": annotation id | None,
+    "seen": [data sources]}."""
+    out = []
+    for a in _radar_result(body, "trafficAnomalies"):
+        uid, start = str(a.get("uuid") or "").strip(), wire.parse_time(str(a.get("startDate") or ""))
+        if not re.match(r"^[0-9a-fA-F-]{8,64}$", uid) or start is None:
+            continue
+        ld = a.get("locationDetails") if isinstance(a.get("locationDetails"), dict) else None
+        ad = a.get("asnDetails") if isinstance(a.get("asnDetails"), dict) else None
+        asn = None
+        if ad and re.match(r"^\d{1,10}$", str(ad.get("asn") or "")):
+            lc = ad.get("location") if isinstance(ad.get("location"), dict) else {}
+            asn = {"asn": int(ad["asn"]), "name": _clip(ad.get("name"), 80), "cc": _a2(lc.get("code")),
+                   "country": _clip(lc.get("name"), 60) or None}
+        out.append({"id": uid.lower(), "start": start, "end": wire.parse_time(str(a.get("endDate") or "")),
+                    "status": str(a.get("status") or "").upper(), "type": str(a.get("type") or "").upper(),
+                    "loc": {"cc": _a2(ld.get("code")), "name": _clip(ld.get("name"), 60)} if ld and _a2(ld.get("code"))
+                    else None, "asn": asn, "outage": str(a["outageId"]) if a.get("outageId") else None,
+                    "seen": [str(s) for s in a.get("visibleInDataSources") or []][:6]})
+    return out
+
+
 # ---------------- sources (each returns its new cached data) ----------------
 
 def _body(url, s, fetch, conditional=True):
@@ -995,10 +1135,28 @@ def _src_monitor(fetch, nt, s, st):
     return {"snaps": {k: v for k, v in snaps.items() if nt - v["created"] <= POST_KEEP}}
 
 
+def _src_radar(url, parse, key):
+    """Cloudflare Radar API: the token in the Authorization header only; the answer replaces the cached list (the
+    API is the record; the query's date range covers the window)."""
+    def fn(fetch, nt, s, st):
+        tok = radar_token()
+        if not tok:
+            raise NotConfigured("not configured: no Cloudflare Radar token (tools/cfradar-key.sh)")
+        status, _h, body = fetch(url, {"Authorization": "Bearer " + tok, "Accept": "application/json"})
+        if status and status >= 400:
+            raise urllib.error.HTTPError(url, status, "HTTP %d" % status, None, None)
+        rows = parse(wire._ungzip(body or b""))
+        for r in rows:
+            r["start"] = min(r["start"], nt)
+        return {key: {r["id"]: r for r in rows}, "t": nt}
+    return fn
+
+
 HANDLERS = {"odin": _src_odin, "netblocks": _src_rss(NETBLOCKS_URL, "netblocks"),
             "cfradar": _src_rss(CFRADAR_URL, "cfradar"), "ukrenergo": _src_tg("ukrenergo"),
             "minenergo": _src_tg("minenergo"), "taipower": _src_taipower, "eskom": _src_eskom, "caiso": _src_caiso,
-            "monitor_ru": _src_monitor}
+            "monitor_ru": _src_monitor, "radar_outages": _src_radar(RADAR_OUTAGES_URL, parse_radar_outages, "anns"),
+            "radar_anomalies": _src_radar(RADAR_ANOMALIES_URL, parse_radar_anomalies, "anoms")}
 
 
 def _poll(names, nt, fetch, clock, st):
@@ -1020,6 +1178,8 @@ def _poll(names, nt, fetch, clock, st):
             s["data"] = HANDLERS[name](fetch, nt, s, st)
             s.update(ok=True, error=None, good=nt, backoff_until=None)
             fails = 0
+        except NotConfigured as e:   # no key set: shown on the row, not a failure in a row
+            s.update(ok=False, error=_clip(str(e), 200))
         except Exception as e:  # noqa: BLE001  one source never fails the feed
             s.update(ok=False, error=_err(e))
             if isinstance(e, urllib.error.HTTPError) and e.code in (403, 429):
@@ -1334,6 +1494,166 @@ def monitor_items(data, nt):
     return out
 
 
+# ---------------- Cloudflare Radar API (1.1) ----------------
+
+RADAR_CAUSE = {"POWER_OUTAGE": "Power outage", "GOVERNMENT_DIRECTED": "Government-directed shutdown",
+               "MILITARY_ACTION": "Military action", "CABLE_CUT": "Cable cut", "TECHNICAL_PROBLEM": "Technical problem",
+               "NETWORK_PROBLEM": "Network problem", "NATURAL_DISASTER": "Natural disaster", "WEATHER": "Weather",
+               "CYBERATTACK": "Cyberattack", "MAINTENANCE": "Maintenance", "FIRE": "Fire", "UNKNOWN": "Cause unknown"}
+RADAR_SCOPE = {"NATIONWIDE": "nationwide", "REGIONAL": "regional", "NETWORK": "network level", "PLATFORM": "platform"}
+CLASSES = ("power", "mobile", "internet")
+# A network name that belongs to a mobile operator (Radar anomalies carry only the network's registry name).
+_MOBILE_NET = re.compile(r"(?<![A-Za-z0-9])(?:TELE2|T2|BEE|BEELINE|VIMPELCOM|MEGAFON|MTS|CELCOM(?:NET)?|MAXIS|"
+                         r"SAFARICOM|AIRTEL|MTN|VODACOM|VODAFONE|KYIVSTAR|LIFECELL|IRANCELL|RIGHTEL|TURKCELL|JAZZ|"
+                         r"ZONG|UFONE|TELENOR|T-MOBILE|ZAIN|OOREDOO)(?![A-Za-z])|MOBILE|WIRELESS|CELLULAR", re.I)
+
+
+def _cause(c):
+    return RADAR_CAUSE.get(c) or str(c or "").replace("_", " ").capitalize() or "Cause unknown"
+
+
+def radar_class(a):
+    """An annotation -> "power", "mobile", "internet" or None (PLATFORM: cloud services, not this module's)."""
+    if a.get("type") == "PLATFORM":
+        return None
+    if a.get("cause") == "POWER_OUTAGE":
+        return "power"
+    c = classify(a.get("desc") or "", "cfradar")
+    return c if c in ("power", "mobile") else "internet"
+
+
+def anomaly_class(x):
+    """A traffic anomaly -> "mobile", "internet" or None (unconfirmed, already an annotation, or a cloud region)."""
+    if x.get("status") not in ("VERIFIED", "TP") or x.get("outage"):
+        return None
+    if x.get("type") == "AS" and x.get("asn"):
+        return "mobile" if _MOBILE_NET.search(x["asn"].get("name") or "") else "internet"
+    if x.get("type") == "LOCATION" and x.get("loc"):
+        return "internet"
+    return None
+
+
+def _country_places(a2s):
+    """ISO alpha-2 codes -> ([places], [ISO-3 codes], {a3: name}) at the theatres.json centroids (up to 4 placed)."""
+    cn = countries()
+    a3s = _uniq(geo.a3_for_a2(c) for c in a2s if c)
+    return [{"ll": cn[a][0]} for a in a3s if a in cn][:4], a3s, {a: cn[a][1] for a in a3s if a in cn}
+
+
+_RADAR_MAJ = re.compile(r"\bnation-?wide\b|\bcomplete\b|\btotal\b|\bnear[- ]total\b", re.I)
+
+
+def _radar_sev(a):
+    if a.get("type") == "NATIONWIDE":
+        return "critical"
+    if a.get("type") == "REGIONAL":
+        return "major"
+    d = a.get("desc") or ""
+    return "major" if _CRIT.search(d) or _MAJ.search(d) or _RADAR_MAJ.search(d) else "minor"
+
+
+def _net(name, asn):
+    """"izzi telecom (AS28548)" stays as it is; "SALT-CH" -> "SALT-CH (AS15796)"."""
+    name = name or "AS%d" % asn
+    return name if re.search(r"(?<![0-9])AS ?%d(?![0-9])" % asn, name, re.I) else "%s (AS%d)" % (name, asn)
+
+
+def radar_outage_items(feed, anns, nt, want=CLASSES):
+    """Radar outage annotations -> items of the classes in `want` (the class is also a tag)."""
+    out = []
+    regs = regions()
+    for a in (anns or {}).values():
+        cls = radar_class(a)
+        if cls not in want:
+            continue
+        desc = a.get("desc") or ""
+        sub = [n.split(",")[0].strip() for n in a.get("geo") or [] if n]
+        codes = match_en("; ".join(a.get("geo") or [])) or (match_en(desc) if desc else [])
+        nets = [_net(x["name"], x["asn"]) for x in a.get("asns") or []]
+        a2s = a.get("loc") or _uniq(x.get("cc") for x in a.get("asns") or [])
+        cplaces, cc, cnames = _country_places(a2s)
+        if not cc and desc:                      # no country in the record: the description's strongest one
+            cn = countries()
+            cc = [x for x in placer.place(desc)["countries"][:1] if x in cn]
+            cplaces, cnames = [{"ll": cn[x][0]} for x in cc], {x: cn[x][1] for x in cc}
+        names = a.get("loc_names") or {}
+        country = _where([cnames[x] for x in cc if x in cnames] or [names.get(c) for c in a2s]) or None
+        if codes:
+            places, place, where = _region_places(codes), "oblast" if codes[0].startswith("UA") else "subject", \
+                _where(regs[c]["en"] for c in codes)
+            cc = _uniq([_region_a3(c) for c in codes] + cc)
+        else:
+            places, place = cplaces, "country" if cplaces else None
+            if sub and country:
+                where = "%s (%s)" % (country, ", ".join(sub[:4]) + (" and %d more" % (len(sub) - 4) if len(sub) > 4
+                                                                     else ""))
+            elif a.get("type") == "NETWORK" and nets:
+                where = ", ".join(nets[:2]) + (" +%d" % (len(nets) - 2) if len(nets) > 2 else "") + \
+                    (", " + country if country else "")
+            else:
+                where = country
+        title, rest = title_summary(desc) if desc else (None, None)
+        if not title:
+            title = "%s: internet outage%s" % (_cause(a.get("cause")), (" in " + where) if where else "")
+        elif len(title) < 40 and where and where.lower() not in title.lower():    # "Exam shutdown" -> "... (Iraq)"
+            title = "%s (%s)" % (title, where)
+        facts = "Cause: %s. Scope: %s." % (_cause(a.get("cause")).lower() if a.get("cause") != "UNKNOWN" else
+                                          "not stated", RADAR_SCOPE.get(a.get("type") or "", "not stated"))
+        if nets:
+            facts += " Networks: %s." % ", ".join(nets[:5])
+        end = a.get("end")
+        active = end is None or end > nt
+        out.append(_mk(feed, "radar_outages", a["id"], "shutdown" if a.get("cause") == "GOVERNMENT_DIRECTED" else
+                       "outage", title, " ".join(x for x in (rest, facts) if x), a.get("url") or RADAR_CENTER,
+                       end if end and end <= nt else a["start"], nt, start=a["start"], end=end, active=active,
+                       severity=_radar_sev(a), status="in effect" if active else "resolved", regions=codes,
+                       where=where, cc=cc, places=places, place=place,
+                       tags=["radar", cls, (a.get("cause") or "unknown").lower().replace("_", "-")]))
+    return out
+
+
+def radar_anomaly_items(feed, anoms, nt, want=("mobile", "internet")):
+    """Radar traffic anomalies -> items of the classes in `want` (unconfirmed and already-annotated ones skipped)."""
+    out = []
+    for x in (anoms or {}).values():
+        cls = anomaly_class(x)
+        if cls not in want:
+            continue
+        seen = ", ".join(x.get("seen") or []) or "traffic"
+        if x["type"] == "AS":
+            n = x["asn"]
+            a2, net = n.get("cc"), _net(n.get("name"), n["asn"])
+            places, cc, cnames = _country_places([a2])
+            country = (cnames.get(cc[0]) if cc else None) or n.get("country")
+            title = "Traffic anomaly on %s%s" % (net, (", " + country) if country else "")
+            where, url, sev = net + ((", " + country) if country else ""), RADAR_TRAFFIC % ("as%d" % n["asn"]), "minor"
+            what = "from the network %s%s" % (net, (" in " + country) if country else "")
+        else:
+            a2 = x["loc"]["cc"]
+            places, cc, cnames = _country_places([a2])
+            country = (cnames.get(cc[0]) if cc else None) or x["loc"].get("name") or a2
+            title, where, url, sev = "Traffic anomaly across %s" % country, country, RADAR_TRAFFIC % a2.lower(), "major"
+            what = "across %s" % country
+        end = x.get("end")
+        active = end is None or end > nt
+        summ = ("Cloudflare Radar's automatic detection flagged an unusual drop in traffic %s, seen in its %s data "
+                "(status %s at Cloudflare; no cause given)." % (what, seen, x["status"]))
+        out.append(_mk(feed, "radar_anomalies", x["id"], "outage", title, summ, url, end if end and end <= nt else
+                       x["start"], nt, start=x["start"], end=end, active=active, severity=sev,
+                       status="in effect" if active else "resolved", where=where, cc=cc, places=places,
+                       place="country" if places else None, tags=["radar", "anomaly", cls]))
+    return out
+
+
+def drop_repeats(items, refs, nt):
+    """Drop Cloudflare Radar's Bluesky posts that repeat an annotation: a shared country, posted from 6 h before the
+    annotation's start to 24 h after its end (or now)."""
+    spans = [(set(r["cc"]), r["start_ms"] // 1000 - 6 * 3600, (r["end_ms"] // 1000 if r["end_ms"] else nt) + 86400)
+             for r in refs if r["cc"] and r["start_ms"]]
+    return [i for i in items if not (i["source"] == "cfradar" and i["kind"] == "post" and i["cc"] and any(
+        set(i["cc"]) & c and lo <= i["ts_ms"] // 1000 <= hi for c, lo, hi in spans))]
+
+
 # ---------------- output ----------------
 
 def _pub(it):
@@ -1452,11 +1772,21 @@ def _power_summary(items, grid, us, geo, nt):
     if ca:
         parts.append("California (CAISO): %s." % ((", ".join(ca["names"]) + " in effect") if ca["events"] else
                                                    "no grid emergency notice"))
+    rad = [i for i in items if i["source"] == "radar_outages"]
+    if rad:
+        act = sum(1 for i in rad if i["active"])
+        parts.append("Cloudflare Radar: %d internet outage%s caused by power cuts in 72 h%s; newest: %s (%s)." % (
+            len(rad), "" if len(rad) == 1 else "s", (", %d still in effect" % act) if act else "",
+            _clip(rad[0]["title"], 140), rad[0]["where"] or "place not given"))
     posts = [i for i in items if i["source"] in ("netblocks", "cfradar")]
     if posts:
         parts.append("Power posts by NetBlocks / Cloudflare Radar in 72 h: %d; newest: %s" % (
             len(posts), _clip(posts[0]["title"], 160)))
     return " ".join(parts) or "No power disruption reported by the sources that answered."
+
+
+def _newest_start(rows):
+    return max((r["start"] for r in (rows or {}).values()), default=None)
 
 
 def power(now=None, fetch=None, clock=time.monotonic):
@@ -1472,8 +1802,13 @@ def power(now=None, fetch=None, clock=time.monotonic):
     _check_answered("power", srcs)
     geo = st["odin_geo"]
     items = odin_items(_data(srcs, "odin"), geo, nt)
+    ro = _data(srcs, "radar_outages") or {}
+    refs = radar_outage_items("power", ro.get("anns"), nt)          # every class: the posts' repeat check
+    items += [i for i in refs if "power" in i["tags"]]
+    posts = []
     for name in ("netblocks", "cfradar"):
-        items += rss_items("power", name, (_data(srcs, name) or {}).get("posts"), nt, ("power",))
+        posts += rss_items("power", name, (_data(srcs, name) or {}).get("posts"), nt, ("power",))
+    items += drop_repeats(posts, refs, nt)
     for name in ("ukrenergo", "minenergo"):
         items += tg_items(name, (_data(srcs, name) or {}).get("posts"), nt)
     tp, es, ca = _data(srcs, "taipower"), _data(srcs, "eskom"), _data(srcs, "caiso")
@@ -1491,7 +1826,7 @@ def power(now=None, fetch=None, clock=time.monotonic):
           "utilities": od["agg"]["utilities"], "t": _iso(od.get("t"))} if od and od.get("agg") else None
     wnd = window(items, nt)
     extra_newest = {"odin": (od or {}).get("t"), "taipower": (cur or {}).get("t"), "eskom": (es or {}).get("t"),
-                    "caiso": (ca or {}).get("t")}
+                    "caiso": (ca or {}).get("t"), "radar_outages": _newest_start(ro.get("anns"))}
     return _finish("power", items, srcs, {"_nt": nt, "grid": grid, "us": us}, _power_summary(wnd, grid, us, geo, nt),
                    extra_newest)
 
@@ -1506,11 +1841,16 @@ def cellular(now=None, fetch=None, clock=time.monotonic):
         _save({"version": VERSION, "sources": srcs, "odin_geo": st.get("odin_geo") or {},
                "odin_map_t": st.get("odin_map_t")})
     _check_answered("cellular", srcs)
-    items, net = [], []
+    ro, ra = _data(srcs, "radar_outages") or {}, _data(srcs, "radar_anomalies") or {}
+    refs = radar_outage_items("cellular", ro.get("anns"), nt)       # every class: the posts' repeat check
+    items = [i for i in refs if "mobile" in i["tags"]] + radar_anomaly_items("cellular", ra.get("anoms"), nt,
+                                                                             ("mobile",))
+    net = [i for i in refs if "internet" in i["tags"]] + radar_anomaly_items("cellular", ra.get("anoms"), nt,
+                                                                             ("internet",))
     for name in ("netblocks", "cfradar"):
         posts = (_data(srcs, name) or {}).get("posts")
-        items += rss_items("cellular", name, posts, nt, ("mobile",))
-        net += rss_items("cellular", name, posts, nt, ("internet",))
+        items += drop_repeats(rss_items("cellular", name, posts, nt, ("mobile",)), refs, nt)
+        net += drop_repeats(rss_items("cellular", name, posts, nt, ("internet",)), refs, nt)
     mon = _data(srcs, "monitor_ru")
     items += monitor_items(mon, nt)
     net = [_pub(i) for i in window(net, nt)[:INTERNET_MAX]]
@@ -1528,11 +1868,18 @@ def cellular(now=None, fetch=None, clock=time.monotonic):
     if russia:
         parts.append("Russia (Na Svyazi map of %s): mobile internet cut in %d regions, whitelists in %d." % (
             russia["date"], russia["shutdown_regions"], russia["whitelist_regions"]))
+    rad = [i for i in wnd if i["source"] in ("radar_outages", "radar_anomalies")]
+    if rad:
+        act = sum(1 for i in rad if i["active"])
+        parts.append("Cloudflare Radar: %d mobile-network outage%s or confirmed traffic anomal%s in 72 h%s; newest: "
+                     "%s." % (len(rad), "" if len(rad) == 1 else "s", "y" if len(rad) == 1 else "ies",
+                              (", %d still in effect" % act) if act else "", _clip(rad[0]["title"], 140)))
     mob = [i for i in wnd if i["kind"] == "post"]
     parts.append("Mobile-network posts by NetBlocks / Cloudflare Radar in 72 h: %d%s." % (
         len(mob), ("; newest: " + _clip(mob[0]["title"], 160)) if mob else ""))
-    parts.append("Other internet-disruption posts in 72 h: %d (Internet group)." % len(net))
-    extra_newest = {"monitor_ru": snaps[-1]["created"] if snaps else None}
+    parts.append("Other internet disruptions in 72 h (posts and Radar records): %d (Internet group)." % len(net))
+    extra_newest = {"monitor_ru": snaps[-1]["created"] if snaps else None,
+                    "radar_outages": _newest_start(ro.get("anns")), "radar_anomalies": _newest_start(ra.get("anoms"))}
     return _finish("cellular", items, srcs, {"_nt": nt, "russia": russia, "internet": net}, " ".join(parts),
                    extra_newest, also=net)
 

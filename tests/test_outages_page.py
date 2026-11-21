@@ -1,5 +1,6 @@
-"""Offline tests for 1.5.3, the page side of the outage layers (web/ext/outages.js): power, cell / mobile networks,
-websites / online services, AI / cloud / datacenters.
+"""Offline tests for 1.5.3 / 1.5.4, the page side of the outage layers (web/ext/outages.js, ext 1.1): power, cell /
+mobile networks, websites / online services, AI / cloud / datacenters. 1.5.4: Cloudflare Radar API records name
+their link (Radar Outage Center, Radar traffic page, Cloudflare's post).
 
 Static checks on the page files (the script tag, the Feed groups in app.js, relative requests only, the CSS) and a
 behaviour check: node runs web/ext/outages.js against a stub GTX and a stub map, with SYNTHETIC fixtures shaped like
@@ -155,6 +156,16 @@ FX = {
               {"source": "openai", "provider": "OpenAI", "status": "operational", "active": 0, "url": "https://example.org/o"}],
        pops={"total": 335, "partial_outage": 1, "under_maintenance": 6, "named": ["IAD"]}),
 }
+RADAR = data("cellular", [
+    (item("cellular", "radar_outages", "r1", provider="Cloudflare Radar", kind="outage", title="Mobile network outage in France",
+          severity="major", status="in effect", url="https://radar.cloudflare.com/outage-center", place="country", ll=[2.35, 46.6],
+          cc=["FRA"], ts=NOW - 30 * M),),
+    (item("cellular", "radar_anomalies", "r2", provider="Cloudflare Radar", kind="outage", title="Traffic anomaly on EXAMPLE-NET (AS64500)",
+          url="https://radar.cloudflare.com/traffic/as64500", place="country", ll=[101.7, 3.1], cc=["MYS"], ts=NOW - 40 * M),),
+    (item("cellular", "radar_outages", "r3", provider="Cloudflare Radar", kind="outage", title="Mobile outage with a post",
+          url="https://example.org/cellular/r3", place="country", ll=[30.5, 50.4], cc=["UKR"], ts=NOW - 50 * M),),
+])
+FX["radar"] = RADAR
 
 HARNESS = r"""
 const fs = require("fs"), vm = require("vm");
@@ -221,6 +232,11 @@ out.popOld = rec.shown[rec.shown.length - 1].html;
 // View on map from a Feed row: the item's own popup at its pin
 const gh = rec.streams.find((s) => s.key === "websites").items(FX.websites).find((i) => i.ll);
 gh.pop(); out.vom = rec.shown[rec.shown.length - 1];
+// 1.5.4: Cloudflare Radar records (a second cellular delivery, after everything above was read)
+rec.feeds.cellular(FX.radar);
+hits = [];
+out.popRadar = ["r1", "r2", "r3"].map((id) => { rec.popups["ou-cellular"]({ properties: { pid: "cellular:radar_" + (id === "r2" ? "anomalies" : "outages") + ":" + id } }, [0, 0]);
+  return rec.shown[rec.shown.length - 1].html; });
 process.stdout.write(JSON.stringify(out, (k, v) => (typeof v === "function" ? "[fn]" : v)));
 """
 
@@ -348,5 +364,10 @@ check("Altai Krai <span" in R["popRu"] and "shutdown, whitelist" in R["popRu"] a
 check("Here:" not in R["popIad"], "a one-region item names no clicked region")
 check("&lt;b&gt;ChatGPT&lt;/b&gt;" in R["popOld"] and "resolved" in R["popOld"], "popup text is escaped; resolved badge")
 check(R["vom"]["ll"] == [-122.39, 37.78] and "Incident with Actions" in R["vom"]["html"], "View on map opens the item's popup at its pin")
+r1, r2, r3 = R["popRadar"]
+check("Radar Outage Center ↗" in r1 and 'href="https://radar.cloudflare.com/outage-center"' in r1 and "Mobile network outage in France" in r1 and
+      "Radar traffic page ↗" in r2 and 'href="https://radar.cloudflare.com/traffic/as64500"' in r2 and
+      "Cloudflare's post ↗" in r3 and "Official status" not in r1 + r2 + r3,
+      "Radar records name their link: Outage Center, traffic page, Cloudflare's post")
 
 print("\n%d checks passed" % ok)

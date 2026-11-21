@@ -1,0 +1,656 @@
+{
+ "success": true,
+ "errors": [],
+ "messages": [],
+ "result": {
+  "annotations": [
+   {
+    "id": "1752",
+    "dataSource": "ALL",
+    "description": "A fixed-line network disruption caused a significant drop in Internet traffic from Salt (AS15796) in Switzerland",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-11-18T19:15:00Z",
+    "endDate": "2026-11-18T23:00:00Z",
+    "locations": [],
+    "asns": [
+     15796
+    ],
+    "geoIds": [],
+    "origins": [],
+    "entities": [
+     {
+      "entityType": "AS",
+      "entityValue": "15796",
+      "entityName": "SALT-CH",
+      "entityLocation": "CH"
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://x.com/CloudflareRadar/status/2123352509846818853",
+    "asnsDetails": [
+     {
+      "asn": "15796",
+      "name": "SALT-CH",
+      "location": {
+       "code": "CH",
+       "name": "Switzerland"
+      }
+     }
+    ],
+    "locationsDetails": [],
+    "originsDetails": [],
+    "outage": {
+     "outageCause": "UNKNOWN",
+     "outageType": "NETWORK"
+    }
+   },
+   {
+    "id": "1751",
+    "dataSource": "ALL",
+    "description": "A fault on the SEA-ME-WE 5 submarine cable off Pakistan's coast caused a drop in Internet traffic across Pakistan",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-11-18T12:30:00Z",
+    "endDate": "2026-11-20T08:00:00Z",
+    "locations": [
+     "PK"
+    ],
+    "asns": [],
+    "geoIds": [],
+    "origins": [],
+    "entities": [
+     {
+      "entityType": "LOCATION",
+      "entityValue": "PK",
+      "entityName": "Pakistan",
+      "entityLocation": null
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://x.com/CloudflareRadar/status/2123214677220217086",
+    "asnsDetails": [],
+    "locationsDetails": [
+     {
+      "name": "Pakistan",
+      "code": "PK"
+     }
+    ],
+    "originsDetails": [],
+    "outage": {
+     "outageCause": "UNKNOWN",
+     "outageType": "NATIONWIDE"
+    }
+   },
+   {
+    "id": "1749",
+    "dataSource": "HTTP_ORIGINS",
+    "description": "A global Microsoft 365 disruption impacted Exchange Online and dependent services, including Outlook, Copilot and Teams calendar features. Microsoft said a large number of servers had become unexpectedly unavailable.",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-11-12T16:45:00Z",
+    "endDate": "2026-11-13T13:00:00Z",
+    "locations": [],
+    "asns": [],
+    "geoIds": [],
+    "origins": [
+     "microsoft-australiacentral",
+     "microsoft-australiacentral2"
+    ],
+    "entities": [
+     {
+      "entityType": "ORIGIN",
+      "entityValue": "microsoft-australiacentral",
+      "entityName": "Microsoft Azure australiacentral",
+      "entityLocation": null
+     },
+     {
+      "entityType": "ORIGIN",
+      "entityValue": "microsoft-australiacentral2",
+      "entityName": "Microsoft Azure australiacentral2",
+      "entityLocation": null
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://x.com/CloudflareRadar/status/2121241680007377398",
+    "asnsDetails": [],
+    "locationsDetails": [],
+    "originsDetails": [
+     {
+      "name": "Microsoft Azure australiacentral",
+      "origin": "microsoft-australiacentral"
+     },
+     {
+      "name": "Microsoft Azure australiacentral2",
+      "origin": "microsoft-australiacentral2"
+     }
+    ],
+    "outage": {
+     "outageCause": "TECHNICAL_PROBLEM",
+     "outageType": "PLATFORM"
+    }
+   },
+   {
+    "id": "1748",
+    "dataSource": "ALL",
+    "description": "Russian strikes on energy infrastructure caused power outages that significantly reduced Internet traffic from Ukraine's Dnipropetrovsk Oblast.",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-11-08T03:15:00Z",
+    "endDate": "2026-11-08T21:00:00Z",
+    "locations": [
+     "UA"
+    ],
+    "asns": [],
+    "geoIds": [
+     "709929"
+    ],
+    "origins": [],
+    "entities": [
+     {
+      "entityType": "LOCATION",
+      "entityValue": "UA",
+      "entityName": "Ukraine",
+      "entityLocation": null
+     },
+     {
+      "entityType": "GEOLOCATION",
+      "entityValue": "709929",
+      "entityName": "Dnipropetrovsk, Ukraine",
+      "entityLocation": "UA"
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://x.com/CloudflareRadar/status/2119759535682535615",
+    "asnsDetails": [],
+    "locationsDetails": [
+     {
+      "name": "Ukraine",
+      "code": "UA"
+     }
+    ],
+    "originsDetails": [],
+    "outage": {
+     "outageCause": "POWER_OUTAGE",
+     "outageType": "REGIONAL"
+    }
+   },
+   {
+    "id": "1747",
+    "dataSource": "ALL",
+    "description": "A network fault caused a near-total loss of Internet traffic from Claro Dominicana (AS6400), affecting fixed and mobile services.",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-11-06T16:45:00Z",
+    "endDate": "2026-11-06T18:45:00Z",
+    "locations": [
+     "DO"
+    ],
+    "asns": [
+     6400
+    ],
+    "geoIds": [],
+    "origins": [],
+    "entities": [
+     {
+      "entityType": "LOCATION",
+      "entityValue": "DO",
+      "entityName": "Dominican Republic",
+      "entityLocation": null
+     },
+     {
+      "entityType": "AS",
+      "entityValue": "6400",
+      "entityName": "Claro Dominicana",
+      "entityLocation": "DO"
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://x.com/CloudflareRadar/status/2119021204161826981",
+    "asnsDetails": [
+     {
+      "asn": "6400",
+      "name": "Claro Dominicana",
+      "location": {
+       "code": "DO",
+       "name": "Dominican Republic"
+      }
+     }
+    ],
+    "locationsDetails": [
+     {
+      "name": "Dominican Republic",
+      "code": "DO"
+     }
+    ],
+    "originsDetails": [],
+    "outage": {
+     "outageCause": "TECHNICAL_PROBLEM",
+     "outageType": "NETWORK"
+    }
+   },
+   {
+    "id": "1744",
+    "dataSource": "ALL",
+    "description": "Damage to energy facilities cut power in Zhytomyr and disrupted Internet connectivity",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-11-03T17:30:00Z",
+    "endDate": "2026-11-04T07:00:00Z",
+    "locations": [],
+    "asns": [],
+    "geoIds": [
+     "686966"
+    ],
+    "origins": [],
+    "entities": [
+     {
+      "entityType": "GEOLOCATION",
+      "entityValue": "686966",
+      "entityName": "Zhytomyr Oblast, Ukraine",
+      "entityLocation": "UA"
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://x.com/CloudflareRadar/status/2117729988929573291",
+    "asnsDetails": [],
+    "locationsDetails": [],
+    "originsDetails": [],
+    "outage": {
+     "outageCause": "POWER_OUTAGE",
+     "outageType": "REGIONAL"
+    }
+   },
+   {
+    "id": "1742",
+    "dataSource": "ALL",
+    "description": " A failure on Peru's national power grid cut electricity across northern Peru on November 1, impacting Internet traffic in Piura starting around 19:45 UTC (14:45 local).",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-11-01T19:45:00Z",
+    "endDate": "2026-11-01T22:30:00Z",
+    "locations": [
+     "PE"
+    ],
+    "asns": [],
+    "geoIds": [
+     "3691146",
+     "3693525",
+     "3695753"
+    ],
+    "origins": [],
+    "entities": [
+     {
+      "entityType": "LOCATION",
+      "entityValue": "PE",
+      "entityName": "Peru",
+      "entityLocation": null
+     },
+     {
+      "entityType": "GEOLOCATION",
+      "entityValue": "3691146",
+      "entityName": "Tumbes, Peru",
+      "entityLocation": "PE"
+     },
+     {
+      "entityType": "GEOLOCATION",
+      "entityValue": "3693525",
+      "entityName": "Piura, Peru",
+      "entityLocation": "PE"
+     },
+     {
+      "entityType": "GEOLOCATION",
+      "entityValue": "3695753",
+      "entityName": "Lambayeque, Peru",
+      "entityLocation": "PE"
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://x.com/CloudflareRadar/status/2117189060469117378",
+    "asnsDetails": [],
+    "locationsDetails": [
+     {
+      "name": "Peru",
+      "code": "PE"
+     }
+    ],
+    "originsDetails": [],
+    "outage": {
+     "outageCause": "POWER_OUTAGE",
+     "outageType": "REGIONAL"
+    }
+   },
+   {
+    "id": "1731",
+    "dataSource": "ALL",
+    "description": "A failure of equipment in the mobile core network of Orange (AS3215) caused a nationwide mobile network outage in France",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-10-21T09:30:00Z",
+    "endDate": "2026-10-21T16:30:00Z",
+    "locations": [],
+    "asns": [
+     3215
+    ],
+    "geoIds": [],
+    "origins": [],
+    "entities": [
+     {
+      "entityType": "AS",
+      "entityValue": "3215",
+      "entityName": "Orange S.A.",
+      "entityLocation": "FR"
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://x.com/CloudflareRadar/status/2112904257230025044",
+    "asnsDetails": [
+     {
+      "asn": "3215",
+      "name": "Orange S.A.",
+      "location": {
+       "code": "FR",
+       "name": "France"
+      }
+     }
+    ],
+    "locationsDetails": [],
+    "originsDetails": [],
+    "outage": {
+     "outageCause": "TECHNICAL_PROBLEM",
+     "outageType": "NETWORK"
+    }
+   },
+   {
+    "id": "1730",
+    "dataSource": "ALL",
+    "description": null,
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-10-20T20:00:00Z",
+    "endDate": "2026-10-21T04:45:00Z",
+    "locations": [],
+    "asns": [
+     41039
+    ],
+    "geoIds": [],
+    "origins": [],
+    "entities": [
+     {
+      "entityType": "AS",
+      "entityValue": "41039",
+      "entityName": "DON-FTTH",
+      "entityLocation": "RU"
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": null,
+    "asnsDetails": [
+     {
+      "asn": "41039",
+      "name": "DON-FTTH",
+      "location": {
+       "code": "RU",
+       "name": "Russian Federation"
+      }
+     }
+    ],
+    "locationsDetails": [],
+    "originsDetails": [],
+    "outage": {
+     "outageCause": "MILITARY_ACTION",
+     "outageType": "NETWORK"
+    }
+   },
+   {
+    "id": "1724",
+    "dataSource": "ALL",
+    "description": "A nationwide power outage caused a significant drop in Internet traffic in Sri Lanka",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-10-17T06:00:00Z",
+    "endDate": "2026-10-17T17:00:00Z",
+    "locations": [
+     "LK"
+    ],
+    "asns": [
+     17470,
+     18001,
+     45356,
+     9329
+    ],
+    "geoIds": [
+     "1223421",
+     "1227618",
+     "1232860",
+     "1249296",
+     "7671049"
+    ],
+    "origins": [],
+    "entities": [
+     {
+      "entityType": "LOCATION",
+      "entityValue": "LK",
+      "entityName": "Sri Lanka",
+      "entityLocation": null
+     },
+     {
+      "entityType": "AS",
+      "entityValue": "17470",
+      "entityName": "HUTCHISON-LK",
+      "entityLocation": "LK"
+     },
+     {
+      "entityType": "AS",
+      "entityValue": "18001",
+      "entityName": "DIALOG-AS",
+      "entityLocation": "LK"
+     },
+     {
+      "entityType": "AS",
+      "entityValue": "45356",
+      "entityName": "MOBITEL-LK",
+      "entityLocation": "LK"
+     },
+     {
+      "entityType": "AS",
+      "entityValue": "9329",
+      "entityName": "SLTINT-AS-AP",
+      "entityLocation": "LK"
+     },
+     {
+      "entityType": "GEOLOCATION",
+      "entityValue": "1223421",
+      "entityName": "Western Province, Sri Lanka",
+      "entityLocation": "LK"
+     },
+     {
+      "entityType": "GEOLOCATION",
+      "entityValue": "1227618",
+      "entityName": "Southern Province, Sri Lanka",
+      "entityLocation": "LK"
+     },
+     {
+      "entityType": "GEOLOCATION",
+      "entityValue": "1232860",
+      "entityName": "North Western Province, Sri Lanka",
+      "entityLocation": "LK"
+     },
+     {
+      "entityType": "GEOLOCATION",
+      "entityValue": "1249296",
+      "entityName": "Central Province, Sri Lanka",
+      "entityLocation": "LK"
+     },
+     {
+      "entityType": "GEOLOCATION",
+      "entityValue": "7671049",
+      "entityName": "Northern Province, Sri Lanka",
+      "entityLocation": "LK"
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": "https://www.straitstimes.com/asia/south-asia/sri-lanka-suffers-nationwide-electricity-blackout",
+    "asnsDetails": [
+     {
+      "asn": "17470",
+      "name": "HUTCHISON-LK",
+      "location": {
+       "code": "LK",
+       "name": "Sri Lanka"
+      }
+     },
+     {
+      "asn": "18001",
+      "name": "DIALOG-AS",
+      "location": {
+       "code": "LK",
+       "name": "Sri Lanka"
+      }
+     },
+     {
+      "asn": "45356",
+      "name": "MOBITEL-LK",
+      "location": {
+       "code": "LK",
+       "name": "Sri Lanka"
+      }
+     },
+     {
+      "asn": "9329",
+      "name": "SLTINT-AS-AP",
+      "location": {
+       "code": "LK",
+       "name": "Sri Lanka"
+      }
+     }
+    ],
+    "locationsDetails": [
+     {
+      "name": "Sri Lanka",
+      "code": "LK"
+     }
+    ],
+    "originsDetails": [],
+    "outage": {
+     "outageCause": "POWER_OUTAGE",
+     "outageType": "NATIONWIDE"
+    }
+   },
+   {
+    "id": "1687",
+    "dataSource": "ALL",
+    "description": "Exam shutdown",
+    "tags": [],
+    "scope": null,
+    "startDate": "2026-10-10T02:45:00Z",
+    "endDate": "2026-10-10T03:45:00Z",
+    "locations": [
+     "IQ"
+    ],
+    "asns": [
+     199739,
+     203214,
+     51684,
+     58322,
+     59588
+    ],
+    "geoIds": [],
+    "origins": [],
+    "entities": [
+     {
+      "entityType": "LOCATION",
+      "entityValue": "IQ",
+      "entityName": "Iraq",
+      "entityLocation": null
+     },
+     {
+      "entityType": "AS",
+      "entityValue": "199739",
+      "entityName": "Earthlink-DMCC-IQ",
+      "entityLocation": "AE"
+     },
+     {
+      "entityType": "AS",
+      "entityValue": "203214",
+      "entityName": "HulumTele",
+      "entityLocation": "IQ"
+     },
+     {
+      "entityType": "AS",
+      "entityValue": "51684",
+      "entityName": "ASIACELL",
+      "entityLocation": "IQ"
+     },
+     {
+      "entityType": "AS",
+      "entityValue": "58322",
+      "entityName": "halasat",
+      "entityLocation": "IQ"
+     },
+     {
+      "entityType": "AS",
+      "entityValue": "59588",
+      "entityName": "ZAINAS-IQ",
+      "entityLocation": "IQ"
+     }
+    ],
+    "eventType": "OUTAGE",
+    "linkedUrl": null,
+    "asnsDetails": [
+     {
+      "asn": "199739",
+      "name": "Earthlink-DMCC-IQ",
+      "location": {
+       "code": "AE",
+       "name": "United Arab Emirates"
+      }
+     },
+     {
+      "asn": "203214",
+      "name": "HulumTele",
+      "location": {
+       "code": "IQ",
+       "name": "Iraq"
+      }
+     },
+     {
+      "asn": "51684",
+      "name": "ASIACELL",
+      "location": {
+       "code": "IQ",
+       "name": "Iraq"
+      }
+     },
+     {
+      "asn": "58322",
+      "name": "halasat",
+      "location": {
+       "code": "IQ",
+       "name": "Iraq"
+      }
+     },
+     {
+      "asn": "59588",
+      "name": "ZAINAS-IQ",
+      "location": {
+       "code": "IQ",
+       "name": "Iraq"
+      }
+     }
+    ],
+    "locationsDetails": [
+     {
+      "name": "Iraq",
+      "code": "IQ"
+     }
+    ],
+    "originsDetails": [],
+    "outage": {
+     "outageCause": "GOVERNMENT_DIRECTED",
+     "outageType": "REGIONAL"
+    }
+   }
+  ]
+ }
+}

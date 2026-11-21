@@ -1,0 +1,190 @@
+{
+ "success": true,
+ "errors": [],
+ "messages": [],
+ "result": {
+  "trafficAnomalies": [
+   {
+    "visibleInDataSources": [
+     "HTTP",
+     "NET"
+    ],
+    "uuid": "f3d61a93-f09c-45cf-a759-0f605e7916ed",
+    "type": "LOCATION",
+    "status": "UNVERIFIED",
+    "startDate": "2026-11-20T23:00:00Z",
+    "endDate": null,
+    "locationDetails": {
+     "code": "GF",
+     "name": "French Guiana"
+    },
+    "asnDetails": null,
+    "originDetails": null,
+    "outageId": null
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP",
+     "NET"
+    ],
+    "uuid": "6c3beaa1-0116-4ecb-b24e-6cf70d9c65b9",
+    "type": "LOCATION",
+    "status": "VERIFIED",
+    "startDate": "2026-11-20T12:30:00Z",
+    "endDate": "2026-11-20T14:15:00Z",
+    "locationDetails": {
+     "code": "CG",
+     "name": "Congo"
+    },
+    "asnDetails": null,
+    "originDetails": null,
+    "outageId": null
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP",
+     "NET"
+    ],
+    "uuid": "2e2937d1-127a-4581-a99f-8e0c39139b64",
+    "type": "AS",
+    "status": "VERIFIED",
+    "startDate": "2026-11-18T22:00:00Z",
+    "endDate": "2026-11-18T22:00:00Z",
+    "locationDetails": null,
+    "asnDetails": {
+     "asn": "15796",
+     "name": "SALT-CH",
+     "location": {
+      "code": "CH",
+      "name": "Switzerland"
+     }
+    },
+    "originDetails": null,
+    "outageId": "1752"
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP",
+     "NET"
+    ],
+    "uuid": "3132f78d-fab8-48f8-b967-8efdd0296b41",
+    "type": "LOCATION",
+    "status": "TP",
+    "startDate": "2026-11-18T12:30:00Z",
+    "endDate": "2026-11-18T12:30:00Z",
+    "locationDetails": {
+     "code": "PK",
+     "name": "Pakistan"
+    },
+    "asnDetails": null,
+    "originDetails": null,
+    "outageId": "1751"
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP",
+     "NET"
+    ],
+    "uuid": "c595977b-aa94-4659-bb59-45d1884015f0",
+    "type": "AS",
+    "status": "TP",
+    "startDate": "2026-11-17T00:15:00Z",
+    "endDate": null,
+    "locationDetails": null,
+    "asnDetails": {
+     "asn": "10030",
+     "name": "CELCOMNET-AP",
+     "location": {
+      "code": "MY",
+      "name": "Malaysia"
+     }
+    },
+    "originDetails": null,
+    "outageId": null
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP",
+     "NET"
+    ],
+    "uuid": "5e240406-cb5c-4a24-9232-a348691ef02f",
+    "type": "AS",
+    "status": "TP",
+    "startDate": "2026-11-10T19:45:00Z",
+    "endDate": "2026-11-11T11:45:00Z",
+    "locationDetails": null,
+    "asnDetails": {
+     "asn": "15378",
+     "name": "TELE2-RU-AS",
+     "location": {
+      "code": "RU",
+      "name": "Russian Federation"
+     }
+    },
+    "originDetails": null,
+    "outageId": null
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP",
+     "NET"
+    ],
+    "uuid": "489fca59-696a-49b9-b618-bb788e8a340d",
+    "type": "AS",
+    "status": "TP",
+    "startDate": "2026-10-29T22:00:00Z",
+    "endDate": "2026-11-04T00:00:00Z",
+    "locationDetails": null,
+    "asnDetails": {
+     "asn": "16345",
+     "name": "BEE-AS",
+     "location": {
+      "code": "RU",
+      "name": "Russian Federation"
+     }
+    },
+    "originDetails": null,
+    "outageId": null
+   },
+   {
+    "visibleInDataSources": [
+     "HTTP_ORIGINS"
+    ],
+    "uuid": "e02a5ade-2ab9-4e52-8aed-31792bb446b3",
+    "type": "ORIGIN",
+    "status": "TP",
+    "startDate": "2026-11-03T03:30:00Z",
+    "endDate": "2026-11-03T05:00:00Z",
+    "locationDetails": null,
+    "asnDetails": null,
+    "originDetails": {
+     "origin": "oracle-eu-frankfurt-1",
+     "name": "Oracle Cloud eu-frankfurt-1"
+    },
+    "outageId": null
+   },
+   {
+    "visibleInDataSources": [
+     "NET",
+     "HTTP"
+    ],
+    "uuid": "a4ab72cf-95cb-4304-af62-10abea5c2b92",
+    "type": "AS",
+    "status": "TP",
+    "startDate": "2026-11-07T04:45:00Z",
+    "endDate": "2026-11-07T06:45:00Z",
+    "locationDetails": null,
+    "asnDetails": {
+     "asn": "28548",
+     "name": "izzi telecom (AS28548)",
+     "location": {
+      "code": "MX",
+      "name": "Mexico"
+     }
+    },
+    "originDetails": null,
+    "outageId": null
+   }
+  ]
+ }
+}

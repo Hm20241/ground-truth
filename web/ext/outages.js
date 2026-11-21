@@ -1,4 +1,4 @@
-// Ground Truth page extension: outage layers (1.5.3, ext 1.0). Asked for: four separate map layers for power
+// Ground Truth page extension: outage layers (1.5.4, ext 1.1; 1.1 labels Cloudflare Radar API links). Asked for: four separate map layers for power
 // outages, website / online-service disruptions, AI / cloud / datacenter disruptions and cell / mobile network
 // disruptions. Feeds: /api/feed/power and /api/feed/cellular (gt/disruption.py), /api/feed/websites and
 // /api/feed/cloud (gt/services.py). Each layer draws its feed's own GeoJSON (one point per item and place), every
@@ -182,7 +182,13 @@
     if (regs.length === 1 && !ru[regs[0]] && String(it.where || "").includes(regs[0])) return "";
     return `<div class="small">${regs.length === 1 ? "Region" : "Regions"}: ${names.join(", ")}${regs.length > 12 ? ` +${regs.length - 12} more` : ""}</div>`;
   }
-  const linkText = (it) => (it.kind === "post" ? "Post" : it.kind === "news" ? "Article" : "Official status");
+  const linkText = (it) => {
+    const u = String(it.url || "");
+    if (String(it.source || "").startsWith("radar_"))   // Cloudflare Radar API records (1.5.4)
+      return u.includes("radar.cloudflare.com/outage-center") ? "Radar Outage Center"
+        : u.includes("radar.cloudflare.com/traffic/") ? "Radar traffic page" : "Cloudflare's post";
+    return it.kind === "post" ? "Post" : it.kind === "news" ? "Article" : "Official status";
+  };
   function itemHtml(k, it, here) {
     const c = BY[k], d = D(k) || {}, sv = sevOf(it), u = link(it.url), ts = tsOf(it);
     const srcRow = arr(d.sources).find((s) => s && s.name === it.source);

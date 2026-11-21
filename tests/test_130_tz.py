@@ -53,7 +53,7 @@ check(all(f in rz for f in ("try {", "catch (err)")), "each redraw step is guard
 check('$("clock").onclick' in APP and '$("tzchips").onclick' in APP, "clock and chips switch the zone")
 check(not re.search(r"\)\}Z|\.slice\(5, ?16\)\.replace\(\"T\"", REST.replace('${utc.slice(11, 16)}Z', "")), "no UTC-only time formats left in app.js")
 check("Kyiv times shown in UTC" not in APP and "Kyiv times shown in ${zoneName()}" in APP, "Alerts note names the page's zone")
-check(('data-ts="${p.ts_source === "date" ? dayStart(p.ts_ms) : p.ts_ms}"' in APP or 'data-ts="${day ? dayStart(p.ts_ms) : p.ts_ms}"' in APP) and 'data-ts="${i.day ? dayStart(i.ts) : i.ts}"' in APP, "Feed rows carry data-ts")
+check(('data-ts="${p.ts_source === "date" ? dayStart(p.ts_ms) : p.ts_ms}"' in APP or 'data-ts="${day ? dayAt(p.ts_ms) : p.ts_ms}"' in APP) and 'data-ts="${i.day ? dayAt(i.ts) : i.ts}"' in APP, "Feed rows carry data-ts")
 check("i.day ? fmtDay(i.ts)" in APP and 'p.ts_source === "date" ? fmtDay(p.ts_ms)' in APP, "date-only Feed rows show their own day")
 check('title="${esc(altTime(' in APP, "Feed times show the other zone as a tooltip")
 check("axisLabel(b.t)" in APP and "getUTCHours() % 12" not in REST, "activity chart ticks follow the zone")
@@ -61,9 +61,11 @@ check(not any("(?<" in x for x in [APP] + list(EXT.values())), "no regex lookbeh
 check("zText(nd.nodeValue, ref)" in APP and "esc(zText(a.summary, isoMs(a.analyzed_at)))" in APP, "Analyst tab and per-event notes get Eastern beside UTC times")
 rz2 = APP[APP.index("function rezone()"):APP.index("function setZone(")]
 check(rz2.index("STREAMS.forEach((st) => { st._d = null; })") < rz2.index("run(render"), "a switch rebuilds the Feed's cached rows before redrawing (TFR spans carry times)")
-check("const start = i.day ? dayStart(i.ts) : i.ts, end = i.day ? dayStart(i.ts + DAY) : i.ts;" in APP and "start > S.brush[1]" in APP, "Feed filter: a date-only item spans its day in the page's zone")
-check("ts: i.day ? dayStart(i.ts) : i.ts, group: i.group" in APP and 'f.properties.ts_source === "date" && f.properties.ts_ms ? dayStart(f.properties.ts_ms)' in APP, "Feed sort: date-only rows at the start of their day in the page's zone")
-check('data-ts="${i.day ? dayStart(i.ts) : i.ts}"' in APP, "date-only rows' data-ts is where they sort")
+check("const start = i.day ? dayAt(i.ts) : i.ts, end = i.day ? dayStart(i.ts + DAY) : i.ts;" in APP and "start > S.brush[1]" in APP, "Feed filter: a date-only item spans its day in the page's zone")
+check("ts: i.day ? dayAt(i.ts) : i.ts, group: i.group" in APP and 'f.properties.ts_source === "date" && f.properties.ts_ms ? dayAt(f.properties.ts_ms)' in APP, "Feed sort: date-only rows at the start of their day in the page's zone, never later than now (1.5.1)")
+check("dayStart(i.ts)" not in APP and "dayStart(p.ts_ms)" not in APP and "dayStart(f.properties" not in APP, "1.5.1: no Feed row sorts or is stamped by dayStart alone (it can lie in the future)")
+check('data-day="1" title="Date only:' in APP, "1.5.1: a date-only time says, on hover, that it is the source's own day")
+check('data-ts="${i.day ? dayAt(i.ts) : i.ts}"' in APP, "date-only rows' data-ts is where they sort")
 check("first ${esc(when(p.thermal.first))}" in APP and "watching_since.slice" not in APP, "thermal first detection and advisories date follow the zone")
 check("zText(a.summary, isoMs(a.analyzed_at))" in APP, "per-event analyst notes use the note's own date for the offset")
 check("zoneUi()" in APP and '$("utc").title = "Live' not in APP, "push state goes into the clock tooltip")
@@ -85,7 +87,7 @@ const NOW = Date.UTC(2026, 10, 20, 6, 12);  // 2026-11-20 06:12Z = 1:12 AM EST
 Date.now = () => NOW;
 function make(store) {
   const localStorage = store;
-  return eval("(() => {" + ISO + "\n" + BLOCK + "return { fmtT, fmtD, fmtDay, when, ago, altTime, axisLabel, zoneAbbr, zoneName, isoMs, zText, dayStart, z: () => ZONE, set: (v) => { ZONE = v; } }; })()");
+  return eval("(() => {" + ISO + "\n" + BLOCK + "return { fmtT, fmtD, fmtDay, when, ago, altTime, axisLabel, zoneAbbr, zoneName, isoMs, zText, dayStart, dayAt, z: () => ZONE, set: (v) => { ZONE = v; } }; })()");
 }
 const mem = (v) => ({ getItem: () => v });
 const out = {};
@@ -110,6 +112,10 @@ out.altEt = P.altTime(t);
 const U = (y, m, d, h) => Date.UTC(y, m - 1, d, h || 0);
 out.dayStartEt = [[2026, 11, 20], [2026, 7, 1], [2026, 3, 8], [2026, 3, 9], [2026, 11, 1], [2026, 11, 2], [2027, 1, 1]].map(([y, m, d]) => (P.dayStart(U(y, m, d)) - U(y, m, d)) / 3600000);
 out.dayStartNoon = (P.dayStart(U(2026, 11, 15, 12)) - U(2026, 11, 15)) / 3600000;
+// 1.5.1: NOW is 1:12 AM Eastern on 11/20. Today's date-only row starts at Eastern midnight; a row already dated 11/21 (a
+// source ahead of Eastern, such as Taiwan MND) sits at NOW, never in the future.
+out.dayAtEt = [P.dayAt(U(2026, 11, 20)) === P.dayStart(U(2026, 11, 20)), P.dayAt(U(2026, 11, 19)) === P.dayStart(U(2026, 11, 19)),
+  P.dayAt(U(2026, 11, 21)) === NOW, P.dayAt(U(2026, 11, 21, 12)) === NOW, P.dayAt(U(2026, 11, 22)) === NOW];
 out.fmtDaySlash = [P.fmtDay("2026/11/20"), P.fmtDay("2026-11-20"), P.fmtDay(U(2026, 11, 20))];
 const prose = "red at 05:38Z, up from 13 at 03:04Z (to 00:23Z). Not 12:05:38Z, 25:00Z or 0538Z.";
 out.zEt = [P.zText(prose, T("2026-11-20T09:00:00Z")), P.zText("at 16:05Z", T("2026-07-01T18:00:00Z")), P.zText(""), P.zText(null)];
@@ -118,6 +124,7 @@ out.utc = [P.fmtD(t), P.fmtT(t), P.zoneAbbr(t), P.zoneName(), P.when(t), P.fmtDa
 out.axisUtc = [P.axisLabel(T("2026-11-20T00:00:00Z")), P.axisLabel(T("2026-11-20T12:00:00Z")), P.axisLabel(T("2026-11-20T05:00:00Z"))];
 out.altUtc = P.altTime(t);
 out.dayStartUtc = P.dayStart(U(2026, 11, 20)) === U(2026, 11, 20) && P.dayStart(U(2026, 11, 20, 12)) === U(2026, 11, 20);
+out.dayAtUtc = [P.dayAt(U(2026, 11, 20)) === U(2026, 11, 20), P.dayAt(U(2026, 11, 21)) === NOW];
 out.zUtc = P.zText(prose, T("2026-11-20T09:00:00Z"));
 console.log(JSON.stringify(out));
 """ % (json.dumps(BLOCK), json.dumps(iso_line))
@@ -148,6 +155,8 @@ if o:
     check(o["zUtc"] == prose_py, "analyst prose untouched in UTC mode")
     check(o["dayStartEt"] == [5, 4, 5, 4, 4, 5, 5], "dayStart: Eastern midnight is 05:00Z in winter, 04:00Z in summer, right on both 2026 DST days and across New Year: %s" % o["dayStartEt"])
     check(o["dayStartUtc"], "dayStart is UTC midnight in UTC mode, for a midnight or noon date stamp")
+    check(o.get("dayAtEt") == [True] * 5, "1.5.1 dayAt: today and yesterday start at Eastern midnight; a day not begun in Eastern yet (11/21 at 1:12 AM on 11/20, noon-stamped or two days ahead) sits at now: %s" % o.get("dayAtEt"))
+    check(o.get("dayAtUtc") == [True, True], "1.5.1 dayAt in UTC mode: today at UTC midnight, tomorrow at now: %s" % o.get("dayAtUtc"))
     check(o["dayStartNoon"] == 5, "dayStart: a date-only value stamped at noon UTC (GeoConfirmed) starts its day at Eastern midnight: %s" % o["dayStartNoon"])
     check(o["fmtDaySlash"] == ["11/20", "11/20", "11/20"], "fmtDay reads a YYYY/MM/DD date as that day: %s" % o["fmtDaySlash"])
     # the page must not depend on the browser's own zone: same output with the machine in Chicago and in Kolkata

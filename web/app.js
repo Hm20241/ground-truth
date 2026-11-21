@@ -27,7 +27,9 @@
    1.5.0: mobile layout (two-row phone header, landscape columns, drawer with backdrop, popups that fit, tap targets,
    safe areas); a news ticker under the title bar (the head of the Feed, with its own SRC sources, pause and speed);
    resizable, collapsible sidebars on a PC; "View on map" on Feed rows with a place; the public copy skips the push
-   stream and the post-text button. */
+   stream and the post-text button.
+   1.5.1: a date-only Feed row never sorts into the future (dayAt): a source ahead of the page's zone (Taiwan MND) can
+   name a day that has not begun here yet. */
 (() => {
   "use strict";
   const THEATRES = {
@@ -82,6 +84,11 @@
   // summer; the second step gets the two DST switch days right), so date-only rows sort and filter with that day's
   // rows instead of with the evening before.
   const dayStart = (ts) => { const d0 = Math.floor(ts / 86400000) * 86400000; return ZONE === "utc" ? d0 : d0 + etOff(d0 + etOff(d0 + 43200000)); };
+  // 1.5.1: where a date-only row sits in time: the start of its day, but never later than now. A source ahead of the
+  // page's zone can name a day that has not begun here yet: Taiwan MND dates its report in Taiwan time and posts it
+  // about 9 AM there (8-10 PM the evening before in Eastern), so its row sat up to 4 h in the future above every newer
+  // item. Such a row now sits at the moment it is drawn; its label still names the source's own day.
+  const dayAt = (ts) => Math.min(dayStart(ts), Date.now());
   const zoneAbbr = (ms) => (ZONE === "utc" ? "UTC" : zparts(ms == null ? Date.now() : ms, ET).timeZoneName);  // "EST" or "EDT"
   const zoneName = () => (ZONE === "utc" ? "UTC" : "Eastern time");
   // the same moment in the other zone, for tooltips
@@ -1098,7 +1105,7 @@
   const feedOff = new Set((() => { try { return JSON.parse(localStorage.getItem("gt-feed-off") || "[]"); } catch (err) { return []; } })());
   // country -> [theatre, lon, lat, name], from tools/build_theatres.py (the server's own placement rule)
   let TH = { a3: {}, a2: {}, names: {} };
-  fetch("geo/theatres.json?v=1.5.0").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
+  fetch("geo/theatres.json?v=1.5.1").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
   function country(k) {
     if (!k) return null;
     const s = String(k).trim(), u0 = s.toUpperCase();  // ISO-3, ISO-2, or a name ("Côte d’Ivoire", "Mexico Travel Advisory")
@@ -1369,7 +1376,7 @@
     const q = S.q.trim().toLowerCase(), now = Date.now();
     const pinned = new Set(((S.events || {}).features || []).map((f) => postOnly(f.properties.url)).filter(Boolean));
     return streamItems().filter((i) => {
-      const start = i.day ? dayStart(i.ts) : i.ts, end = i.day ? dayStart(i.ts + DAY) : i.ts;  // 1.3.0: the day in the page's zone
+      const start = i.day ? dayAt(i.ts) : i.ts, end = i.day ? dayStart(i.ts + DAY) : i.ts;  // 1.3.0: the day in the page's zone (1.5.1: from now at the latest)
       if (!inTheatre(i.th)) return false;
       if (i.cat && CATS[i.cat] && !S.cats.has(i.cat)) return false;
       if (S.hours && now - end > S.hours * 3600000) return false;
@@ -1387,7 +1394,7 @@
     const sea = p.sea && !["offshore", "open ocean"].includes(p.sea) ? p.sea : "";
     // 1.4.0: the country moves up into the title bar; a sea stays in the meta line unless the bar already names it
     const ks = ccList([p.country, p.country_name]), named = ks.length || p.country_name;
-    const day = p.ts_source === "date", when = `<span class="time"${p.ts_ms ? ` data-ts="${day ? dayStart(p.ts_ms) : p.ts_ms}"${day ? ' data-day="1"' : ` title="${esc(altTime(p.ts_ms))}"`}` : ""}>${!p.ts_ms ? "–" : day ? fmtDay(p.ts_ms) : fmtD(p.ts_ms) + " " + fmtT(p.ts_ms)}</span>`
+    const day = p.ts_source === "date", when = `<span class="time"${p.ts_ms ? ` data-ts="${day ? dayAt(p.ts_ms) : p.ts_ms}"${day ? ' data-day="1" title="Date only: the day as the source gives it, in its own calendar"' : ` title="${esc(altTime(p.ts_ms))}"`}` : ""}>${!p.ts_ms ? "–" : day ? fmtDay(p.ts_ms) : fmtD(p.ts_ms) + " " + fmtT(p.ts_ms)}</span>`
       + (p.ts_ms ? `<span class="ag">${day ? "date only" : ago(p.ts_ms)}</span>` : "");
     const bar = titleBar(ks, p.country_name ? ["", p.country_name] : sea ? ["🌊", sea] : ["🌐", thName(p.theatre) || "Global"], catName, when);
     const where = named ? sea : "";
@@ -1405,7 +1412,7 @@
     const cat = i.cat && i.cat !== "other" && CATS[i.cat], g = FG[i.group] || FG.map, c = cat ? cat[1] : g[1], u = linkUrl(i.url);
     const ks = i.cn || [], nm = new Set(ks.map((k) => k.name));  // 1.4.0: a where that only lists the bar's countries is dropped
     const where = i.where && !String(i.where).split(/\s*,\s*/).every((w) => nm.has(w)) ? i.where : "";
-    const when = `<span class="time" data-ts="${i.day ? dayStart(i.ts) : i.ts}"${i.day ? ' data-day="1"' : ` title="${esc(altTime(i.ts))}"`}>${i.day ? fmtDay(i.ts) : fmtD(i.ts) + " " + fmtT(i.ts)}</span><span class="ag">${i.day ? "date only" : ago(i.ts)}</span>`;
+    const when = `<span class="time" data-ts="${i.day ? dayAt(i.ts) : i.ts}"${i.day ? ' data-day="1" title="Date only: the day as the source gives it, in its own calendar"' : ` title="${esc(altTime(i.ts))}"`}>${i.day ? fmtDay(i.ts) : fmtD(i.ts) + " " + fmtT(i.ts)}</span><span class="ag">${i.day ? "date only" : ago(i.ts)}</span>`;
     return `<li class="sx${i.ll ? "" : " nl"}" data-sx="${n}" style="--c:${c}">${titleBar(ks, ["🌐", thName(i.th) || "Global"], cat ? cat[0] : g[0], when)}<div class="t">${u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(i.title)}</a>` : esc(i.title)}</div><div class="m">
       ${where ? `<span>${esc(where)}</span>` : ""}
       <span class="badge src" style="border-color:${(FG[i.group] || FG.map)[1]}">${esc(i.label)}</span>${i.badge ? `<span class="badge">${esc(i.badge)}</span>` : ""}${trTag(i)}${i.ll ? VM_BTN : ""}</div></li>`;
@@ -1420,8 +1427,8 @@
   function renderFeed(list) {
     if (list) feedPins = list;
     const fr = renderSrcNotice();
-    const all = feedPins.map((f) => ({ pin: f, ts: f.properties.ts_source === "date" && f.properties.ts_ms ? dayStart(f.properties.ts_ms) : f.properties.ts_ms || 0, group: "map" }))
-      .concat(streamFiltered().map((i) => ({ it: i, ts: i.day ? dayStart(i.ts) : i.ts, group: i.group })));
+    const all = feedPins.map((f) => ({ pin: f, ts: f.properties.ts_source === "date" && f.properties.ts_ms ? dayAt(f.properties.ts_ms) : f.properties.ts_ms || 0, group: "map" }))
+      .concat(streamFiltered().map((i) => ({ it: i, ts: i.day ? dayAt(i.ts) : i.ts, group: i.group })));
     const counts = {};
     all.forEach((r) => { counts[r.group] = (counts[r.group] || 0) + 1; });
     const rows = all.filter((r) => !feedOff.has(r.group)).sort((a, b) => b.ts - a.ts);

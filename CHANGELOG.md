@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.1 (2026-11-21): date-only rows never in the future; real icon files
+- A date-only Feed row sits at the start of its day, but never later than now. A source ahead of the page's zone (Taiwan's defence ministry dates its report in Taiwan time) used to sort up to 4 hours into the future, above every newer item. Its label still names the source's own day, and the tooltip says so.
+- The page icon now comes from files beside the page: `favicon.svg`, a 32 px PNG and a 180 px `apple-touch-icon.png`. Before, it was only an inline SVG, which Safari and iOS commonly skip.
+
 ## 1.5.0 (2026-11-21): mobile layout, news ticker, resizable sidebars, warships worldwide, more sources, translations
 - Phones: two columns in landscape. In portrait, a better map/list split, with the timeline hidden on small screens.
 - Popups fit the screen and sit above the map controls.

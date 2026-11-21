@@ -29,7 +29,8 @@
    resizable, collapsible sidebars on a PC; "View on map" on Feed rows with a place; the public copy skips the push
    stream and the post-text button.
    1.5.1: a date-only Feed row never sorts into the future (dayAt): a source ahead of the page's zone (Taiwan MND) can
-   name a day that has not begun here yet. */
+   name a day that has not begun here yet.
+   1.5.2: on the GitHub Pages copy the tab and window title read "Ground Truth --GitHub". */
 (() => {
   "use strict";
   const THEATRES = {
@@ -712,6 +713,9 @@
   // The server sends timestamps only; the page works out "sirens now" etc. on its own clock, so the public copy
   // (refreshed every ~10 min) shows an old siren as past, never as live.
   const PUBLIC = /\.github\.io$/i.test(location.hostname);
+  // 1.5.2, asked for: add "--GitHub" to the GitHub page's title bar / tab text, only for GitHub. Self-hosted copies and
+  // the Home Assistant frame keep "Ground Truth".
+  if (PUBLIC && !/ --GitHub$/.test(document.title)) document.title += " --GitHub";
   const AL_POLL = PUBLIC ? 60000 : 10000;
   const AR_COL = { red: "#f05252", yellow: "#f2b33d", nominal: "#6b7280", launch: "#c084fc" };
   const IL_COL = { siren: "#f05252", shelter: "#f2853d", early: "#fde047", ended: "#3ecf8e", recent: "#8a929b" };
@@ -1105,7 +1109,7 @@
   const feedOff = new Set((() => { try { return JSON.parse(localStorage.getItem("gt-feed-off") || "[]"); } catch (err) { return []; } })());
   // country -> [theatre, lon, lat, name], from tools/build_theatres.py (the server's own placement rule)
   let TH = { a3: {}, a2: {}, names: {} };
-  fetch("geo/theatres.json?v=1.5.1").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
+  fetch("geo/theatres.json?v=1.5.2").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
   function country(k) {
     if (!k) return null;
     const s = String(k).trim(), u0 = s.toUpperCase();  // ISO-3, ISO-2, or a name ("Côte d’Ivoire", "Mexico Travel Advisory")

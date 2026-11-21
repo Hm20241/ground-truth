@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.5.2 (2026-11-21): "--GitHub" in the GitHub Pages tab title
+- On GitHub Pages (any `*.github.io` host) the tab and window title reads "Ground Truth --GitHub", so this copy is easy to tell apart from a self-hosted one. A self-hosted copy keeps "Ground Truth".
+
 ## 1.5.1 (2026-11-21): date-only rows never in the future; real icon files
 - A date-only Feed row sits at the start of its day, but never later than now. A source ahead of the page's zone (Taiwan's defence ministry dates its report in Taiwan time) used to sort up to 4 hours into the future, above every newer item. Its label still names the source's own day, and the tooltip says so.
 - The page icon now comes from files beside the page: `favicon.svg`, a 32 px PNG and a 180 px `apple-touch-icon.png`. Before, it was only an inline SVG, which Safari and iOS commonly skip.

@@ -373,4 +373,8 @@ check('matchMedia("(hover: hover) and (pointer: fine)")' in APP and "#gtip {" in
 check('title="Category: ${esc(cat)}"' in APP and 'data-h="6" title=' in INDEX, "tooltips: the title bar's category and the time range")
 check(".feed .tb {" in CSS and ".feed .tb .ct {" in CSS, "style.css styles the title bar")
 
+# 1.5.2: the GitHub Pages copy (and only it) adds "--GitHub" to the tab title
+check('if (PUBLIC && !/ --GitHub$/.test(document.title)) document.title += " --GitHub";' in APP and
+      APP.index("const PUBLIC = ") < APP.index('document.title += " --GitHub"') and APP.count("document.title") == 2,
+      "the tab title gains ' --GitHub' on a github.io host only, once, and nothing else sets the title")
 print("%d checks passed" % ok)

@@ -1,6 +1,7 @@
 /* Ground Truth 1.7.0, Atlas theme, the interface: search, topic pills, the one sheet (Now, Feed, Topics, More), the detail
    card and the wall display. Three layouts from one page: desk (side panel), phone (bottom sheet + tab bar), wall (nothing
-   to touch). The wall display never starts by itself: only ?wall=1 in the address or the More setting turns it on. */
+   to touch). The wall display never starts by itself: only ?wall=1 in the address or the More setting turns it on.
+   1.7.1: where a feed this copy does not carry would show (A.has in core.js), the screen says "Not on this copy." */
 (() => {
   "use strict";
   const A = window.ATLAS, { $, esc, nf, LS, S, ico, COL } = A;
@@ -42,9 +43,13 @@
   const row = (e) => `<li><button type="button" class="row${S.sel && S.sel.id === e.id ? " on" : ""}" data-act="sel" data-id="${esc(e.id)}">${disc(e)}<span class="r-main"><span class="r-title">${esc(e.title)}</span><span class="r-meta">${metaOf(e)}</span></span></button></li>`;
   const chip = (act, v, label, on) => `<button type="button" class="chip" data-act="${act}" data-v="${esc(v)}" aria-pressed="${on ? "true" : "false"}">${esc(label)}</button>`;
   const openClassic = `<button type="button" class="link" data-act="classic">Open Classic${ico("right")}</button>`;
-  const stub = (name, what) => `<div class="stub"><b>${esc(name)}</b>${esc(what)} Not in this theme yet. It is in the Classic theme.<br>${openClassic}</div>`;
-  const tile = (n, label) => `<div class="tile"><b>${esc(n)}</b><span>${esc(label)}</span></div>`;
-  const loading = (name) => (S.failed.has(name) ? `<div class="empty">The server did not answer for this part. It will be tried again.</div>` : `<div class="empty">Loading…</div>`);
+  const NA = "Not on this copy.";
+  const stub = (name, what, feeds) => (feeds && !A.hasAny(feeds) ? `<div class="stub"><b>${esc(name)}</b>${esc(what)} ${NA}</div>`
+    : `<div class="stub"><b>${esc(name)}</b>${esc(what)} Not in this theme yet. It is in the Classic theme.<br>${openClassic}</div>`);
+  // a figure whose feed this copy does not carry keeps its place and says so
+  const tile = (n, label, feeds) => (feeds && !A.hasAny(feeds) ? `<div class="tile"><span style="color:var(--text)">${esc(label.charAt(0).toUpperCase() + label.slice(1))}</span><span>${NA}</span></div>`
+    : `<div class="tile"><b>${esc(n)}</b><span>${esc(label)}</span></div>`);
+  const loading = (name) => (!A.has(name) ? `<div class="empty">${NA}</div>` : S.failed.has(name) ? `<div class="empty">The server did not answer for this part. It will be tried again.</div>` : `<div class="empty">Loading…</div>`);
   const tcol = (n) => (n >= 8 ? "var(--red)" : n >= 5 ? "var(--amber)" : "var(--text)");
   const pic = () => (S.d.analysis || {}).picture || null;
   const tensionHtml = (p) => `<div class="tension" style="--tc:${tcol(p.overall_tension)}"><div class="t-num" aria-hidden="true">${esc(p.overall_tension)}<span>/10</span></div>
@@ -125,7 +130,8 @@
     if (UI.filterOpen) {
       h += `<div class="filter" id="filterbox"><h3>Region</h3><div class="chips">${chip("region", "all", "Everywhere", S.region === "all")}${Object.entries(A.REGIONS).map(([k, v]) => chip("region", k, v[0], S.region === k)).join("")}</div>
         <h3>Time</h3><div class="chips">${[[0, "Any time"], [6, "Last 6 hours"], [24, "Last 24 hours"], [72, "Last 3 days"]].map(([v, l]) => chip("hours", v, l, S.hours === v)).join("")}</div>
-        <h3>Sources${S.topic !== "all" ? " (follow the topic while one is picked)" : ""}</h3><div class="chips">${Object.entries(A.GROUPS).map(([k, l]) => `<button type="button" class="chip" data-act="group" data-v="${k}" aria-pressed="${S.topic === "all" ? S.groups.has(k) : false}"${S.topic !== "all" ? " disabled" : ""}>${esc(l)}</button>`).join("")}</div>
+        <h3>Sources${S.topic !== "all" ? " (follow the topic while one is picked)" : ""}</h3><div class="chips">${Object.entries(A.GROUPS).filter(([k]) => A.groupOn(k)).map(([k, l]) => `<button type="button" class="chip" data-act="group" data-v="${k}" aria-pressed="${S.topic === "all" ? S.groups.has(k) : false}"${S.topic !== "all" ? " disabled" : ""}>${esc(l)}</button>`).join("")}</div>
+        ${Object.keys(A.GROUPS).some((k) => !A.groupOn(k)) ? `<p class="muted small" style="margin-top:10px">Left out: ${esc(Object.entries(A.GROUPS).filter(([k]) => !A.groupOn(k)).map(([, l]) => l).join(", "))}. ${NA}</p>` : ""}
         <p class="muted small" style="margin-top:10px">The time filter also applies to the pins on the map.</p></div>`;
     }
     if (!S.loaded.has("events") && !S.loaded.has("wire")) return h + loading("events");
@@ -144,58 +150,63 @@
     hazards: () => (S.d.hazards ? `${nf(((S.d.hazards.by_alert || {}).Orange || 0) + ((S.d.hazards.by_alert || {}).Red || 0))} orange or red alerts, ${nf((S.d.quakes || {}).count)} earthquakes` : "Opens when picked"),
     official: () => { const t = (S.d.summary || {}).travel_advisories; return t ? `${t.level4} countries at "Do not travel"` : "Loading"; },
   };
+  // the feed behind each row's figure; a topic with none of its feeds on this copy is a plain line, not a button
+  const FIG_FEED = { air: ["mil"], sea: ["ukmto"], outages: ["outages"], cyber: ["cyber"], hazards: ["hazards", "quakes"], official: ["advisories"] };
   function viewTopics() {
-    return `<div class="view-top"><h2 class="view-h">Topics<small>Pick one: the map and the feed follow it</small></h2></div><div class="rows">` + A.TOPICS.map((t) => `<button type="button" class="row${S.topic === t.k ? " on" : ""}" data-act="topicpage" data-v="${t.k}">
-      <span class="disc plain">${ico(t.icon)}</span><span class="r-main"><span class="r-title">${esc(t.name)}</span><span class="r-meta">${esc(t.blurb)}</span><span class="r-meta" style="color:var(--text)">${esc(statOf[t.k]())}</span></span><span class="r-end">${ico("right")}</span></button>`).join("") + `</div>`;
+    return `<div class="view-top"><h2 class="view-h">Topics<small>Pick one: the map and the feed follow it</small></h2></div><div class="rows">` + A.TOPICS.map((t) => {
+      const inner = `<span class="disc plain">${ico(t.icon)}</span><span class="r-main"><span class="r-title">${esc(t.name)}</span><span class="r-meta">${esc(t.blurb)}</span><span class="r-meta" style="color:var(--text)">${esc(FIG_FEED[t.k] && !A.hasAny(FIG_FEED[t.k]) ? NA : statOf[t.k]())}</span></span>`;
+      return A.topicOn(t.k) ? `<button type="button" class="row${S.topic === t.k ? " on" : ""}" data-act="topicpage" data-v="${t.k}">${inner}<span class="r-end">${ico("right")}</span></button>` : `<div class="row">${inner}</div>`; }).join("") + `</div>`;
   }
   const LEGEND = {
-    all: [["dot", "red", "Fighting: strikes, drones, missiles, forces"], ["dot", "blue", "At sea"], ["dot", "amber", "Energy and infrastructure"], ["dot", "slate", "Statements and reports"], ["line", "red", "Battle fronts"], ["area", "red", "Air-raid alert, red"], ["area", "amber", "Air-raid alert, yellow"], ["ring", "blue", "Incident at sea"]],
-    conflict: [["dot", "red", "Fighting: strikes, drones, missiles, forces"], ["dot", "blue", "At sea"], ["dot", "amber", "Energy and infrastructure"], ["dot", "slate", "Statements and reports"], ["line", "red", "Front line (solid), blockade or defence line (dashed)"], ["area", "red", "Occupied area in Ukraine (DeepState)"], ["area", "slate", "Status unknown, and other areas drawn on the source map"]],
+    all: [["dot", "red", "Fighting: strikes, drones, missiles, forces"], ["dot", "blue", "At sea"], ["dot", "amber", "Energy and infrastructure"], ["dot", "slate", "Statements and reports"], ["line", "red", "Battle fronts"], ["area", "red", "Air-raid alert, red"], ["area", "amber", "Air-raid alert, yellow"], ["ring", "blue", "Incident at sea", ["ukmto"]]],
+    conflict: [["dot", "red", "Fighting: strikes, drones, missiles, forces"], ["dot", "blue", "At sea"], ["dot", "amber", "Energy and infrastructure"], ["dot", "slate", "Statements and reports"], ["line", "red", "Front line (solid), blockade or defence line (dashed)"], ["area", "red", "Occupied area in Ukraine (DeepState)", ["front"]], ["area", "slate", "Status unknown, and other areas drawn on the source map"]],
     alerts: [["area", "red", "Air-raid alert, red"], ["area", "amber", "Air-raid alert, yellow"], ["area", "slate", "Standing warning"], ["dot", "red", "Siren in Israel, last 10 minutes"], ["dot", "slate", "Siren in Israel, last 24 hours"], ["ring", "amber", "US embassy alert, last 3 days"]],
-    air: [["dot", "slate", "Military aircraft (red when it reports an emergency)"], ["area", "blue", "US flight restriction"], ["ring", "red", "Emergency code being sent now"], ["ring", "slate", "Emergency code, ended"]],
-    sea: [["ring", "red", "Attack at sea"], ["ring", "blue", "Other incident or advisory at sea"], ["dot", "red", "Chokepoint, traffic down by half or more"], ["dot", "amber", "Chokepoint, down by a fifth or more"], ["dot", "blue", "Chokepoint, near normal, and merchant ships"], ["dot", "amber", "Tankers"]],
-    outages: [["area", "amber", "Internet outage (stronger when ongoing)"], ["dot", "amber", "Power, mobile, website or cloud outage, active"], ["dot", "slate", "The same, ended"], ["line", "slate", "Undersea cables"]],
-    cyber: [["area", "amber", "Ransomware claims and reported attacks, 7 days (stronger with more)"]],
-    hazards: [["ring", "amber", "Earthquake in a watched area"], ["ring", "slate", "Other earthquake, magnitude 4 or more"], ["dot", "amber", "Disaster alert, orange"], ["dot", "red", "Disaster alert, red, and fires seen from space"], ["dot", "slate", "Disaster alert, green"]],
-    official: [["area", "red", "US travel advisory: do not travel"], ["area", "amber", "US travel advisory: reconsider travel"], ["ring", "amber", "US embassy alert, last 3 days"]],
+    air: [["dot", "slate", "Military aircraft (red when it reports an emergency)", ["mil"]], ["area", "blue", "US flight restriction", ["tfr"]], ["ring", "red", "Emergency code being sent now", ["squawk"]], ["ring", "slate", "Emergency code, ended", ["squawk"]]],
+    sea: [["ring", "red", "Attack at sea", ["ukmto"]], ["ring", "blue", "Other incident or advisory at sea", ["ukmto"]], ["dot", "red", "Chokepoint, traffic down by half or more", ["portwatch"]], ["dot", "amber", "Chokepoint, down by a fifth or more", ["portwatch"]], ["dot", "blue", "Chokepoint, near normal, and merchant ships", ["portwatch", "ships"]], ["dot", "amber", "Tankers", ["ships"]]],
+    outages: [["area", "amber", "Internet outage (stronger when ongoing)", ["outages"]], ["dot", "amber", "Power, mobile, website or cloud outage, active", ["power", "cellular", "websites", "cloud"]], ["dot", "slate", "The same, ended", ["power", "cellular", "websites", "cloud"]], ["line", "slate", "Undersea cables", ["cables"]]],
+    cyber: [["area", "amber", "Ransomware claims and reported attacks, 7 days (stronger with more)", ["cyber"]]],
+    hazards: [["ring", "amber", "Earthquake in a watched area", ["quakes"]], ["ring", "slate", "Other earthquake, magnitude 4 or more", ["quakes"]], ["dot", "amber", "Disaster alert, orange", ["hazards"]], ["dot", "red", "Disaster alert, red, and fires seen from space", ["hazards", "firms"]], ["dot", "slate", "Disaster alert, green", ["hazards"]]],
+    official: [["area", "red", "US travel advisory: do not travel", ["advisories"]], ["area", "amber", "US travel advisory: reconsider travel", ["advisories"]], ["ring", "amber", "US embassy alert, last 3 days"]],
   };
   function topicExtra(k) {
     const d = S.d, s = d.summary || {};
     if (k === "conflict") return `<div class="tiles">${tile(nf(s.events_24h), "map pins in 24 hours")}${tile(nf(s.events_6h), "in 6 hours")}${tile(S.fronts.length, "front lines drawn")}${tile(nf(s.thermal_corroborated), "pins matched by a satellite fire")}</div>` +
-      stub("Russian losses and Taiwan daily counts", "Daily official tallies will sit here as two small charts.") + stub("Analyst note on each pin", "The analyst's reading of a single event will show in its card.");
+      stub("Russian losses and Taiwan daily counts", "Daily official tallies will sit here as two small charts.", ["losses", "pla"]) + stub("Analyst note on each pin", "The analyst's reading of a single event will show in its card.");
     if (k === "alerts") { const a = (d.alerts || {}).summary || {}, r = (d.alerts || {}).regions || {};
       return `<div class="tiles">${tile((a.ukraine || {}).n ?? "–", "regions in Ukraine")}${tile((a.russia || {}).n ?? "–", "regions in Russia")}${tile((a.israel || {}).sirens_now ?? "–", "sirens in Israel now")}${tile((a.us_embassies || {}).alerts_24h ?? "–", "US embassy alerts, 24 hours")}</div>` +
         ((r.threats || []).length ? `<section class="sec"><h2>Threats being tracked <small>alerts.in.ua</small></h2><ul class="changes">${r.threats.slice(0, 6).map((t) => `<li>${esc(t.msg || t.what)} <span class="muted">(${esc(A.ago(A.isoMs(t.at)))})</span></li>`).join("")}</ul></section>` : "") +
-        stub("Shelter countdowns and early warnings in Israel", "Each alerted town's time to shelter and the all-clear will show here and on the map.") + `<p class="muted small" style="margin-top:10px">Not a safety service. If you are in an alerted area, follow the official alerts.</p>`; }
+        stub("Shelter countdowns and early warnings in Israel", "Each alerted town's time to shelter and the all-clear will show here and on the map.", ["tzeva", "tzevalive"]) + `<p class="muted small" style="margin-top:10px">Not a safety service. If you are in an alerted area, follow the official alerts.</p>`; }
     if (k === "air") { const t = d.tfr || {}, q = d.squawk || {}, roles = s.mil_aircraft_by_role || {};
-      return `<div class="tiles">${tile(nf(s.mil_aircraft), "military aircraft heard")}${tile(nf((t.by_status || {}).active), "US flight restrictions active")}${tile(nf(q.count), "emergency codes now")}${tile(nf(s.airspace_czib_active), "conflict-zone airspace warnings")}</div>` +
+      return `<div class="tiles">${tile(nf(s.mil_aircraft), "military aircraft heard", ["mil"])}${tile(nf((t.by_status || {}).active), "US flight restrictions active", ["tfr"])}${tile(nf(q.count), "emergency codes now", ["squawk"])}${tile(nf(s.airspace_czib_active), "conflict-zone airspace warnings", ["czib"])}</div>` +
         (Object.keys(roles).length ? `<p class="muted small" style="margin-top:10px">By role: ${esc(Object.entries(roles).sort((a, b) => b[1] - a[1]).map(([r, n]) => `${n} ${r}`).join(", "))}.</p>` : "") +
-        stub("GPS jamming", "A map of where aircraft reported degraded GPS over the last day.") + stub("Conflict-zone airspace warnings on the map", "The areas regulators warn airlines away from, as shapes.") + stub("Aircraft photos and types legend", "A photo of the airframe and a colour per role."); }
+        stub("GPS jamming", "A map of where aircraft reported degraded GPS over the last day.", ["gpsjam"]) + stub("Conflict-zone airspace warnings on the map", "The areas regulators warn airlines away from, as shapes.", ["czib"]) + stub("Aircraft photos and types legend", "A photo of the airframe and a colour per role.", ["mil"]); }
     if (k === "sea") { const cps = ((d.portwatch || {}).chokepoints || []).filter((c) => c.pinned || (c.avg7 || {}).total >= 20).slice(0, 8), st = (d.status || {}).feeds || {};
-      return `<div class="tiles">${tile(nf(s.ukmto_incidents_7d), "incidents at sea, 7 days")}${tile(nf((d.ships || {}).count), "ships heard")}${tile(nf((s.listed_ships_heard || {}).heard_1h), "ships on a sanctions or watch list, last hour")}</div>` +
+      return `<div class="tiles">${tile(nf(s.ukmto_incidents_7d), "incidents at sea, 7 days", ["ukmto"])}${tile(nf((d.ships || {}).count), "ships heard", ["ships"])}${tile(nf((s.listed_ships_heard || {}).heard_1h), "ships on a sanctions or watch list, last hour", ["ships"])}</div>` +
         (st.ships && !st.ships.ok ? `<div class="empty">The ship feed reported an error at its last run, so ship positions may be old.</div>` : "") +
         `<section class="sec"><h2>Chokepoints <small>ships a day, IMF PortWatch</small></h2>` + (cps.length ? `<table class="table"><thead><tr><th>Passage</th><th class="n">7-day average</th><th class="n">Against last year</th></tr></thead><tbody>${cps.map((c) => { const g = (c.change_vs_year_pct || {}).total;
           return `<tr><td>${esc(c.name)}</td><td class="n">${esc(c.avg7.total)}</td><td class="n">${g == null ? "–" : `<span class="state${g <= -50 ? " hot" : g <= -20 ? " warm" : ""}">${g > 0 ? "+" : ""}${g}%</span>`}</td></tr>`; }).join("")}</tbody></table>` : loading("portwatch")) + `</section>` +
-        stub("Ship tracks, sanctions rings and satellite ship counts", "Tanker tracks, a ring on listed ships and the satellite count for seas with no receivers."); }
+        stub("Ship tracks, sanctions rings and satellite ship counts", "Tanker tracks, a ring on listed ships and the satellite count for seas with no receivers.", ["ships", "vessellists", "gfw"]); }
     if (k === "outages") { const o = s.internet_outages || {}, act = (n) => S.entries.filter((e) => e.sub === n && e.active).length;
-      return `<div class="tiles">${tile(o.countries_with_outages ?? "–", "countries with internet outages")}${tile(d.power ? act("power") : "–", "power outages active")}${tile(d.cellular ? act("cellular") : "–", "mobile network cuts active")}${tile(d.cloud && d.websites ? act("cloud") + act("websites") : "–", "cloud and website incidents active")}</div>` +
-        stub("Internet routing drops", "Countries whose share of reachable networks fell sharply."); }
-    if (k === "cyber") return (d.cyber ? `<p class="lede" style="margin-top:12px;font-size:15px">${esc(d.cyber.summary || "")}</p>` : loading("cyber")) + stub("Routing drops and denial-of-service detail", "Per-country routing losses and the list of sites being flooded.");
+      return `<div class="tiles">${tile(o.countries_with_outages ?? "–", "countries with internet outages", ["outages"])}${tile(d.power ? act("power") : "–", "power outages active", ["power"])}${tile(d.cellular ? act("cellular") : "–", "mobile network cuts active", ["cellular"])}${tile((d.cloud || !A.has("cloud")) && (d.websites || !A.has("websites")) ? act("cloud") + act("websites") : "–", "cloud and website incidents active", ["cloud", "websites"])}</div>` +
+        stub("Internet routing drops", "Countries whose share of reachable networks fell sharply.", ["bgp"]); }
+    if (k === "cyber") return (d.cyber ? `<p class="lede" style="margin-top:12px;font-size:15px">${esc(d.cyber.summary || "")}</p>` : loading("cyber")) + stub("Routing drops and denial-of-service detail", "Per-country routing losses and the list of sites being flooded.", ["bgp", "cyber"]);
     if (k === "hazards") { const h = d.hazards || {}, b = h.by_alert || {};
-      return `<div class="tiles">${tile(d.quakes ? nf(d.quakes.count) : "–", "earthquakes, 48 hours")}${tile(d.quakes ? nf(d.quakes.watch_count) : "–", "in watched areas")}${tile(d.hazards ? nf((b.Orange || 0) + (b.Red || 0)) : "–", "orange or red disaster alerts")}${tile(d.firms ? nf(d.firms.count) : "–", "fires seen from space")}</div>` +
-        stub("Tsunami warnings and radiation readings", "Warning-centre bulletins and the radiation monitor network."); }
+      return `<div class="tiles">${tile(d.quakes ? nf(d.quakes.count) : "–", "earthquakes, 48 hours", ["quakes"])}${tile(d.quakes ? nf(d.quakes.watch_count) : "–", "in watched areas", ["quakes"])}${tile(d.hazards ? nf((b.Orange || 0) + (b.Red || 0)) : "–", "orange or red disaster alerts", ["hazards"])}${tile(d.firms ? nf(d.firms.count) : "–", "fires seen from space", ["firms"])}</div>` +
+        stub("Tsunami warnings and radiation readings", "Warning-centre bulletins and the radiation monitor network.", ["tsunami", "radiation"]); }
     if (k === "official") { const t = s.travel_advisories || {}, l4 = ((d.advisories || {}).items || []).filter((i) => i.level === 4).sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 6);
-      return `<div class="tiles">${tile(t.level4 ?? "–", "countries: do not travel")}${tile(t.level3 ?? "–", "countries: reconsider travel")}${tile((((S.d.alerts || {}).summary || {}).us_embassies || {}).alerts_24h ?? "–", "US embassy alerts, 24 hours")}</div>` +
+      return `<div class="tiles">${tile(t.level4 ?? "–", "countries: do not travel", ["advisories"])}${tile(t.level3 ?? "–", "countries: reconsider travel", ["advisories"])}${tile((((S.d.alerts || {}).summary || {}).us_embassies || {}).alerts_24h ?? "–", "US embassy alerts, 24 hours")}</div>` +
         (l4.length ? `<section class="sec"><h2>Do not travel <small>most recently updated</small></h2><table class="table"><tbody>${l4.map((i) => `<tr><td>${A.safeUrl(i.url) ? `<a href="${esc(i.url)}" target="_blank" rel="noopener noreferrer">${esc(i.country)}</a>` : esc(i.country)}</td><td class="n">${esc(i.date)}</td></tr>`).join("")}</tbody></table></section>` : "") +
-        stub("US terror advisories and sanctions updates", "The national terrorism advisory bulletin and new sanctions listings."); }
+        stub("US terror advisories and sanctions updates", "The national terrorism advisory bulletin and new sanctions listings.", ["ntas", "ofac"]); }
     return "";
   }
   function viewTopic(k) {
     const t = A.TOPICS.find((x) => x.k === k) || A.TOPICS[0], list = A.feed({ topic: k, noFilter: true, allGroups: false });
-    return `<div class="view-top"><button type="button" class="btn back" data-act="page" data-v="">${ico("left")}Topics</button></div>
-      <h1 class="head" style="margin-top:4px">${esc(t.name)}</h1><p class="muted">${esc(t.blurb)}</p>${topicExtra(k)}
-      <section class="sec"><h2>On the map</h2><ul class="legend">${LEGEND[k].map(([shape, tone, label]) => `<li><span class="sw ${shape}" style="--c:${COL[tone]}"></span>${esc(label)}</li>`).join("")}</ul></section>
-      <section class="sec"><h2>Latest <small>${nf(list.length)} entr${list.length === 1 ? "y" : "ies"}</small></h2>${list.length ? listHtml(list, 15, false).replace(/data-act="morerows">[^<]*</, 'data-act="nav" data-v="feed">Open in the feed<') : `<p class="muted">${(A.TOPIC_NEEDS[k] || []).some((n) => !S.loaded.has(n) && !S.failed.has(n)) ? "Loading…" : "No dated entries for this topic."}</p>`}</section>`;
+    const top = `<div class="view-top"><button type="button" class="btn back" data-act="page" data-v="">${ico("left")}Topics</button></div>
+      <h1 class="head" style="margin-top:4px">${esc(t.name)}</h1><p class="muted">${esc(t.blurb)}</p>`;
+    if (!A.topicOn(k)) return top + `<div class="empty">${NA}</div>`;
+    return `${top}${topicExtra(k)}
+      <section class="sec"><h2>On the map</h2><ul class="legend">${LEGEND[k].map(([shape, tone, label, feeds]) => (feeds && !A.hasAny(feeds) ? `<li class="off"><span class="sw ${shape}" style="--c:${COL.slate};opacity:0.35"></span>${esc(label)}. ${NA}</li>` : `<li><span class="sw ${shape}" style="--c:${COL[tone]}"></span>${esc(label)}</li>`)).join("")}</ul></section>
+      <section class="sec"><h2>Latest <small>${nf(list.length)} entr${list.length === 1 ? "y" : "ies"}</small></h2>${list.length ? listHtml(list, 15, false).replace(/data-act="morerows">[^<]*</, 'data-act="nav" data-v="feed">Open in the feed<') : `<p class="muted">${(A.TOPIC_NEEDS[k] || []).some((n) => A.has(n) && !S.loaded.has(n) && !S.failed.has(n)) ? "Loading…" : "No dated entries for this topic."}</p>`}</section>`;
   }
 
   // ---------- More ----------
@@ -278,7 +289,7 @@
       <p class="d-meta">${[c.place ? `<b>${esc(c.place)}</b>` : "", c.src ? esc(c.src) : ""].filter(Boolean).join(" · ")}${c.ts ? `${c.place || c.src ? "<br>" : ""}${esc(A.when(c))}` : ""}</p>
       ${c.summary ? `<p class="d-sum">${esc(String(c.summary).slice(0, 700))}${String(c.summary).length > 700 ? "…" : ""}</p>` : ""}
       ${(c.facts || []).length ? `<dl class="d-facts">${c.facts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` : ""}
-      ${!c.ll && ll ? `<p class="d-note">Placed by country from its text, not at an exact spot: the dashed ring marks ${esc(A.ccName(c.cc))}.</p>` : !ll ? `<p class="d-note">This entry names no place, so the map does not move.</p>` : ""}
+      ${!c.ll && ll ? `<p class="d-note">Placed by country from its text, not at an exact spot: the dashed ring marks ${esc(A.ccName(c.cc))}.</p>` : !ll ? `<p class="d-note">${c.cc && !A.has("news_geo") ? "The place is not known on this copy, so the map does not move." : "This entry names no place, so the map does not move."}</p>` : ""}
       ${c.note ? `<p class="d-note">${esc(c.note)}</p>` : ""}
       <div class="d-acts">${url ? `<a class="btn primary" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(c.urlLabel || "Open the source")}${ico("out")}</a>` : ""}
         ${ll ? `<button type="button" class="btn" data-act="showmap">${ico("pin")}Show on the map</button>` : ""}${c.region && !c.front ? `<button type="button" class="btn" data-act="page" data-v="region:${esc(c.region)}">${esc(A.regionName(c.region))}</button>` : ""}${c.classic ? `<button type="button" class="btn" data-act="classic">Open Classic</button>` : ""}</div>`;
@@ -321,7 +332,7 @@
     const fresh = S.lastSeen ? A.feed({ topic: "all", noFilter: true }).filter((e) => e.ts > S.lastSeen).length : 0;
     const navHtml = (withIcon) => NAV.map(([k, name, ic]) => `<button type="button" data-act="nav" data-v="${k}"${S.dest === k && !searching ? ' aria-current="page"' : ""}>${withIcon ? ico(ic) : ""}<span>${name}</span>${k === "feed" && fresh && S.dest !== "feed" ? `<span class="badge" aria-label="${fresh} new">${fresh > 99 ? "99+" : fresh}</span>` : ""}</button>`).join("");
     $("seg").innerHTML = navHtml(false); $("tabbar").innerHTML = navHtml(true);
-    $("pills").innerHTML = A.TOPICS.map((t) => `<button type="button" class="pill" data-act="topic" data-v="${t.k}" aria-pressed="${S.topic === t.k}">${t.k === "all" ? "" : ico(t.icon)}${esc(t.name)}</button>`).join("");
+    $("pills").innerHTML = A.TOPICS.filter((t) => A.topicOn(t.k)).map((t) => `<button type="button" class="pill" data-act="topic" data-v="${t.k}" aria-pressed="${S.topic === t.k}">${t.k === "all" ? "" : ico(t.icon)}${esc(t.name)}</button>`).join("");
     $("live").className = "b-live " + (S.net === "ok" ? "ok" : S.net === "loading" ? "" : "bad"); $("livet").textContent = netWord();
     $("qclear").hidden = !S.q;
   }

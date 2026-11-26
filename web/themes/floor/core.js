@@ -46,6 +46,10 @@
     if (ZONE === "utc") return new Date(ms).toISOString().slice(11, secs ? 19 : 16) + (secs ? "" : "Z");
     const p = zparts(ms, ET); return `${p.hour}:${p.minute}${secs ? ":" + p.second : ""} ${p.dayPeriod}`;
   };
+  // 1.7.1: the analyst writes times in UTC ("05:38Z"). In Eastern mode each gets its Eastern time beside it (as Classic does).
+  WF.zText = (s, ref) => (ZONE === "utc" || !s ? s || "" : String(s).replace(/(^|[^\d:])([01]\d|2[0-3]):([0-5]\d)Z\b/g, (m, pre, h, mi) => {
+    const d = new Date(Number.isFinite(ref) ? ref : Date.now());
+    return `${pre}${h}:${mi}Z (${WF.fmtT(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), +h, +mi))})`; }));
   WF.fmtDay = (ms) => { const p = zparts(ms, ZONE === "utc" ? "UTC" : ET); return `${p.weekday} ${p.day} ${p.month}`; };
   WF.dayKey = (ms) => { const p = zparts(ms, ZONE === "utc" ? "UTC" : ET); return p.year + p.month + p.day; };
   WF.ms = (v) => (typeof v === "number" ? v : v ? Date.parse(v) : NaN);
@@ -146,16 +150,37 @@
       EXTRAS[name].forEach((f) => { const p = f.properties; p.attribution = p.attribution || att; p.source_note = WF.PIN_SRC[name][1]; });
       mergeEvents();
     }
-    // The feed status says which feeds this server runs. An extra pin source is asked for only when it is listed
-    // (the public mirror carries no GeoConfirmed or CIR), so a missing one is never requested and never an error.
-    if (name === "status") EXTRA.forEach((n) => { if (n in (v.feeds || {})) WF.load(n); });
+    // The extra pin sources ride on the status reply (WF.load asks only for the ones it lists; see below).
+    if (name === "status") { listed = v && v.feeds && typeof v.feeds === "object" ? new Set(Object.keys(v.feeds)) : listed; EXTRA.forEach((n) => WF.load(n)); }
   }
+  // ---------- which feeds this copy carries (1.7.1; the Classic theme's rule, web/app.js loadExt) ----------
+  // api/status lists the feeds a copy runs. The public mirror carries fewer than the server (no news wire, Telegram,
+  // power, mobile, web, cloud, cyber, GPS interference, GeoConfirmed or CIR), so a feed is asked for only when the
+  // status lists it, and nothing that depends on the status is asked for before the status has answered. The five
+  // core replies are always asked for. An endpoint that goes with a feed follows that feed. If the status itself
+  // cannot be read, every feed is asked for, as before.
+  const ALWAYS = new Set(["events", "summary", "analysis", "alerts", "status"]);
+  const WITH = { czib_geo: "czib", outages_geo: "outages", advisories_geo: "advisories" };
+  let listed = null;        // the feed names the status lists; null until a status reply is in
+  let statusDone = false;   // the first status request has settled (a reply or a failure)
+  const HELD = new Set();   // asked for before the status answered
+  // true when this copy does not carry `name` (a data name such as "wire" or "czib_geo", or a status feed name such as "pla")
+  WF.absent = (name) => { const k = ALWAYS.has(name) ? null : WITH[name] || name; return !!(k && listed && !listed.has(k)); };
+  WF.held = () => HELD.size;
+  WF.NOC = "Not on this copy.";
   WF.load = (name) => {
-    if (WF.LOADING.has(name)) return Promise.resolve();
+    if (!SRC[name] || WF.LOADING.has(name)) return Promise.resolve();
+    if (!ALWAYS.has(name)) {
+      if (!statusDone) { HELD.add(name); return Promise.resolve(); }  // wait for the status
+      if (WF.absent(name)) return Promise.resolve();                   // not on this copy: never asked for
+      if (EXTRA.includes(name) && !listed) return Promise.resolve();   // an extra pin source needs the status to name it
+    }
     WF.LOADING.add(name);
     const [path, pick] = SRC[name];
     return api(path).then((r) => { take(name, pick(r)); delete WF.ERR[name]; }, (e) => { WF.ERR[name] = e.message || "failed"; })
-      .then(() => { WF.LOADING.delete(name); if (WF.onData) WF.onData(EXTRA.includes(name) ? "events" : name); WF.renderSoon(); });
+      .then(() => { WF.LOADING.delete(name);
+        if (name === "status" && !statusDone) { statusDone = true; const held = [...HELD]; HELD.clear(); held.forEach((n) => WF.load(n)); }
+        if (WF.onData) WF.onData(EXTRA.includes(name) ? "events" : name); WF.renderSoon(); });
   };
   // Pin counts from the merged pins, by the server summary's own rule (a pin with a time, no older than the window).
   let statsOf = null, statsAt = 0, stats = null;
@@ -172,8 +197,9 @@
     return stats;
   };
   WF.need = (names) => names.forEach((n) => { if (!(n in WF.D) && !WF.LOADING.has(n)) WF.load(n); });
-  // a panel body for data that is not here yet, or failed
+  // a panel body for data that is not here yet, failed, or is not carried by this copy (that one never loads)
   WF.wait = (names) => {
+    if (names.some((n) => WF.absent(n) && !(n in WF.D))) return `<p class="note">${WF.NOC}</p>`;
     const bad = names.filter((n) => WF.ERR[n] && !(n in WF.D));
     if (bad.length) return `<p class="note">Could not load this (${esc(WF.ERR[bad[0]])}). It is tried again every two minutes.</p>`;
     return names.some((n) => !(n in WF.D)) ? `<p class="note">Loading…</p>` : "";

@@ -46,7 +46,13 @@
   // ---------- time ----------
   const zone = () => (S.tz === "utc" ? "UTC" : "America/New_York");
   const zlabel = () => (S.tz === "utc" ? "UTC" : "Eastern");
-  const fmtTime = (ms) => new Date(ms).toLocaleTimeString("en-GB", { timeZone: zone(), hour: "2-digit", minute: "2-digit" });
+  // 1.7.1: Eastern times read am/pm ("9:05 PM"); UTC, when chosen, stays on the 24-hour clock.
+  const fmtTime = (ms) => (S.tz === "utc" ? new Date(ms).toLocaleTimeString("en-GB", { timeZone: "UTC", hour: "2-digit", minute: "2-digit" })
+    : new Date(ms).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }));
+  // The analyst writes times in UTC ("05:38Z"). In Eastern mode each gets its Eastern time beside it (as Classic does).
+  const zText = (s, ref) => (S.tz === "utc" || !s ? s || "" : String(s).replace(/(^|[^\d:])([01]\d|2[0-3]):([0-5]\d)Z\b(?! \()/g, (m, pre, h, mi) => {
+    const d = new Date(Number.isFinite(ref) ? ref : Date.now());
+    return `${pre}${h}:${mi}Z (${fmtTime(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), +h, +mi))})`; }));
   const fmtDay = (ms) => new Date(ms).toLocaleDateString("en-GB", { timeZone: zone(), weekday: "long", day: "numeric", month: "long" });
   const fmtDate = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || "") ? new Date(d + "T12:00:00Z").toLocaleDateString("en-GB", { timeZone: "UTC", day: "numeric", month: "short" }) : String(d || ""));  // a date with no time
   const plural = (n, one, many) => `${nf(n)} ${Number(n) === 1 ? one : many || one + "s"}`;
@@ -80,9 +86,19 @@
   const on = (ev, fn) => (listeners[ev] = listeners[ev] || []).push(fn);
   const emit = (ev, a) => (listeners[ev] || []).forEach((fn) => { try { fn(a); } catch (e) { console.error(e); } });
 
+  // ---------- which feeds this copy carries (1.7.1) ----------
+  // api/status lists the feeds a copy carries; the public mirror has fewer than the server. Once status has answered,
+  // a feed it does not list is never asked for, and its place on the page says "Not on this copy." (the Classic
+  // theme's rule: loadExt in web/app.js). Nothing that depends on the list is asked for before status has answered.
+  // If status itself fails, every feed is asked for as before. The core endpoints are always asked for.
+  const CORE_KEYS = ["events", "summary", "analysis", "alerts", "status"], NOT_HERE = "Not on this copy.";
+  let statusDone; const statusKnown = new Promise((res) => { statusDone = res; });
+  const absent = (name) => { const known = (S.status || {}).feeds; return !!known && !CORE_KEYS.includes(name) && !(name in known); };
+
   // Feeds a section or a map topic needs, fetched on first use and kept for three minutes.
   const feedAt = {}, feedWait = {};
-  function need(name) {
+  const need = (name) => statusKnown.then(() => (absent(name) ? Promise.reject(new Error(name + " is not on this copy")) : fetchFeed(name)));
+  function fetchFeed(name) {
     if (S.feeds[name] && Date.now() - feedAt[name] < 180000) return Promise.resolve(S.feeds[name]);
     if (feedWait[name]) return feedWait[name];
     feedWait[name] = api("feed/" + name).then((j) => { S.feeds[name] = j.data || {}; S.feeds[name]._ok = j.ok; S.feeds[name]._at = j.at; feedAt[name] = Date.now(); delete feedWait[name]; delete S.failed[name]; return S.feeds[name]; },
@@ -168,7 +184,9 @@
   const CORE = [["events", "events"], ["summary", "summary"], ["analysis", "analysis"], ["alerts", "alerts"], ["status", "status"]];
   function loadCore() {
     const jobs = CORE.map(([key, path]) => api(path).then((j) => { S[key === "events" ? "eventsBase" : key] = j; delete S.failed[key]; }, () => { S.failed[key] = true; }));
-    jobs.push(need("wire").catch(() => {}), need("telegram").catch(() => {}));
+    // status first: the wire and Telegram are asked for only once this copy is known to carry them
+    const status = jobs[CORE.findIndex(([key]) => key === "status")].then(statusDone);
+    jobs.push(status.then(() => Promise.all([need("wire").catch(() => {}), need("telegram").catch(() => {})])));
     const show = () => { mergeEvents(); buildEntries(); emit("data"); render(); };
     // The page is drawn from the source map first; the other pin sources join it when they arrive.
     return Promise.all(jobs).then(() => { S.loadedAt = Date.now(); show(); return loadExtraPins(); }).then((got) => { if (got) show(); });
@@ -277,11 +295,15 @@
     const inTh = S.entries.filter((e) => S.filter.theatre === "all" || e.theatre === S.filter.theatre), byTh = inTh.filter(kindOk);
     const inBoth = inTh.filter((e) => S.filter.src === "all" || e.src === S.filter.src);
     $("kindchips").innerHTML = [["all", "Everything"], ["tagged", "Tagged with a topic"]].map(([k, n]) => `<button type="button" class="chip" data-kind="${k}" aria-pressed="${S.filter.kind === k}"><span>${n}</span><b>${nf(inBoth.filter((e) => day(e) && (k === "all" || tagged(e))).length)}</b></button>`).join("");
-    const srcs = [["all", "All sources"], ["pin", "Event map"], ["wire", "News wire"], ["telegram", "Telegram"]];
+    // a source this copy does not carry gets no chip; with the event map alone, the Source and Show filters would change nothing
+    const others = ["wire", "telegram"].filter((k) => !absent(k)), gone = ["wire", "telegram"].filter(absent);
+    const srcs = [["all", "All sources"], ["pin", "Event map"], ["wire", "News wire"], ["telegram", "Telegram"]].filter(([k]) => !gone.includes(k));
+    $("srcchips").parentNode.hidden = $("kindchips").parentNode.hidden = !others.length;
     $("srcchips").innerHTML = srcs.map(([k, n]) => `<button type="button" class="chip" data-src="${k}" aria-pressed="${S.filter.src === k}"><span>${n}</span><b>${nf(byTh.filter((e) => day(e) && (k === "all" || e.src === k)).length)}</b></button>`).join("");
     const miss = ["wire", "telegram"].filter((k) => S.failed[k]).map((k) => SRC[k]);
-    $("feedstand").textContent = `Every dated entry from the event map, the news wire and Telegram, newest first. Counts are for the last 24 hours. Times are ${zlabel()}.`
-      + (miss.length ? ` Could not load: ${miss.join(", ")}.` : "");
+    const from = ["the event map", ...others.map((k) => (k === "wire" ? "the news wire" : "Telegram"))];
+    $("feedstand").textContent = `Every dated entry from ${from.length > 1 ? from.slice(0, -1).join(", ") + " and " + from[from.length - 1] : from[0]}, newest first. Counts are for the last 24 hours. Times are ${zlabel()}.`
+      + (gone.length ? ` ${gone.map((k) => SRC[k]).join(" and ")}: not on this copy.` : "") + (miss.length ? ` Could not load: ${miss.join(", ")}.` : "");
   }
 
   // ---------- front page ----------
@@ -292,20 +314,20 @@
       $("bluf").textContent = S.failed.analysis ? "The map and the feed below still work." : "";
       $("tension").innerHTML = ""; $("changes").innerHTML = ""; return;
     }
-    const gen = isoMs(pic.generated_at), b = sentences(pic.bluf, 3);
+    const gen = isoMs(pic.generated_at), b = sentences(zText(pic.bluf, isoMs(pic.generated_at)), 3);
     $("leadmeta").textContent = `The analyst picture, written ${gen ? when(gen) + " " + zlabel() + " (" + ago(gen) + ")" : "at an unknown time"}${pic.confidence ? " · confidence " + pic.confidence : ""}`;
-    $("headline").textContent = pic.headline || "No headline";
+    $("headline").textContent = zText(pic.headline, gen) || "No headline";
     $("bluf").textContent = b.head;
     $("tension").innerHTML = tensionHtml(pic);
     const ch = pic.changes_since_last || [];
-    $("changes").innerHTML = ch.length ? ch.slice(0, 4).map((c) => `<li>${esc(c)}</li>`).join("") : `<li class="none">No changes listed in this picture.</li>`;
+    $("changes").innerHTML = ch.length ? ch.slice(0, 4).map((c) => `<li>${esc(zText(c, gen))}</li>`).join("") : `<li class="none">No changes listed in this picture.</li>`;
     const fresh = S.lastSeen ? S.entries.filter((e) => e.ts > S.lastSeen).length : 0;
     $("since").innerHTML = S.lastSeen
       ? `<b>Since you last looked</b> (${esc(ago(S.lastSeen))}): ${fresh ? `<a href="#/feed">${nf(fresh)} new ${fresh === 1 ? "entry" : "entries"}</a>, marked New in the feed.` : "nothing new in the feed."}`
       : `<b>${nf(sum.events_6h)}</b> events pinned in the last 6 hours, <b>${nf(sum.events_24h)}</b> in 24.`;
     // wall view
-    $("wheadline").textContent = pic.headline || "";
-    $("wbluf").textContent = sentences(pic.bluf, 2).head;
+    $("wheadline").textContent = zText(pic.headline, gen) || "";
+    $("wbluf").textContent = sentences(zText(pic.bluf, gen), 2).head;
     $("wtension").innerHTML = tensionHtml(pic);
     const al = sum.regional_alerts || {}, ua = al.ukraine || {}, il = al.israel || {};
     $("wfacts").innerHTML = [
@@ -318,7 +340,9 @@
     const none = `<p class="none">${S.loadedAt ? "No entries could be loaded." : "Loading"}</p>`;
     const pins = S.entries.filter((e) => e.src === "pin" && !e.day).slice(0, 5), wire = S.entries.filter((e) => e.src !== "pin" && tagged(e)).slice(0, 9);
     $("latestpins").innerHTML = pins.length ? pins.map((e) => entryHtml(e, { date: true })).join("") : none;
-    $("latest").innerHTML = wire.length ? groupedHtml(wire) : none;
+    const noWire = absent("wire") && absent("telegram");
+    $("latest").innerHTML = noWire ? `<p class="none">${NOT_HERE}</p>` : wire.length ? groupedHtml(wire) : none;
+    $("latesthint").hidden = noWire;
     $("wlatest").innerHTML = S.entries.filter((e) => tagged(e) && !e.day).slice(0, 8).map((e) => entryHtml(e)).join("");
     $("wzone").textContent = zlabel();
     // the wall list never shows a half-cut entry: drop the ones that do not fit
@@ -328,7 +352,7 @@
     const pic = (S.analysis || {}).picture, by = (S.summary || {}).events_24h_by_theatre || {};
     if (!pic || !pic.theatres) { $("world").innerHTML = `<p class="none">Theatre notes come with the analyst picture, which has not loaded.</p>`; return; }
     $("world").innerHTML = pic.theatres.map((t) => {
-      const n = Number(t.status), dev = (t.key_developments || [])[0] || sentences(String(t.summary || "").replace(/^Evidence:\s*/, ""), 1).head;
+      const n = Number(t.status), dev = zText((t.key_developments || [])[0] || sentences(String(t.summary || "").replace(/^Evidence:\s*/, ""), 1).head, isoMs(pic.generated_at));
       return `<article class="th"><h3><a href="#/conflict?t=${esc(t.theatre)}">${esc(thName(t.theatre) || t.theatre)}</a></h3>
         <p class="th-lv lv-${level(n)}"><b>${esc(n)}</b>/10 <span>${esc(t.trend || "")}</span><em>${plural(by[t.theatre] || 0, "event")} in 24 h</em></p>
         <p class="th-txt">${esc(dev)}</p></article>`;
@@ -395,8 +419,8 @@
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("sheet").hidden) { closeSheet(); $("tabsections").focus(); } });
   window.addEventListener("hashchange", route);
 
-  window.GT2 = { S, $, esc, nf, api, need, on, emit, THEATRES, FAMILY, CATS, cat, fam, thName, fmtTime, fmtDay, fmtShort, fmtDate, plural, when, ago, isoMs, zlabel,
-    entryHtml, groupedHtml, sentences, level, levelWord, tensionHtml, httpUrl, render, store, PINSRC, pinSource, pinStats, dayOnly };
+  window.GT2 = { S, $, esc, nf, api, need, on, emit, THEATRES, FAMILY, CATS, cat, fam, thName, fmtTime, fmtDay, fmtShort, fmtDate, plural, when, ago, isoMs, zlabel, zText,
+    entryHtml, groupedHtml, sentences, level, levelWord, tensionHtml, httpUrl, render, store, absent, statusKnown, NOT_HERE, PINSRC, pinSource, pinStats, dayOnly };
 
   // The version beside the live light, the theme button directly under it (themes/switch.js draws the button).
   if (window.GTTheme) { $("ver").textContent = window.GTTheme.version ? "v" + window.GTTheme.version : ""; window.GTTheme.mount($("themeslot")); }

@@ -238,11 +238,17 @@
     const names = [...(TOPICS[topic].feeds || [])];
     if (topic === "conflict") names.push("front");
     const jobs = names.map((n) => G.need(n).catch(() => null));
-    if (topic === "air" && !window.h3) {
+    if (topic === "air" && !window.h3) jobs.push(G.statusKnown.then(() => {
+      if (G.absent("gpsjam")) return null;   // the hexagon decoder is only for GPS interference
       h3wait = h3wait || new Promise((res) => { const s = document.createElement("script"); s.src = "vendor/h3-js.umd.js?v=4.5.0"; s.onload = res; s.onerror = res; document.head.appendChild(s); });
-      jobs.push(h3wait);
-    }
+      return h3wait;
+    }));
     return Promise.all(jobs).then(() => { drawTopicFeeds(); renderCaption(); renderInView(); });
+  }
+  const topicEmpty = (k) => { const t = TOPICS[k]; return Array.isArray(t.cats) && !t.cats.length && (t.feeds || []).length > 0 && t.feeds.every(G.absent); };
+  function syncTopics() {   // a topic with no pins of its own and no feed on this copy would lead to nothing: its switch is hidden
+    document.querySelectorAll("#topics [data-topic]").forEach((b) => { b.hidden = topicEmpty(b.dataset.topic); });
+    if (topicEmpty(topic)) { topic = "conflict"; applyTopic(); }
   }
   function applyTopic() {
     document.querySelectorAll("#topics [data-topic]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.topic === topic)));
@@ -256,6 +262,9 @@
 
   // ---------- caption ----------
   const lg = (cls, txt) => `<span class="lg"><i class="${cls}" aria-hidden="true"></i>${txt}</span>`;
+  // a feed this copy does not carry (1.7.1): one plain line, not an error
+  const FEEDNAME = { front: "Occupied areas (DeepState)", mil: "Military aircraft", gpsjam: "GPS interference", ukmto: "Incidents at sea (UKMTO)", portwatch: "Chokepoint traffic", ships: "Ships", quakes: "Earthquakes", hazards: "Disaster alerts" };
+  const notHere = (names) => { const gone = names.filter(G.absent); return gone.length ? ` <span class="muted">${gone.map((n) => FEEDNAME[n]).join(", ")}: not on this copy.</span>` : ""; };
   const notLoaded = (names) => { const bad = names.filter((n) => S.failed[n] && !S.feeds[n]); return bad.length ? ` <span class="warn">Could not load: ${bad.join(", ")}.</span>` : ""; };
   function renderCaption() {
     const s = S.summary || {}, F = S.feeds; let h = "";
@@ -267,17 +276,17 @@
       const ps = G.pinStats(), others = Object.entries(G.PINSRC).filter(([k]) => ps.by[k]).map(([k, v]) => `${esc(v[0])} (${nf(ps.by[k])})`);
       const from = others.length ? `Pins come from the source map (${nf(ps.by.map || 0)}), ${others.length > 1 ? others.slice(0, -1).join(", ") + " and " + others[others.length - 1] : others[0]}. ` : "";
       h = `<b>Conflict.</b> ${nf(S.events ? ps.h24 : s.events_24h)} of the ${nf(S.events ? ps.total : s.events_total)} event pins are from the last 24 hours. Older pins are faded; a red ring marks the last 6 hours. ${from}`
-        + `${ar.length ? `${G.plural(ar.length, "region")} ${ar.length === 1 ? "is" : "are"} under an air-raid alert now (${nf(red)} red). ` : ""}Lines are drawn as the source map draws them.` + notLoaded(["front"])
-        + row(lg("ln", "Front line"), lg("ln dash", "Blockade"), lg("ln dots", "Defence line"), `<span class="lg"><i class="sw red"></i><i class="sw amber"></i>Air-raid alert, red and yellow</span>`, lg("sw rust", "Occupied, per DeepState"))
+        + `${ar.length ? `${G.plural(ar.length, "region")} ${ar.length === 1 ? "is" : "are"} under an air-raid alert now (${nf(red)} red). ` : ""}Lines are drawn as the source map draws them.` + notLoaded(["front"]) + notHere(["front"])
+        + row(lg("ln", "Front line"), lg("ln dash", "Blockade"), lg("ln dots", "Defence line"), `<span class="lg"><i class="sw red"></i><i class="sw amber"></i>Air-raid alert, red and yellow</span>`, G.absent("front") ? "" : lg("sw rust", "Occupied, per DeepState"))
         + row(...Object.entries(G.FAMILY).map(([k, v]) => lg("dot f-" + k, v[0])));
     } else if (topic === "air") {
       const n = ((F.mil || {}).geojson || { features: [] }).features.length, j = F.gpsjam || {};
-      h = `<b>Air.</b> ${F.mil ? nf(n) + " military aircraft are being heard on open receivers now" : "Loading aircraft"}. Pins are the map’s aviation, missile and drone events. Restricted airspace is listed in the <a href="#/air">Air</a> section and is not drawn on this map.` + notLoaded(["mil", "gpsjam"])
-        + row(lg("pinx slate", "Military aircraft"), j.levels ? `<span class="lg"><i class="sw red"></i><i class="sw amber"></i>High and medium GPS interference, ${esc(G.fmtDate(j.date))}</span>` : "", lg("dot f-violent", "Missile or drone event"), lg("dot f-military", "Aviation event"));
+      h = `<b>Air.</b> ${F.mil ? nf(n) + " military aircraft are being heard on open receivers now. " : G.absent("mil") ? "" : "Loading aircraft. "}Pins are the map’s aviation, missile and drone events. Restricted airspace is listed in the <a href="#/air">Air</a> section and is not drawn on this map.` + notLoaded(["mil", "gpsjam"]) + notHere(["mil", "gpsjam"])
+        + row(G.absent("mil") ? "" : lg("pinx slate", "Military aircraft"), j.levels ? `<span class="lg"><i class="sw red"></i><i class="sw amber"></i>High and medium GPS interference, ${esc(G.fmtDate(j.date))}</span>` : "", lg("dot f-violent", "Missile or drone event"), lg("dot f-military", "Aviation event"));
     } else if (topic === "sea") {
       const u = F.ukmto || {}, sh = F.ships || {};
       h = `<b>Sea.</b> Incidents reported to UKMTO${u.located != null ? ` (${nf(u.located)} placed; the last 7 days at full strength)` : ""}, chokepoints with their traffic against a year ago, and the map’s own sea events. `
-        + `${sh.points ? `Small dots are ${nf(sh.points.length)} ships heard by volunteer receivers: none in the Gulf or Red Sea means no coverage there, not no ships.` : ""}` + notLoaded(["ukmto", "portwatch", "ships"])
+        + `${sh.points ? `Small dots are ${nf(sh.points.length)} ships heard by volunteer receivers: none in the Gulf or Red Sea means no coverage there, not no ships.` : ""}` + notLoaded(["ukmto", "portwatch", "ships"]) + notHere(["ukmto", "portwatch", "ships"])
         + row(lg("pinx red", "Attack or hijack"), lg("pinx sea", "Other incident or sea event"), lg("ring sea", "Chokepoint"), lg("ring red", "Chokepoint down by half or more"), lg("ln dash", "Blockade line"));
     } else if (topic === "outages") {
       const o = s.internet_outages || {};
@@ -286,7 +295,8 @@
         + row(lg("dot f-infra", "Energy, infrastructure or communications event"));
     } else if (topic === "hazards") {
       const q = F.quakes || {}, hz = F.hazards || {};
-      h = `<b>Hazards.</b> ${q.count != null ? `${nf(q.count)} earthquakes of magnitude 4 or more in ${nf(q.window_hours)} hours` : "Loading earthquakes"}${hz.count != null ? ` and ${nf(hz.count)} disaster alerts from GDACS in ${nf(hz.window_days)} days` : ""}. Fires are counted in the <a href="#/hazards">Hazards</a> section.` + notLoaded(["quakes", "hazards"])
+      const parts = [q.count != null ? `${nf(q.count)} earthquakes of magnitude 4 or more in ${nf(q.window_hours)} hours` : G.absent("quakes") ? "" : "Loading earthquakes", hz.count != null ? `${nf(hz.count)} disaster alerts from GDACS in ${nf(hz.window_days)} days` : ""].filter(Boolean);
+      h = `<b>Hazards.</b> ${parts.length ? parts.join(" and ") + ". " : ""}Fires are counted in the <a href="#/hazards">Hazards</a> section.` + notLoaded(["quakes", "hazards"]) + notHere(["quakes", "hazards"])
         + row(lg("ring", "Earthquake, sized by magnitude"), lg("ring red", "Earthquake on the watch list"), lg("dot f-violent", "Red"), lg("dot amberdot", "orange"), lg("dot f-words", "green disaster alert"));
     }
     $("mapcap").innerHTML = h;
@@ -341,7 +351,7 @@
   // ---------- "In view" list on the map page ----------
   function renderInView() {
     if (!ready || S.route.view !== "map" || window.innerWidth <= 900) return;
-    const b = map.getBounds(), inb = (ll) => ll && b.contains(ll), F = S.feeds; let html = "", n = 0, what = "";
+    const b = map.getBounds(), inb = (ll) => ll && b.contains(ll), F = S.feeds; let html = "", n = 0, what = "", gone = false;
     if (topic === "conflict" || topic === "outages" || topic === "air" || topic === "sea") {
       const cats = TOPICS[topic].cats, list = S.entries.filter((e) => e.src === "pin" && inb(e.ll) && (!cats || cats.includes(e.cat)));
       n = list.length; what = `event pin${n === 1 ? "" : "s"}`;
@@ -353,11 +363,11 @@
       if (topic === "air" && F.mil) { const m = F.mil.geojson.features.filter((f) => inb(f.geometry.coordinates)); what = `event pin${n === 1 ? "" : "s"}, ${nf(m.length)} military aircraft`; }
     } else if (topic === "hazards") {
       const q = ((F.quakes || {}).geojson || { features: [] }).features.filter((f) => inb(f.geometry.coordinates)).sort((a, c) => c.properties.mag - a.properties.mag);
-      n = q.length; what = `earthquake${n === 1 ? "" : "s"}`;
+      n = q.length; what = `earthquake${n === 1 ? "" : "s"}`; gone = G.absent("quakes");
       html = q.slice(0, 40).map((f) => `<article class="entry"><time class="e-time">M ${esc(f.properties.mag)}</time><div class="e-body"><h3 class="e-title">${link(f.properties.url, esc(f.properties.place || "")) || esc(f.properties.place || "")}</h3><p class="e-src">${esc(G.when(G.isoMs(f.properties.time)))} ${G.zlabel()}${f.properties.watch ? " · on the watch list" : ""}</p></div></article>`).join("");
     }
-    $("inview-n").textContent = `${nf(n)} ${what}`;
-    $("inview").innerHTML = html || `<p class="none">Nothing from this topic in this part of the map.</p>`;
+    $("inview-n").textContent = gone ? "" : `${nf(n)} ${what}`;
+    $("inview").innerHTML = gone ? `<p class="none">${G.NOT_HERE}</p>` : html || `<p class="none">Nothing from this topic in this part of the map.</p>`;
     $("inview-hint").textContent = `${TOPICS[topic].label}: ${topic === "hazards" ? "largest" : "newest"} first. Move the map and this list follows it.`;
   }
 
@@ -394,7 +404,7 @@
     });
   }
   G.on("route", applyView);
-  G.on("data", () => { drawAll(); if (wall.on && ready && wall.i === 0) wallStep(); });
+  G.on("data", () => { syncTopics(); drawAll(); if (wall.on && ready && wall.i === 0) wallStep(); });
   G.on("render", () => { renderCaption(); renderInView(); });
   window.addEventListener("resize", () => requestAnimationFrame(() => map.resize()));
   $("mapclose").addEventListener("click", () => { location.hash = "#/"; });

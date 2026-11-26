@@ -118,6 +118,10 @@ a.row { text-decoration: none; }
 .row.doc { grid-template-columns: minmax(0, 1fr); } .row.doc .lead, .row.doc .val { display: none; }
 .row.all .nm b { color: var(--muted); }
 .row.cred .nm > span { white-space: normal; }
+/* 1.7.1: the line that names what this copy does not carry (in the map key and under the log's source chips) */
+.miss { color: var(--muted); font-size: .875rem; }
+.legend span.miss { display: block; flex: 0 0 100%; white-space: normal; }
+.logbar .miss { flex: 0 0 100%; align-self: center; }
 .row .nm { min-width: 0; }
 .row .nm b { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .row .nm > span { display: block; color: var(--muted); font-size: .875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

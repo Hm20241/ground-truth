@@ -40,7 +40,7 @@
       <div class="segs" aria-hidden="true">${Array.from({ length: 10 }, (_, i) => `<i class="${i < t ? "on " + st : ""}"></i>`).join("")}</div>` : `<div class="big dim">–</div><div class="lab">Tension</div><div class="trend">${WF.ERR.analysis ? "not loaded" : "loading"}</div>`}</div>`;
     const gen = a ? WF.ms(a.generated_at) : NaN;
     const pic = `<div class="pic">${a ? `<div class="kick"><b>Analyst picture</b><span>written ${esc(WF.ago(gen))} · confidence ${esc(a.confidence || "–")}</span></div>
-      <h1>${esc(a.headline)}</h1><p>${esc(a.bluf)}</p><button type="button" class="linkbtn picmore" data-act="picture" data-k="pic">Full picture and what changed</button>` : `<div class="kick"><b>Analyst picture</b></div><p>${WF.ERR.analysis ? "Could not load the analyst picture (" + esc(WF.ERR.analysis) + ")." : "Loading…"}</p>`}</div>`;
+      <h1>${esc(WF.zText(a.headline, WF.ms(a.generated_at)))}</h1><p>${esc(WF.zText(a.bluf, WF.ms(a.generated_at)))}</p><button type="button" class="linkbtn picmore" data-act="picture" data-k="pic">Full picture and what changed</button>` : `<div class="kick"><b>Analyst picture</b></div><p>${WF.ERR.analysis ? "Could not load the analyst picture (" + esc(WF.ERR.analysis) + ")." : "Loading…"}</p>`}</div>`;
     const newN = WF.lastSeen ? WF.logAll().filter((i) => i.t > WF.lastSeen).length : null;
     const fig = (b, s) => `<div class="fig"><b>${b}</b><span>${s}</span></div>`;
     // pin figures: counted from the merged pins once they are here (the same pins as the map, the log and the
@@ -62,7 +62,9 @@
   function renderMapHead() {
     put($("views"), Object.entries(WF.VIEWS).map(([k, v]) => `<button type="button" data-view="${k}" data-k="vw-${k}" aria-pressed="${S.view === k}">${esc(v.name)}</button>`).join(""));
     put($("mapFocus"), S.theatre === "global" ? "" : `<button type="button" class="chip tag" data-th="global" data-k="mf-clear" title="Back to all theatres">${esc(WF.tname(S.theatre))} ✕</button>`);
-    put($("legend"), WF.VIEWS[S.view].legend);
+    // 1.7.1: a layer whose feed this copy does not carry is named in the key, so an empty map is not read as "nothing there"
+    const lost = (WF.VIEWS[S.view].feeds || []).filter(([f]) => WF.absent(f)).map(([, n]) => n);
+    put($("legend"), WF.VIEWS[S.view].legend + (lost.length ? `<span class="miss">Not on this copy: ${esc(lost.join(", "))}.</span>` : ""));
   }
 
   // ---------- the log ----------
@@ -75,11 +77,14 @@
     LOG = all.filter((i) => S.src === "all" || i.kind === S.src).sort((x, y) => y.t - x.t);
     LOGMAP = new Map(LOG.map((i) => [i.id, i]));
     const chips = [["all", "All"], ...kinds.map((k) => [k, WF.KIND_NAME[k]])];
+    const lostSrc = (B[S.board].kinds || []).filter((k) => WF.KIND_FEED[k] && WF.absent(WF.KIND_FEED[k])).map((k) => WF.KIND_NAME[k]);
     put($("logbar"), (kinds.length > 1 ? chips.map(([k, n]) => `<button type="button" class="chip" data-src="${k}" data-k="src-${k}" aria-pressed="${S.src === k}">${esc(n)}</button>`).join("") : "") +
-      (S.theatre === "global" ? "" : `<button type="button" class="chip tag" data-th="global" data-k="th-clear" title="Show all theatres">${esc(WF.tname(S.theatre))} ✕</button>`));
+      (S.theatre === "global" ? "" : `<button type="button" class="chip tag" data-th="global" data-k="th-clear" title="Show all theatres">${esc(WF.tname(S.theatre))} ✕</button>`) +
+      // 1.7.1: a source this copy does not carry has no chip (it has no entries); one line names what is missing
+      (lostSrc.length ? `<span class="miss">Not on this copy: ${esc(lostSrc.join(", "))}.</span>` : ""));
     $("logbar").hidden = !$("logbar").innerHTML;
     $("logCount").textContent = LOG.length ? `${nf(LOG.length)} entries` : "";
-    const waiting = !LOG.length && (WF.LOADING.size || !D.events);
+    const waiting = !LOG.length && (WF.LOADING.size || WF.held() || !D.events);
     if (!LOG.length) { put($("log"), `<li class="note">${waiting ? "Loading…" : "Nothing in this log" + (S.theatre === "global" ? "." : " for this theatre.")}<br>This board's log holds ${esc(B[S.board].what)}.</li>`); return; }
     const rows = [], shown = LOG.slice(0, S.wall ? 14 : S.shown), newN = WF.lastSeen ? LOG.filter((i) => i.t > WF.lastSeen).length : 0;
     let day = "", lined = !newN;
@@ -140,12 +145,13 @@
   function closeDrawer() { if ($("drawer").hidden) return; $("drawer").hidden = true; $("scrim").hidden = true; if (opener && document.contains(opener)) opener.focus(); opener = null; }
   function pictureHtml() {
     const a = D.analysis; if (!a) return `<p>The analyst picture is not loaded.</p>`;
-    const li = (xs) => `<ul>${(xs || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
-    return `<p class="muted">Written ${esc(WF.when(WF.ms(a.generated_at)))} from ${nf(a.events_considered)} events. Confidence ${esc(a.confidence || "–")}. Times inside the text are UTC, as written.</p>
-      <p class="lead"><b>${esc(a.headline)}</b></p><p>${esc(a.bluf)}</p>
+    const ref = WF.ms(a.generated_at), z = (x) => esc(WF.zText(x, ref));
+    const li = (xs) => `<ul>${(xs || []).map((x) => `<li>${z(x)}</li>`).join("")}</ul>`;
+    return `<p class="muted">Written ${esc(WF.when(WF.ms(a.generated_at)))} from ${nf(a.events_considered)} events. Confidence ${esc(a.confidence || "–")}. Where the text gives a UTC time, the Eastern time is beside it.</p>
+      <p class="lead"><b>${z(a.headline)}</b></p><p>${z(a.bluf)}</p>
       <h3>What changed since the last picture</h3>${li(a.changes_since_last)}
       <h3>Theatre by theatre</h3>${(a.theatres || []).map((t) => `<div class="row"><span class="lead">${WF.ui.lead.lv(t.status, WF.levelSt(t.status))}</span><span class="nm"><b>${esc(WF.tname(t.theatre) || t.theatre)}</b><span>${esc(WF.levelWord(t.status))}, ${esc(t.trend || "")}</span></span><span class="val"></span></div>
-        <p>${esc(t.summary)}</p>${li(t.key_developments)}${t.watch ? `<p class="muted"><b>Watch:</b> ${esc(Array.isArray(t.watch) ? t.watch.join("; ") : t.watch)}</p>` : ""}`).join("")}
+        <p>${z(t.summary)}</p>${li(t.key_developments)}${t.watch ? `<p class="muted"><b>Watch:</b> ${esc(Array.isArray(t.watch) ? t.watch.join("; ") : t.watch)}</p>` : ""}`).join("")}
       <h3>Across theatres</h3>${li(a.cross_theatre)}
       <h3>Indicators</h3><ul>${(a.indicators || []).map((i) => `<li><b>${esc(i.indicator)}</b>: ${esc(i.state)}. ${esc(i.note || "")}</li>`).join("")}</ul>
       <h3>What the picture cannot see</h3>${li(a.gaps)}`;

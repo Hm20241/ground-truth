@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.1 (2026-11-25): themes fit the copy they run on; Eastern times read am/pm
+- **Fix for copies that carry fewer feeds (such as this GitHub Pages copy):** Dispatch, Atlas and Watch Floor now ask only for the feeds the copy's `api/status` lists. Before, they asked for all of them, the browser logged "404" errors, and Atlas said "Some sources did not answer".
+- **Where a feed is not carried,** the page says "Not on this copy." and leaves out controls that would lead nowhere. A self-hosted copy with every feed looks the same as before.
+- **Times:** Eastern times read am/pm in every theme (Dispatch used a 24-hour clock). UTC times inside analyst text get the Eastern time beside them in every theme. Eastern is still the default; the Eastern / UTC switch remains.
+- **Dispatch:** official statements show a date and time, not a raw timestamp.
+
 ## 1.7.0 (2026-11-25): four themes and a theme button
 - **Four ways to look at the same data.** A "Theme" button under the version and live status switches between them, and the browser remembers the choice.
   - **Classic:** the page as it was, and still the default.

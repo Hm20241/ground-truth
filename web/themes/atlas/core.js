@@ -1,7 +1,9 @@
 /* Ground Truth 1.7.0, Atlas theme, core: helpers, the time zone, icons, the data loaders and the one list of entries
    every screen reads. Read-only: every request is a GET to a relative api/ path. Nothing here is invented; a missing
    feed stays missing. The event pins follow Classic's rule: the source map's pins plus the GeoConfirmed, CIR and
-   kinetic pins it does not already carry (web/app.js mergeEvents), and the fronts count those merged pins. */
+   kinetic pins it does not already carry (web/app.js mergeEvents), and the fronts count those merged pins.
+   1.7.1: a copy is asked only for the feeds its api/status lists (the public copy carries about 30 of them); a feed it
+   does not list is not an error, and the screens say "Not on this copy." */
 (() => {
   "use strict";
   const A = (window.ATLAS = {});
@@ -185,8 +187,30 @@
   // heavier replies wait until their topic is opened
   const TOPIC_NEEDS = { sea: ["ships", "portwatch"], hazards: ["firms", "quakes", "hazards"], outages: ["cables", "outages_geo", "power", "cellular", "websites", "cloud", "outages"],
     cyber: ["cyber", "cyber_geo"], air: ["mil", "tfr", "squawk"], official: ["advisories", "advisories_geo"] };
+  // ---------- which feeds this copy carries (1.7.1) ----------
+  // Once api/status is known, api/feed/<name> is asked for only when status.feeds lists <name>, as on the Classic page
+  // (web/app.js loadExt). A reply that goes with a feed follows it. The five core replies are always asked for. If status
+  // itself does not load, every feed is asked for, as before 1.7.1.
+  const ALWAYS = ["events", "summary", "analysis", "alerts", "status"];
+  const WITH = { news_geo: ["wire", "telegram"], cyber_geo: ["cyber"], outages_geo: ["outages"], advisories_geo: ["advisories"] };
+  const has = (name) => { const fs = (S.d.status || {}).feeds; return !fs || ALWAYS.includes(name) || (WITH[name] || [name]).some((n) => n in fs); };
+  const hasAny = (names) => (names || []).some(has);
+  // the feeds behind a topic pill and behind a Filter source: with none of them on this copy, the control is left out
+  const TOPIC_FEEDS = { air: ["mil", "tfr", "squawk"], sea: ["ukmto", "portwatch", "ships"], outages: ["power", "cellular", "websites", "cloud", "outages", "cables"],
+    cyber: ["cyber"], hazards: ["firms", "quakes", "hazards"] };
+  const GROUP_FEEDS = { wire: ["wire"], telegram: ["telegram"], official: ["official"], sea: ["ukmto"], air: ["tfr", "squawk"],
+    outages: ["power", "cellular", "websites", "cloud", "outages"], cyber: ["cyber"], hazards: ["quakes", "hazards"] };
+  const topicOn = (k) => !TOPIC_FEEDS[k] || hasAny(TOPIC_FEEDS[k]);
+  const groupOn = (g) => !GROUP_FEEDS[g] || hasAny(GROUP_FEEDS[g]);
+
   const pending = new Map();
+  let statusP = null;
+  // Everything but the core waits for the first status reply, then is asked for only if this copy carries it.
   function load(name, force) {
+    if (ALWAYS.includes(name)) return fetchOne(name, force);
+    return (statusP || (statusP = fetchOne("status"))).then(() => (has(name) ? fetchOne(name, force) : undefined));
+  }
+  function fetchOne(name, force) {
     if (pending.has(name)) return pending.get(name);
     if (S.loaded.has(name) && !force) return Promise.resolve();
     const p = api(PATHS[name] || "feed/" + name).then((j) => {
@@ -344,6 +368,6 @@
   }
   const setZone = (z) => { ZONE = S.zone = z === "utc" ? "utc" : "et"; LS.set("tz", ZONE); emit("zone"); };
 
-  Object.assign(A, { $, esc, nf, LS, REDUCED, S, on, emit, ico, GLYPHS, COL, CATS, REGIONS, regionName, TOPICS, GROUPS, DEFAULT_GROUPS, FRONT_KIND, TOPIC_NEEDS, PIN_SRC,
+  Object.assign(A, { $, esc, nf, LS, REDUCED, S, on, emit, ico, GLYPHS, COL, CATS, REGIONS, regionName, TOPICS, GROUPS, DEFAULT_GROUPS, FRONT_KIND, TOPIC_NEEDS, PIN_SRC, has, hasAny, topicOn, groupOn,
     fmtT, fmtDate, dayKey, dayLabel, ago, when, whenShort, zText, zoneAbbr, isoMs, setZone, load, need, start, feed, centre, safeUrl, hash, ccName });
 })();

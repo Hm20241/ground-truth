@@ -784,7 +784,7 @@
   const PUBLIC_NOTE = "Public copy, refreshed about every 10 minutes, so not live. For real-time sirens use the Home Front Command app, Tzeva Adom or alerts.in.ua.";
   const NOT_SAFETY = "Not a safety tool: follow official alerts (Home Front Command in Israel, Povitryana Tryvoha in Ukraine).";
   const apiRev = (p) => fetch("api/" + p, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : Promise.reject(r.status))); // ETag revalidation: unchanged = 304
-  const tzT = (ms, tz) => new Date(ms).toLocaleTimeString("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit" });
+  const tzT = (ms, tz) => new Date(ms).toLocaleTimeString("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit" });  // 1.7.1: am/pm
   const span = (s) => { const m = Math.max(0, Math.round(s / 60)); return m < 60 ? m + " min" : Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min"; };
   const agoS = (s) => (s < 120 ? Math.max(0, Math.round(s)) + " s ago" : span(s) + " ago");
   const isoMs = (s) => (s ? Date.parse(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(s) ? s.replace(" ", "T") + "Z" : /T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(s) ? s + "Z" : s) : null);  // 1.3.0: a time with no zone is the server's UTC, never the browser's (1.5.6: "YYYY-MM-DD HH:MM" too, which Chrome reads as browser-local)
@@ -1167,7 +1167,7 @@
   const feedOff = new Set((() => { try { return JSON.parse(localStorage.getItem("gt-feed-off") || "[]"); } catch (err) { return []; } })());
   // country -> [theatre, lon, lat, name], from tools/build_theatres.py (the server's own placement rule)
   let TH = { a3: {}, a2: {}, names: {} };
-  fetch("geo/theatres.json?v=1.7.0").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
+  fetch("geo/theatres.json?v=1.7.1").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
   function country(k) {
     if (!k) return null;
     const s = String(k).trim(), u0 = s.toUpperCase();  // ISO-3, ISO-2, or a name ("Côte d’Ivoire", "Mexico Travel Advisory")
@@ -2259,7 +2259,7 @@
   function tick() {
     const now = Date.now(), utc = new Date(now).toISOString(), p = zparts(now, ET), et = `${p.hour}:${p.minute}`;
     $("utc").textContent = ZONE === "utc" ? utc.slice(11, 19) : `${et}:${p.second} ${p.dayPeriod}`;
-    $("clockz").textContent = ZONE === "utc" ? `UTC · ${et} ${p.dayPeriod} ${p.timeZoneName}` : `${p.timeZoneName} · ${utc.slice(11, 16)}Z`;
+    $("clockz").textContent = ZONE === "utc" ? `UTC · ${et} ${p.dayPeriod} ${p.timeZoneName}` : p.timeZoneName;  // 1.7.1: Eastern shows Eastern only
   }
   function zoneUi() {
     const other = ZONE === "utc" ? "Eastern time" : "UTC";

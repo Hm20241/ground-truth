@@ -7,8 +7,10 @@
   const link = (u, t) => (G.httpUrl(u) ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${t}</a>` : t);
   const block = (title, body, wide) => `<section class="block${wide ? " wide" : ""}"><h2>${title}</h2>${body}</section>`;
   const rows = (items) => `<ul class="rows">${items.join("")}</ul>`;
-  const placeholder = (name, what) => `<div class="placeholder"><b>${name}</b><span>${what}</span><em>Not in this theme yet. It is in the Classic theme.</em><button type="button" class="btn" data-classic>Open Classic</button></div>`;
-  const wait = (name) => `<p class="none">${S.failed[name] ? "This feed could not be loaded." : "Loading"}</p>`;
+  // A block this theme does not fill yet. `feeds` are the feeds the Classic theme fills it from: on a copy that carries
+  // none of them the Classic theme has nothing either, so the block says so and offers no button.
+  const placeholder = (name, what, ...feeds) => (feeds.length && feeds.every(G.absent) ? `<p class="none">${G.NOT_HERE}</p>` : `<div class="placeholder"><b>${name}</b><span>${what}</span><em>Not in this theme yet. It is in the Classic theme.</em><button type="button" class="btn" data-classic>Open Classic</button></div>`);
+  const wait = (name) => `<p class="none">${G.absent(name) ? G.NOT_HERE : S.failed[name] ? "This feed could not be loaded." : "Loading"}</p>`;
   const tm = (iso) => { const ms = G.isoMs(iso); return ms ? `${esc(G.when(ms))} ${G.zlabel()}` : ""; };
   const pill = (txt, cls) => `<span class="pill ${cls}">${esc(txt)}</span>`;
   const D = (d) => esc(G.fmtDate(String(d || "").replace(/\//g, "-")));   // a date with no time, as "22 Nov"
@@ -36,7 +38,7 @@
       const n = Number(t.status), li = (a) => (a || []).map((x) => `<li>${esc(x)}</li>`).join("");
       return `<article class="th-block" id="th-${esc(t.theatre)}"><h3>${esc(G.thName(t.theatre) || t.theatre)}</h3>
         <p class="th-lv lv-${G.level(n)}"><b>${esc(n)}</b>/10 <span>${esc(t.trend || "")}</span><em>${G.plural(by[t.theatre] || 0, "event")} pinned in 24 hours</em></p>
-        <p class="th-sum">${esc(cap(String(t.summary || "").replace(/^Evidence:\s*/, "")))}</p>
+        <p class="th-sum">${esc(G.zText(cap(String(t.summary || "").replace(/^Evidence:\s*/, "")), G.isoMs(pic.generated_at)))}</p>
         <div class="th-cols"><div><h4>Key developments</h4><ul>${li(t.key_developments) || "<li>None listed.</li>"}</ul></div><div><h4>Watch for</h4><ul>${li(t.watch) || "<li>Nothing listed.</li>"}</ul></div></div></article>`;
     }).join("") : `<p class="none">${S.failed.analysis ? "The analyst picture could not be loaded." : "Loading"}</p>`;
     const fr = (G.fronts ? G.fronts() : []);
@@ -73,7 +75,7 @@
       + (s.airspace_czib_active != null ? `<p><b>${nf(s.airspace_czib_active)}</b> conflict-zone airspace warnings are in force worldwide.</p>` : "") : wait("tfr");
     const tw = pla ? `<p class="lede"><span class="fig-big">${nf(pla.aircraft)}</span>Chinese military aircraft and ${nf(pla.plan_ships)} navy ships around Taiwan (${D(pla.date)}).</p><p>${nf(pla.entered_adiz)} entered the air defence zone. ${link(pla.url, "Taiwan defence ministry report")}.</p>` : `<p class="none">No daily count in the summary.</p>`;
     return block("Military aircraft", mil) + block("Worth a look", notable) + block("GPS interference", jam) + block("Restricted airspace", tfr) + block("Taiwan Strait", tw)
-      + block("Aircraft emergency codes", placeholder("Emergency transponder codes", "Aircraft squawking 7500, 7600 or 7700 will be listed here."));
+      + block("Aircraft emergency codes", placeholder("Emergency transponder codes", "Aircraft squawking 7500, 7600 or 7700 will be listed here.", "squawk"));
   }
 
   // ---------- Sea ----------
@@ -94,8 +96,8 @@
         <p class="muted">Heard in the last hour by volunteer receivers. A low count can mean no coverage, not no ships.${sh._ok === false ? " The last refresh of this feed failed; these are the previous figures." : ""}</p>`;
     }
     return block("Incidents at sea (UKMTO)", inc) + block("Chokepoint traffic against a year ago", choke) + block("Ships heard, by area", ships, true)
-      + block("Listed and sanctioned ships", placeholder("Ships on sanctions and watch lists", "Tankers and cargo ships named on sanctions lists, where they were last heard and where they say they are going."))
-      + block("Ship counts from satellite", placeholder("Satellite ship counts", "Daily vessel counts at the chokepoints from satellite tracking, for the areas with no receivers."));
+      + block("Listed and sanctioned ships", placeholder("Ships on sanctions and watch lists", "Tankers and cargo ships named on sanctions lists, where they were last heard and where they say they are going.", "vessellists"))
+      + block("Ship counts from satellite", placeholder("Satellite ship counts", "Daily vessel counts at the chokepoints from satellite tracking, for the areas with no receivers.", "gfw"));
   }
 
   // ---------- Outages and cyber ----------
@@ -119,9 +121,9 @@
         + `<p class="muted">Ransomware entries are claims posted by the gangs, not confirmed breaches.</p>`;
     }
     return block("Internet outages", net) + block("Cyber", cy)
-      + block("Power", placeholder("Power grids", "Grid outages and load in the watched countries.")) + block("Mobile networks", placeholder("Mobile networks", "Cellular outages by country and operator."))
-      + block("Websites and cloud", placeholder("Website and cloud reachability", "Whether key government, bank and media sites answer, and cloud-region incidents."))
-      + block("Undersea cables", placeholder("Undersea cables", "Cable faults and repairs, with the cables drawn on the map."));
+      + block("Power", placeholder("Power grids", "Grid outages and load in the watched countries.", "power")) + block("Mobile networks", placeholder("Mobile networks", "Cellular outages by country and operator.", "cellular"))
+      + block("Websites and cloud", placeholder("Website and cloud reachability", "Whether key government, bank and media sites answer, and cloud-region incidents.", "websites", "cloud"))
+      + block("Undersea cables", placeholder("Undersea cables", "Cable faults and repairs, with the cables drawn on the map.", "cables"));
   }
 
   // ---------- Hazards ----------
@@ -144,13 +146,13 @@
     }
     const fires = Object.keys(s.firms_hotspots_by_theatre || {}).length ? `<table class="tbl"><thead><tr><th>Theatre</th><th class="num">Fire detections</th></tr></thead><tbody>${Object.entries(s.firms_hotspots_by_theatre).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<tr><td>${esc(G.thName(k) || k)}</td><td class="num">${nf(n)}</td></tr>`).join("")}</tbody></table><p class="muted">Satellite heat detections in the watched theatres. ${nf(s.thermal_corroborated)} event pins have one nearby.</p>` : `<p class="none">No fire counts in the summary.</p>`;
     return block("Earthquakes", qk) + block("Disaster alerts", gd) + block("Fires seen from space", fires)
-      + block("Tsunami warnings", placeholder("Tsunami warnings", "Warnings and watches from the tsunami centres.")) + block("Radiation", placeholder("Radiation monitors", "Readings from public radiation monitoring networks near the watched sites."));
+      + block("Tsunami warnings", placeholder("Tsunami warnings", "Warnings and watches from the tsunami centres.", "tsunami")) + block("Radiation", placeholder("Radiation monitors", "Readings from public radiation monitoring networks near the watched sites.", "radiation"));
   }
 
   // ---------- Official ----------
   function official() {
     const s = S.summary || {}, F = S.feeds, o = F.official, a = F.advisories, emb = ((S.alerts || {}).embassy || {}).items;
-    const st = o ? rows((o.items || []).slice(0, 12).map((i) => `<li><span class="r-m">${esc(i.source || "")} · ${D(i.date)}</span><span class="r-t">${link(i.url, esc(i.title))}</span></li>`)) : wait("official");
+    const st = o ? rows((o.items || []).slice(0, 12).map((i) => `<li><span class="r-m">${esc(i.source || "")} · ${/T\d{2}:\d{2}/.test(i.date || "") ? tm(i.date) : D(i.date)}</span><span class="r-t">${link(i.url, esc(i.title))}</span></li>`)) : wait("official");
     const em = emb ? (emb.length ? rows(emb.slice(0, 8).map((i) => `<li><span class="r-m">${i.t ? esc(G.when(i.t * 1000)) + " " + G.zlabel() : ""}</span><span class="r-t">${link(i.url, esc(i.title))}</span>${esc(cut(i.event, 200))}</li>`)) : `<p class="none">No embassy alerts in the feed.</p>`) : wait("alerts");
     let adv = wait("advisories");
     if (a) {
@@ -161,16 +163,16 @@
         + `<p class="muted">US State Department advisories.</p>`;
     }
     return block("Statements", st) + block("Embassy security alerts", em) + block("Travel advisories", adv)
-      + block("Sanctions and threat bulletins", placeholder("Sanctions notices and US threat bulletins", "New sanctions designations and national terrorism advisory bulletins."));
+      + block("Sanctions and threat bulletins", placeholder("Sanctions notices and US threat bulletins", "New sanctions designations and national terrorism advisory bulletins.", "ofac", "ntas"));
   }
 
   // ---------- Analysis ----------
   function analysis() {
     const pic = (S.analysis || {}).picture;
     if (!pic) return block("The picture", `<p class="none">${S.failed.analysis ? "The analyst picture could not be loaded." : "Loading"}</p>`, true);
-    const li = (a) => rows((a || []).map((x) => `<li>${esc(x)}</li>`));
+    const li = (a) => rows((a || []).map((x) => `<li>${esc(G.zText(x, G.isoMs(pic.generated_at)))}</li>`));
     const st = (v) => pill(v || "?", v === "present" ? "red" : v === "emerging" ? "amber" : "grey");
-    return block("The headline", `<p class="lede" style="font-size:26px;line-height:1.25;font-weight:700">${esc(pic.headline || "")}</p><p class="lede">${esc(pic.bluf || "")}</p>
+    return block("The headline", `<p class="lede" style="font-size:26px;line-height:1.25;font-weight:700">${esc(G.zText(pic.headline, G.isoMs(pic.generated_at)))}</p><p class="lede">${esc(G.zText(pic.bluf, G.isoMs(pic.generated_at)))}</p>
         <p class="muted">Written ${tm(pic.generated_at)} from ${nf(pic.events_considered)} events. Confidence: ${esc(pic.confidence || "not stated")}. A machine-written reading of open sources, not a verified report.</p>`, true)
       + block("How tense", `<div class="tension">${G.tensionHtml(pic)}</div>` + rows((pic.theatres || []).map((t) => `<li><span class="r-n lv-${G.level(t.status)}">${esc(t.status)}/10 ${esc(t.trend || "")}</span><a href="#/conflict?t=${esc(t.theatre)}">${esc(G.thName(t.theatre) || t.theatre)}</a></li>`)))
       + block("What changed since the last picture", li(pic.changes_since_last))
@@ -197,13 +199,13 @@
     // where the pins come from, with the credits as the Classic theme words them (web/ext/curated.js)
     const ps = G.pinStats(), ver = (window.GTTheme || {}).version, out = (u, t) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${t}</a>`;
     const pins = S.events ? rows([`<li><span class="r-n">${nf(ps.by.map || 0)}</span>Source map<span class="r-m">The curated map the pins and the front lines come from</span></li>`,
-        ...Object.entries(G.PINSRC).map(([k, v]) => `<li><span class="r-n">${nf(ps.by[k] || 0)}</span>${esc(v[0])}<span class="r-m">${esc(v[2])}</span></li>`)])
+        ...Object.entries(G.PINSRC).map(([k, v]) => (G.absent(k) ? `<li>${esc(v[0])}<span class="r-m">${G.NOT_HERE}</span></li>` : `<li><span class="r-n">${nf(ps.by[k] || 0)}</span>${esc(v[0])}<span class="r-m">${esc(v[2])}</span></li>`))])
       + `<p class="muted">The source map wins: a pin from another source is left out when the map already has the same post.</p>`
       + `<p class="muted">Verified pins: ${out("https://geoconfirmed.org", "GeoConfirmed")} and ${out("https://eyesonrussia.org", "CIR Eyes on Russia")} (research use; not on the public mirror), and S2 Underground’s Iran kinetic events map (${out("https://creativecommons.org/licenses/by-nc-sa/4.0/", "CC BY-NC-SA 4.0")}, layout changed).</p>`
       : `<p class="none">${S.failed.events ? "The event map could not be loaded." : "Loading"}</p>`;
-    const pubs = (d, what) => (d && d.sources ? `<p class="lede"><span class="fig-big">${nf(d.sources.length)}</span>${what}, ${nf(d.sources.filter((x) => !x.ok).length)} failing now.</p><p>${nf(d.count)} entries held; last fetched ${tm(d.fetched_at)}.</p>` : `<p class="none">Not loaded.</p>`);
+    const pubs = (d, what, name) => (G.absent(name) ? `<p class="none">${G.NOT_HERE}</p>` : d && d.sources ? `<p class="lede"><span class="fig-big">${nf(d.sources.length)}</span>${what}, ${nf(d.sources.filter((x) => !x.ok).length)} failing now.</p><p>${nf(d.count)} entries held; last fetched ${tm(d.fetched_at)}.</p>` : `<p class="none">Not loaded.</p>`);
     return block("Source health", `<p class="lede"><span class="fig-big">${nf(fs.length - bad)}</span>of ${nf(fs.length)} sources are reporting on time${bad ? `; ${nf(bad)} need a look` : ""}.</p>${table}<p class="muted">Server time ${tm(st.now)}. This page re-reads the data every 3 minutes.</p>`, true)
-      + block("News wire", pubs(w, "publishers")) + block("Telegram", pubs(tg, "channels"))
+      + block("News wire", pubs(w, "publishers", "wire")) + block("Telegram", pubs(tg, "channels", "telegram"))
       + block("Time zone", `<p>Every time on the page is shown in <b>${G.zlabel()}</b> time. Change it with the Eastern / UTC switch at the top of any page; the choice is remembered on this device.</p>`)
       + block("Event pins, by source", pins)
       + block("About this page", `<p>Ground Truth${ver ? " " + esc(ver) : ""}, Dispatch theme. It reads the live data and writes nothing. It is not a safety tool: follow official alerts.</p>`);
@@ -215,7 +217,10 @@
     if (r.view !== "section") return;
     const page = PAGES[r.name];
     $("section").innerHTML = `<header class="page-head"><h1>${page.title}</h1><p class="standfirst">${page.stand}</p></header><div class="blocks">${RENDER[r.name]()}</div>`;
-    const missing = page.feeds.filter((f) => !S.feeds[f] && !S.failed[f]);
+    // 1.7.1: any UTC time left in the page's text ("05:38Z", the analyst's own words) gets its Eastern time beside it.
+    const pic = (S.analysis || {}).picture, ref = pic ? G.isoMs(pic.generated_at) : NaN, tw = document.createTreeWalker($("section"), NodeFilter.SHOW_TEXT);
+    for (let nd = tw.nextNode(); nd; nd = tw.nextNode()) { const v = G.zText(nd.nodeValue, ref); if (v !== nd.nodeValue) nd.nodeValue = v; }
+    const missing = page.feeds.filter((f) => !S.feeds[f] && !S.failed[f] && !G.absent(f));   // a feed this copy lacks is not asked for
     if (missing.length && asked !== r.name) {
       asked = r.name;
       Promise.all(page.feeds.map((f) => G.need(f).catch(() => null))).then(() => { asked = ""; if (S.route.name === r.name) render(S.route); });

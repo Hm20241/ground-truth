@@ -22,7 +22,7 @@ def fake_get(path, timeout=30):
         return {"data": {"items": [{"ts_ms": t * 1000} for t in (v or [])]}}
     raise ValueError(path)
 A.api_get = fake_get
-check(A.ANALYST_VERSION == "1.6", "version 1.6")
+check(tuple(map(int, A.ANALYST_VERSION.split("."))) >= (1, 6), "analyst version is 1.6 or later (%s)" % A.ANALYST_VERSION)
 check(A.CFG["picture_min_gap_min"] == 14 and A.CFG["picture_feed_trigger"] == 5 and A.CFG["picture_every_h"] == 3.0, "defaults")
 plists = sorted((ROOT / "analyst" / "launchd").glob("*gt-analyst.plist"))  # absent in the public copy
 check(not plists or "<integer>900</integer>" in plists[0].read_text(), "launchd tick is 15 minutes")

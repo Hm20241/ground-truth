@@ -23,6 +23,7 @@ ENABLED = ("geoconfirmed", "curated", "hazards",  # 0.11.0: Phase A (verified pi
            "airnow")  # 1.7.2: EPA AirNow air-quality monitors
 META = {}     # feed -> {"module", "version", "every", "public_ok", "non_commercial"}
 ERRORS = {}   # module or module:feed -> reason
+PRIVATE = []  # 1.8.0: feed names loaded from gt/private/
 
 
 def _flag(mod, attr, feed):
@@ -56,5 +57,28 @@ def load(registry):
     return META
 
 
+def load_private(registry):
+    """1.8.0: modules in gt/private/ (kept out of the public copy). Where the folder is absent nothing happens.
+    Their feeds are never public_ok, whatever the module says."""
+    try:
+        from gt import private
+    except ImportError:
+        return
+    for m in getattr(private, "MODULES", ()):
+        try:
+            mod = importlib.import_module("gt.private." + m)
+        except Exception as e:  # noqa: BLE001
+            ERRORS["private:" + m] = "%s: %s" % (type(e).__name__, str(e)[:200])
+            continue
+        for feed, (fn, every) in (getattr(mod, "FEEDS", None) or {}).items():
+            if not re.fullmatch(r"[a-z]+", feed) or feed in registry:
+                ERRORS["private:%s:%s" % (m, feed)] = "feed name invalid or already registered"
+                continue
+            registry[feed] = (fn, int(every))
+            PRIVATE.append(feed)
+            META[feed] = {"module": "private." + m, "version": getattr(mod, "VERSION", None), "every": int(every),
+                          "public_ok": False, "non_commercial": True, "private": True}
+
+
 def status():
-    return {"enabled": list(enabled()), "feeds": META, "errors": ERRORS}
+    return {"enabled": list(enabled()), "feeds": META, "errors": ERRORS, "private": sorted(PRIVATE)}

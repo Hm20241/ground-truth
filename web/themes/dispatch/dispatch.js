@@ -200,14 +200,15 @@
   // ---------- routing ----------
   const NAV = [["home", "Front page"], ["map", "Map"], ["feed", "Feed"], ["conflict", "Conflict"], ["air", "Air"], ["sea", "Sea"],
     ["outages", "Outages and cyber"], ["hazards", "Hazards"], ["official", "Official"], ["analysis", "Analysis"], ["sources", "Sources"], ["wall", "Wall view"]];
+  const EXTRA = [];   // extra pages registered by GTPrivate.onViews (below): [route name "p/<id>", title]
   const SECTIONS = ["conflict", "air", "sea", "outages", "hazards", "official", "analysis", "sources"];
   function parseHash() {
     const h = location.hash.replace(/^#\/?/, ""), [name, qs] = h.split("?"), q = {};
     (qs || "").split("&").forEach((kv) => { const [k, v] = kv.split("="); if (k) { try { q[k] = decodeURIComponent(v || ""); } catch (e) { q[k] = ""; } } });   // 1.7.3: a broken %-code in the address no longer stops the page
     let n = name || "";
     if (!n) n = "home";   // the wall view never starts by itself: it opens from #/wall or the "Wall view" link
-    if (!NAV.some(([k]) => k === n)) n = "home";
-    return { name: n, view: SECTIONS.includes(n) ? "section" : n, q };
+    if (!NAV.some(([k]) => k === n) && !EXTRA.some(([k]) => k === n)) n = "home";
+    return { name: n, view: SECTIONS.includes(n) ? "section" : EXTRA.some(([k]) => k === n) ? "extra" : n, q };
   }
   function route() {
     S.route = parseHash();
@@ -220,12 +221,33 @@
     window.scrollTo(0, 0);
     emit("route", r);
     render();
+    showExtra();
   }
   function navHtml() {
-    const link = ([k, n]) => `<a href="#/${k === "home" ? "" : k}" data-nav="${k}"${k === "wall" ? ' class="aside"' : ""}>${n}</a>`;
-    $("nav").innerHTML = NAV.map(link).join("");
-    $("sheetlist").innerHTML = NAV.map(([k, n]) => `<a href="#/${k === "home" ? "" : k}" data-nav="${k}">${n}</a>`).join("");
+    const all = [...NAV]; const at = all.findIndex(([k]) => k === "sources"); all.splice(at < 0 ? all.length : at, 0, ...EXTRA);
+    const link = ([k, n]) => `<a href="#/${k === "home" ? "" : k}" data-nav="${k}"${k === "wall" ? ' class="aside"' : ""}>${esc(n)}</a>`;
+    $("nav").innerHTML = all.map(link).join("");
+    $("sheetlist").innerHTML = all.map(([k, n]) => `<a href="#/${k === "home" ? "" : k}" data-nav="${k}">${esc(n)}</a>`).join("");
   }
+  // Extra pages: any view a private script registers with GTPrivate gets a masthead link and a route "#/p/<id>". The page
+  // fills one host element; leaving the page runs the view's cleanup. Where nothing is registered none of this runs.
+  const extraViews = {}; let extraOpen = "";
+  function showExtra() {
+    const r = S.route, host = document.getElementById("extrahost"), view = extraViews[r.name];
+    if (extraOpen && (extraOpen !== r.name || !view)) { const old = extraViews[extraOpen]; extraOpen = ""; try { if (old && old.cleanup) old.cleanup(); } catch (e) { console.error("extra page", e); } if (host) host.innerHTML = ""; }
+    if (!view || !host || extraOpen === r.name) return;
+    extraOpen = r.name;
+    // the page's own clock is passed in, so the Eastern / UTC switch applies
+    try { view.render.dispatch(host, Object.assign({}, window.GTPrivate.ctx, { when: (ms) => when(ms) + " " + (S.tz === "utc" ? "UTC" : "ET") })); } catch (e) { console.error("extra page", e); host.innerHTML = '<p class="none">This page could not be drawn.</p>'; }
+  }
+  if (window.GTPrivate && window.GTPrivate.onViews) window.GTPrivate.onViews((views) => {
+    if (!views || !views.length) return;
+    const main = document.getElementById("main");
+    if (!document.getElementById("v-extra")) { const sec = document.createElement("section"); sec.className = "view"; sec.id = "v-extra"; sec.dataset.view = "extra"; sec.hidden = true; sec.innerHTML = '<div class="wrap" id="extrahost"></div>'; main.insertBefore(sec, document.getElementById("v-wall")); }
+    views.forEach((w) => { const k = "p/" + w.id; if (!extraViews[k]) { extraViews[k] = w; EXTRA.push([k, w.title || w.id]); } });
+    navHtml();
+    if (/^#\/p\//.test(location.hash)) route(); else document.querySelectorAll("[data-nav]").forEach((a) => (a.dataset.nav === S.route.name ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
+  });
   function closeSheet() { $("sheet").hidden = true; $("tabsections").setAttribute("aria-expanded", "false"); }
 
   // ---------- pieces of text ----------

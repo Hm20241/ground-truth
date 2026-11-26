@@ -1170,7 +1170,7 @@
   const feedOff = new Set((() => { try { return JSON.parse(localStorage.getItem("gt-feed-off") || "[]"); } catch (err) { return []; } })());
   // country -> [theatre, lon, lat, name], from tools/build_theatres.py (the server's own placement rule)
   let TH = { a3: {}, a2: {}, names: {} };
-  fetch("geo/theatres.json?v=1.7.4").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
+  fetch("geo/theatres.json?v=1.8.0").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
   function country(k) {
     if (!k) return null;
     const s = String(k).trim(), u0 = s.toUpperCase();  // ISO-3, ISO-2, or a name ("Côte d’Ivoire", "Mexico Travel Advisory")
@@ -2184,6 +2184,14 @@
   // The queue runs here, synchronously, so every layer, tab and map hook is registered before the map's load event.
   (window.GTXQ || []).forEach((fn) => { try { fn(window.GTX); } catch (err) { console.error("GTX extension", err); } });
   window.GTXQ = { push: (fn) => fn(window.GTX) };
+  // 1.8.0: private views. themes/private.js (loaded just before this file) hands over, once the server has said which
+  // extra views it carries, each view that has a Classic renderer; each becomes a tab drawn by that renderer when opened.
+  // Where the server lists none (the public copy) nothing is called and no tab appears.
+  if (window.GTPrivate) window.GTPrivate.onViews((views) => views.forEach((v) => {
+    const id = "pv-" + v.id;
+    if (EXT.tabs.some((t) => t.id === id)) return;
+    window.GTX.tab({ id, label: v.title, before: "sources", render: (el) => v.render.classic(el, window.GTPrivate.ctx) });
+  }));
 
   // ---------- 1.4.0: version + live light (header) ----------
   // The page's version and one light for how fresh it is. Live: the push stream is connected, so feed updates land

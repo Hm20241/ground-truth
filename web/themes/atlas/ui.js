@@ -7,6 +7,20 @@
   const A = window.ATLAS, { $, esc, nf, LS, S, ico, COL } = A;
   const NAV = [["now", "Now", "now"], ["feed", "Feed", "feed"], ["topics", "Topics", "topics"], ["more", "More", "more"]];
   const body = $("body"), sheet = $("sheet"), root = document.documentElement;
+  // 1.8.0: extra pages that a server's private files register (themes/private.js). Generic: one pill and one More row per page,
+  // opened inside the sheet. The page keeps its own element, so a data refresh here never rebuilds it; leaving it runs its cleanup.
+  const PV = { list: [], host: {}, open: null, cleanup: null };
+  const pvPage = () => (S.page && S.page.startsWith("view:") ? PV.list.find((x) => x.id === S.page.slice(5)) || null : null);
+  function pvClose() { if (!PV.open) return; const f = PV.cleanup; PV.open = null; PV.cleanup = null; try { if (typeof f === "function") f(); } catch (e) { console.error("private page", e); } }
+  function pvMount(v) {
+    const host = PV.host[v.id] || (PV.host[v.id] = document.createElement("div"));
+    if (PV.open === v.id && host.parentNode === body) return;
+    const back = `<div class="view-top"><button type="button" class="btn back" data-act="page" data-v="">${ico("left")}More</button></div>`;
+    if (PV.open === v.id) { body.innerHTML = back; body.appendChild(host); return; }   // card shown over the page and closed again: put it back as it was
+    pvClose(); host.innerHTML = ""; host.className = "pv-host"; body.innerHTML = back; body.appendChild(host); PV.open = v.id;
+    try { PV.cleanup = v.render.atlas(host, window.GTPrivate.ctx) || null; } catch (e) { console.error("private page", e); host.innerHTML = '<div class="empty">This page could not be drawn.</div>'; }
+  }
+  if (window.GTPrivate && window.GTPrivate.onViews) window.GTPrivate.onViews((views) => { PV.list = views || []; render(); });
   const UI = { mode: "desk", sheet: "half", limit: 60, filterOpen: false, detail: false, panelW: Math.min(640, Math.max(340, +LS.get("panel", 420) || 420)), collapsed: LS.get("collapsed", "0") === "1", wallI: -1 };
   document.querySelectorAll("[data-ico]").forEach((el) => { el.innerHTML = ico(el.dataset.ico); });
 
@@ -229,6 +243,7 @@
   function viewMore() {
     const st = (S.d.status || {}).feeds, wp = wallPref(), T = window.GTTheme;
     return `<div class="view-top"><h2 class="view-h">More</h2></div><div class="rows">
+      ${PV.list.map((v) => `<button type="button" class="row" data-act="view" data-v="${esc(v.id)}"><span class="disc plain">${ico("globe")}</span><span class="r-main"><span class="r-title">${esc(v.title)}</span><span class="r-meta">${esc(v.blurb || "A page this server adds")}</span></span><span class="r-end">${ico("right")}</span></button>`).join("")}
       <button type="button" class="row" data-act="page" data-v="analyst"><span class="disc plain">${ico("news")}</span><span class="r-main"><span class="r-title">Analyst picture</span><span class="r-meta">The full written picture: every region, indicators, risks and gaps</span></span><span class="r-end">${ico("right")}</span></button>
       <button type="button" class="row" data-act="page" data-v="sources"><span class="disc plain">${ico("signal")}</span><span class="r-main"><span class="r-title">Sources and their health</span><span class="r-meta">${st ? `${Object.values(st).filter((f) => f.ok && !f.stale).length} of ${Object.keys(st).length} sources working` : "How fresh each source is"}</span></span><span class="r-end">${ico("right")}</span></button></div>
       <section class="sec"><h2>Settings</h2>
@@ -324,25 +339,28 @@
   // ---------- render the sheet ----------
   let lastKey = "";
   function render() {
-    if (UI.mode === "wall") { renderWall(); return; }
+    if (UI.mode === "wall") { pvClose(); renderWall(); return; }
     const searching = S.q.trim().length >= 2;
     const key = UI.detail && S.sel ? "detail:" + S.sel.id : searching ? "search" : S.dest + ":" + (S.page || "");
     const act = document.activeElement, fk = act && body.contains(act) ? (act.dataset.act || "") + "|" + (act.dataset.id || act.dataset.v || "") : null, top = body.scrollTop;
     let h;
+    const pv = !(UI.detail && S.sel) && !searching && S.dest === "more" ? pvPage() : null;
+    if (!pv && !(UI.detail && S.sel) && !searching) pvClose();
     if (UI.detail && S.sel) h = `<div class="view-top"><button type="button" class="btn back" data-act="close">${ico("left")}Back</button></div>` + detailHtml(S.sel, true);
     else if (searching) h = viewSearch();
+    else if (pv) h = null;
     else if (S.page && S.page.startsWith("region:")) h = viewRegion(S.page.slice(7));
     else if (S.dest === "now") h = viewNow();
     else if (S.dest === "feed") h = viewFeed();
     else if (S.dest === "topics") h = S.page ? viewTopic(S.page) : viewTopics();
     else h = S.page === "analyst" ? viewAnalyst() : S.page === "sources" ? viewSources() : viewMore();
-    body.innerHTML = h;
+    if (pv) pvMount(pv); else body.innerHTML = h;
     body.scrollTop = key === lastKey ? top : 0; lastKey = key;
     if (fk) { const [a, v] = fk.split("|"); const el = [...body.querySelectorAll(`[data-act="${a}"]`)].find((x) => (x.dataset.id || x.dataset.v || "") === v); if (el) el.focus({ preventScroll: true }); }
     const fresh = S.lastSeen ? A.feed({ topic: "all", noFilter: true }).filter((e) => e.ts > S.lastSeen).length : 0;
     const navHtml = (withIcon) => NAV.map(([k, name, ic]) => `<button type="button" data-act="nav" data-v="${k}"${S.dest === k && !searching ? ' aria-current="page"' : ""}>${withIcon ? ico(ic) : ""}<span>${name}</span>${k === "feed" && fresh && S.dest !== "feed" ? `<span class="badge" aria-label="${fresh} new">${fresh > 99 ? "99+" : fresh}</span>` : ""}</button>`).join("");
     $("seg").innerHTML = navHtml(false); $("tabbar").innerHTML = navHtml(true);
-    $("pills").innerHTML = A.TOPICS.filter((t) => A.topicOn(t.k)).map((t) => `<button type="button" class="pill" data-act="topic" data-v="${t.k}" aria-pressed="${S.topic === t.k}">${t.k === "all" ? "" : ico(t.icon)}${esc(t.name)}</button>`).join("");
+    $("pills").innerHTML = A.TOPICS.filter((t) => A.topicOn(t.k)).map((t) => `<button type="button" class="pill" data-act="topic" data-v="${t.k}" aria-pressed="${S.topic === t.k}">${t.k === "all" ? "" : ico(t.icon)}${esc(t.name)}</button>`).join("") + PV.list.map((v) => `<button type="button" class="pill" data-act="view" data-v="${esc(v.id)}" aria-pressed="${PV.open === v.id}">${ico("globe")}${esc(v.title)}</button>`).join("");
     $("live").className = "b-live " + (S.net === "ok" ? "ok" : S.net === "loading" ? "" : "bad"); $("livet").textContent = netWord();
     $("qclear").hidden = !S.q;
   }
@@ -365,6 +383,7 @@
     const act = b.dataset.act, v = b.dataset.v;
     if (act === "nav") { if (S.q) { S.q = ""; $("q").value = ""; } if (UI.mode === "phone" && (UI.sheet === "peek" || (S.dest === v && !S.page && !UI.detail))) setSheet(UI.sheet === "half" && S.dest === v ? "full" : "half"); pageStack.length = 0; go(v, null); }
     else if (act === "topic") setTopic(v);
+    else if (act === "view") { if (S.q) { S.q = ""; $("q").value = ""; } if (UI.mode === "phone" && UI.sheet === "peek") setSheet("half"); if (UI.mode === "desk" && UI.collapsed) collapse(false); pageStack.length = 0; go("more", "view:" + v); }
     else if (act === "topicpage") { setTopic(v); go("topics", v); }
     else if (act === "topicgo") { setTopic(v); go("topics", v); }
     else if (act === "alertsat") { setTopic("alerts"); go("topics", "alerts"); if (v === "israel") A.flyTo([35, 31.6], 6.3); else if (v === "russia") A.flyTo([42, 50], 4.2); else A.region(v); }

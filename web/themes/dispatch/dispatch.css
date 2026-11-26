@@ -243,6 +243,10 @@ body[data-view="map"] .mapbox { height: clamp(380px, calc(100vh - 300px), 900px)
 .th-block li::before { content: ""; position: absolute; left: 1px; top: 13px; width: 6px; height: 6px; background: var(--ink); }
 .th-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 40px; }
 
+/* extra pages from GTPrivate views (dispatch.js): same page padding as a section page */
+#extrahost { padding-top: 28px; padding-bottom: 40px; }
+@media (max-width: 900px) { #extrahost { padding-top: 18px; } }
+
 /* ---------- footer, phone bar ---------- */
 .foot { border-top: 1px solid var(--ink); margin-top: 10px; padding: 16px 0 26px; font-size: 14px; color: var(--ink-3); }
 .foot p { max-width: 70em; }

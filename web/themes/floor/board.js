@@ -223,10 +223,31 @@
   // ---------- actions ----------
   function setBoard(k) {
     if (!B[k]) return;
+    unmountView();
     S.board = k; S.src = "all"; S.shown = 120; S.theatre = "global"; document.body.dataset.board = k;
-    WF.need(B[k].need); WF.setView(B[k].view); render();
+    if (B[k].host) { document.body.setAttribute("data-viewboard", ""); if (S.pane === "map" || S.pane === "log") setPane("board"); } else document.body.removeAttribute("data-viewboard");
+    WF.need(B[k].need); WF.setView(B[k].view); if (B[k].host) mountView(B[k]); render();
     const sc = $("scroller"); if (sc) sc.scrollTop = 0;
   }
+  // ---------- private views (1.8.0): a view registered by themes/private.js gets one board of its own ----------
+  // Generic: the view brings its own title, one-line description and renderer (view.render.floor(host, ctx), which may
+  // return a function that stops its timers). This file knows nothing else about it. On the board the usual strip and
+  // three panels give way to one host box; the ticker, top bar and Systems stay.
+  let viewStop = null;
+  function unmountView() {
+    if (viewStop) { try { viewStop(); } catch (e) { console.error("private view", e); } viewStop = null; }
+    const h = $("viewHost"); if (h) { h.hidden = true; h.textContent = ""; }
+  }
+  function mountView(b) {
+    const h = $("viewHost"); h.hidden = false; h.textContent = ""; h.setAttribute("aria-label", b.name);
+    try { const r = b.pv.render.floor(h, window.GTPrivate.ctx); viewStop = typeof r === "function" ? r : typeof b.pv.cleanup === "function" ? b.pv.cleanup : null; }
+    catch (e) { console.error("private view", e); h.innerHTML = '<p class="note">This board could not be drawn.</p>'; }
+  }
+  { const h = document.createElement("section"); h.id = "viewHost"; h.className = "viewhost"; h.hidden = true; $("scroller").appendChild(h); }
+  if (window.GTPrivate) window.GTPrivate.onViews((views) => {
+    views.forEach((v) => { if (typeof v.render.floor === "function") B["v-" + v.id] = { name: String(v.title || v.id), about: String(v.about || ""), view: "conflict", need: [], panels: [], log: () => [], kinds: [], what: "", host: true, pv: v }; });
+    renderTop();
+  });
   function setTheatre(k, fly) { S.theatre = WF.THEATRES[k] ? k : "global"; S.shown = 120; if (fly !== false) WF.flyTheatre(S.theatre); render(); }
   function setPane(p) {
     S.pane = p; document.body.dataset.pane = p;
@@ -239,6 +260,7 @@
   function setWall(on) {
     S.wall = on; document.documentElement.classList.toggle("wall", on);
     if (on && window.GTTheme) GTTheme.close();  // the theme button is hidden in wall view; so is its open menu
+    if (on && B[S.board].host) setBoard("conflict");  // the wall tours the map: a private board has none
     if (on) { closeDrawer(); if (S.wide) setWide(S.wide); tourStart(); } else tourStop();
     render(); if (WF.map) setTimeout(() => WF.map.resize(), 50);
   }
@@ -303,7 +325,10 @@
   WF.tourTo = (i) => { tourI = i - 1; tourStep(); };  // for the screenshots
 
   // ---------- render and boot ----------
-  function render() { flushMap(); renderTop(); renderStrip(); renderPanels(); renderMapHead(); renderLog(); renderSys(); renderTicker(); }
+  function render() { flushMap(); renderTop();
+    if (B[S.board].host) { renderSys(); renderTicker(); $("viewHost").dispatchEvent(new CustomEvent("gt-render")); return; }  // the view repaints itself (times, zone switch)
+    renderStrip(); renderPanels(); renderMapHead(); renderLog(); renderSys(); renderTicker();
+  }
   WF.render = render;
   // 1.7.3: map sources are rebuilt once a frame, just before the page is drawn (every reply already asks for that
   // frame). The four pin replies each rebuilt every pin, popup and front count; replies landing together now share one.

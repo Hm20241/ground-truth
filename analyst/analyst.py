@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ground Truth analyst, v1.6 (2026-11-26; 1.6, GT 1.7.3, asked for: "run the analyst every 15 minutes on the feed":
+"""Ground Truth analyst, v1.7 (2026-11-26; 1.7 adds optional private_*.py plugins next to this file, see load_plugins; 1.6, GT 1.7.3, asked for: "run the analyst every 15 minutes on the feed":
 launchd runs `cycle` every 15 min, and a new whole picture is also due when the Feed has moved, see picture_due;
 1.5, 2026-11-21: 1.5 adds `translate`, English for non-English Feed items; 1.1 adds a slow mode that expires by itself, see config.json;
 1.2 explains the 0.4.0 feeds; 1.3 explains the Global Fishing Watch ship traffic counts; 1.4 adds the 0.11+
@@ -44,7 +44,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-ANALYST_VERSION = "1.6"
+ANALYST_VERSION = "1.7"
 PROMPT_VERSION = "ev1/pic3"
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONF_DIR = os.path.expanduser("~/.config/ground-truth")
@@ -527,6 +527,50 @@ def cmd_translate(dry):
         r.get("stored"), r.get("rejected"), r.get("total")))
 
 
+# --- 1.7: optional plugins -------------------------------------------------------------------------------
+# Any private_*.py next to this file may add commands. A plugin defines COMMANDS = {"name": callable(args)}
+# (args is the argparse namespace: .dry_run, .force) and may define register(host) to receive the helpers it needs
+# (host.api_get, host.api_post, host.call_claude, host.CFG, host.log, host.claude_ready). A plugin that is missing is
+# simply absent; one that fails to import is logged and skipped, never fatal.
+BUILTIN_COMMANDS = ["cycle", "events", "picture", "status", "translate"]
+PLUGINS = {}
+
+
+class _Host:
+    """What a plugin may use. Functions resolve the module globals at call time, so tests can swap them."""
+    CFG = CFG
+    log = staticmethod(lambda msg: log(msg))
+    api_get = staticmethod(lambda *a, **k: api_get(*a, **k))
+    api_post = staticmethod(lambda *a, **k: api_post(*a, **k))
+    call_claude = staticmethod(lambda *a, **k: call_claude(*a, **k))
+    claude_ready = staticmethod(lambda: claude_ready())
+    version = ANALYST_VERSION
+
+
+def load_plugins(directory=None):
+    import glob
+    import importlib.util
+    found = {}
+    for path in sorted(glob.glob(os.path.join(directory or HERE, "private_*.py"))):
+        name = os.path.basename(path)
+        try:
+            spec = importlib.util.spec_from_file_location("analyst_plugin_" + name[:-3], path)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            if callable(getattr(mod, "register", None)):
+                mod.register(_Host)
+            for cmd, fn in dict(getattr(mod, "COMMANDS", {})).items():
+                if callable(fn) and cmd not in BUILTIN_COMMANDS and cmd not in found:
+                    found[cmd] = fn
+                else:
+                    log("plugin %s: command %r ignored (not callable, built in, or taken)" % (name, cmd))
+        except Exception as e:
+            log("plugin %s not loaded: %s: %s" % (name, type(e).__name__, str(e)[:200]))
+    PLUGINS.clear()
+    PLUGINS.update(found)
+    return found
+
+
 def cmd_status():
     ov = api_get("analysis")
     pic = ov.get("picture") or {}
@@ -541,9 +585,11 @@ def cmd_status():
 
 def main():
     ap = argparse.ArgumentParser(description="Ground Truth analyst")
-    ap.add_argument("command", choices=["cycle", "events", "picture", "status", "translate"])
+    load_plugins()
+    ap.add_argument("command", choices=BUILTIN_COMMANDS + sorted(PLUGINS))
     ap.add_argument("--max", type=int, default=None, help="events per run (default from config)")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--force", action="store_true", help="plugin commands: run even when not due")
     a = ap.parse_args()
     load_cfg()
     if a.command == "status":
@@ -553,7 +599,8 @@ def main():
             "full (cycle every launchd tick, picture every %sh)" % CFG["picture_every_h"]))
         return cmd_status()
     os.makedirs(CACHE_DIR, exist_ok=True)
-    lock = open(os.path.join(CACHE_DIR, "translate.lock" if a.command == "translate" else "lock"), "w")
+    lock = open(os.path.join(CACHE_DIR, "translate.lock" if a.command == "translate" else
+                             a.command + ".lock" if a.command in PLUGINS else "lock"), "w")
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
@@ -563,6 +610,12 @@ def main():
         log("no Claude credentials yet: save the `claude setup-token` output to "
             "~/.config/ground-truth/claude_token (chmod 600). Skipping this run.")
         return
+    if a.command in PLUGINS:
+        try:
+            return PLUGINS[a.command](a)
+        except Exception as e:
+            log("ERROR %s %s: %s" % (a.command, type(e).__name__, e))
+            sys.exit(1)
     if a.command == "translate":
         try:
             return cmd_translate(a.dry_run)

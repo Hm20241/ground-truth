@@ -25,6 +25,7 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ROOT)
 from gt import alerts, analysis, extfeeds, feeds, geo, mymaps, translate  # noqa: E402
 extfeeds.load(feeds.REGISTRY)  # 0.11.0: per-release feed modules (gt/extfeeds.py)
+extfeeds.load_private(feeds.REGISTRY)  # 1.8.0: private modules (gt/private/), absent from the public copy
 
 VERSION = open(os.path.join(ROOT, "VERSION")).read().strip()
 WEB = os.path.join(ROOT, "web")
@@ -727,8 +728,12 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(_news_geo(), cache="no-store")
             if path == "/api/digest":
                 return self._json(_digest(), cache="no-store")
+            if path.startswith("/api/private/"):
+                hit = _private_get(path, u.query)
+                return self._json(*hit) if hit else self._json({"error": "not found"}, 404)
             if path == "/api/status":
                 return self._json({"version": VERSION, "now": feeds.now_iso(), "modules": extfeeds.status(),
+                                   "private_web": _private_web(),
                                    "streams": STREAMS["n"], "feeds": {
                     k: {"ok": v.get("ok"), "at": v.get("at"), "age_s": int(_age(k)) if v.get("at") else None,
                         "error": v.get("error"), "ms": v.get("ms"), "running": k in RUNNING,
@@ -749,10 +754,47 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json({"error": "%s" % type(e).__name__}, 500)
 
 
+def _private_web():
+    """1.8.0: script names in web/private/ (the private pages' code), so a page loads exactly what this server has.
+    Empty where the folder is absent (the public copy)."""
+    try:
+        return sorted(f for f in os.listdir(os.path.join(WEB, "private")) if re.fullmatch(r"[A-Za-z0-9_-]+\.js", f))
+    except OSError:
+        return []
+
+
+def _private_get(path, query):
+    try:
+        from gt.private import routes
+    except ImportError:
+        return None
+    return routes.get(path, urllib.parse.parse_qs(query))
+
+
 def _post(handler):
     """POST /api/analysis/{events,picture}: analyst results, and (1.5.0) POST /api/translations: English for
     non-English Feed items (gt/translate.py). Both token-gated with the analyst's token (see gt/analysis.py)."""
     path = urllib.parse.urlparse(handler.path).path
+    if path.startswith("/api/private/"):  # 1.8.0: private routes (gt/private/routes.py), absent from the public copy
+        try:
+            from gt.private import routes
+        except ImportError:
+            return handler._json({"error": "not found"}, 404)
+        try:
+            n = int(handler.headers.get("Content-Length") or 0)
+        except ValueError:
+            n = 0
+        if not 0 < n <= analysis.MAX_BODY:
+            return handler._json({"error": "body must be 1 byte to %d bytes" % analysis.MAX_BODY}, 413)
+        try:
+            body = json.loads(handler.rfile.read(n).decode("utf-8"))
+            hit = routes.post(path, body, handler.headers.get("X-GT-Token")) if isinstance(body, dict) else ({"error": "body must be a JSON object"}, 400)
+        except ValueError as e:
+            return handler._json({"error": str(e)[:200]}, 400)
+        except Exception as e:
+            traceback.print_exc()
+            return handler._json({"error": type(e).__name__}, 500)
+        return handler._json(*hit) if hit else handler._json({"error": "not found"}, 404)
     if path not in ("/api/analysis/events", "/api/analysis/picture", "/api/translations"):
         return handler._json({"error": "not found"}, 404)
     if not analysis.authorized(handler.headers.get("X-GT-Token")):

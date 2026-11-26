@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.8.0 (2026-11-26): optional private pages and routes (hooks only)
+- **For self-hosted copies:** the server can now load extra feed modules from a `gt/private/` folder, serve extra routes under `/api/private/`, and list extra page scripts from `web/private/` in `/api/status`. A small loader (`web/themes/private.js`) loads the ones that match the current theme and lets each theme add a tab, link, panel or board for them.
+- **Nothing changes where those folders are absent**, which includes this public copy: the loader makes no request and adds nothing.
+- **Analyst:** `analyst.py` loads optional `private_*.py` plugins that sit next to it, so an extra analysis job can be added without editing it.
+
 ## 1.7.4 (2026-11-26): the news wire covers a full day
 - **Server:** the news wire reply used to be cut to the newest 600 stories (about the last 10 hours) although the pages say "last 24 hours". It now carries a full day and more (about 3,600 stories, 38 hours on a busy day), and says how many hours back it reaches (`span_h`). Self-hosted copies that run the wire see this; the Pages copy does not carry the wire.
 

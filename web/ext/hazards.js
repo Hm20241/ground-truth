@@ -58,8 +58,17 @@
   // the pin's own country first when GDACS names it; none when GDACS names none. Quakes: the server's country for the epicentre.
   const gdCc = (p) => { const a = (p.affected || []).length ? p.affected : p.iso3 ? [p.iso3] : [];
     return !a.length ? undefined : a.includes(p.country) ? [p.country].concat(a.filter((c) => c !== p.country)) : a; };
+  // GDACS gives a flood's end as a day still to come (live 11-24 02:35Z: "Flood in Indonesia", episode updated 11-23 23:06Z,
+  // to 11-25 01:00Z), so the row sat "in 22h" above every newer item. An end not reached yet is not the latest news: the
+  // event sorts by GDACS's last update of it (modified), never later than now. Droughts and wildfires keep their day rule.
+  const latest = (p) => {
+    const t = isoMs(p.to) || isoMs(p.from), now = Date.now();
+    if (!(t > now) || dayOnly(p)) return t;
+    const m = isoMs(p.modified);
+    return m > 0 && m <= now ? m : now;
+  };
   GTX.stream({ key: "hazards", group: "hazards", label: "GDACS", data: () => GTX.S.feeds.hazards, items: (d) => feats(d).map((f) => { const p = f.properties;
-    return { id: "gd:" + p.id, ts: isoMs(p.to) || isoMs(p.from), day: dayOnly(p), title: `${p.alert ? p.alert + " alert: " : ""}${p.name || p.type_label || "Hazard"}`, url: p.url,
+    return { id: "gd:" + p.id, ts: latest(p), day: dayOnly(p), title: `${p.alert ? p.alert + " alert: " : ""}${p.name || p.type_label || "Hazard"}`, url: p.url,
       where: p.severity || "", badge: p.type_label, th: p.theatre || null, ll: pt(f), zoom: 5, cc: gdCc(p) }; }) });
   GTX.stream({ key: "quakes", group: "hazards", label: "Earthquakes", data: () => GTX.S.feeds.quakes, items: (d) => feats(d).map((f) => { const p = f.properties;
     return { id: "eq:" + p.id, ts: isoMs(p.time), title: `M${p.mag != null ? p.mag : "?"} ${p.kind && p.kind !== "earthquake" ? p.kind : "earthquake"}: ${p.place || p.country_name || ""}`,

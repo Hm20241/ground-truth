@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" data-gt-theme="atlas">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Ground Truth</title>
+<!-- Ground Truth 1.7.0, the Atlas theme: this page plus themes/atlas/. Icons, vendor/ and geo/ are the ones Classic uses. -->
+<link rel="icon" href="favicon.svg?v=1.7.0" type="image/svg+xml">
+<link rel="icon" href="icon-32.png?v=1.7.0" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1.7.0">
+<link href="vendor/maplibre-gl.css?v=5.6.0" rel="stylesheet">
+<link href="themes/atlas/atlas.css?v=1.7.0" rel="stylesheet">
+</head>
+<body>
+<a class="skip" href="#body">Skip to the summary</a>
+<div id="map" aria-label="World map of events"></div>
+
+<!-- Search and topic pills float over the top of the map (desk and phone) -->
+<div class="top" id="top">
+  <form class="search" id="searchform" role="search" autocomplete="off">
+    <span class="s-ico" aria-hidden="true" data-ico="search"></span>
+    <input id="q" type="search" enterkeyhint="search" placeholder="Search places, events, sources" aria-label="Search places, events and sources">
+    <button type="button" class="s-clear" id="qclear" aria-label="Clear the search" hidden data-ico="close"></button>
+  </form>
+  <div class="pills" id="pills" role="group" aria-label="What the map shows"></div>
+</div>
+
+<!-- The one sheet: a side panel on a desk, a bottom sheet on a phone -->
+<section class="sheet" id="sheet" aria-label="Ground Truth">
+  <button type="button" class="grab" id="grab" aria-label="Change the height of the sheet"><i></i></button>
+  <!-- Desk: title, clock and hide button, then the status light with the version, then the theme button under it.
+       Phone: only the status line and the theme button show, at the top of the sheet (hidden at its lowest height). -->
+  <header class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <span class="b-name">Ground Truth</span>
+    <button type="button" class="b-clock" id="clock" title="Switch between Eastern time and UTC"></button>
+    <button type="button" class="b-collapse" id="collapse" aria-label="Hide the panel" data-ico="left"></button>
+    <div class="b-status"><span class="b-live" id="live" role="status"><i></i><span id="livet">Loading</span></span><span class="b-ver" id="ver"></span></div>
+    <div class="b-theme" id="themebtn"></div>
+  </header>
+  <nav class="seg" id="seg" aria-label="Sections"></nav>
+  <div class="sheet-body" id="body" tabindex="-1"></div>
+  <div class="resize" id="resize" role="separator" aria-orientation="vertical" aria-label="Resize the panel" tabindex="0"></div>
+</section>
+<button type="button" class="reopen" id="reopen" aria-label="Show the panel" hidden data-ico="right"></button>
+
+<!-- Detail card (desk): the same card a feed entry and a map pin open -->
+<aside class="detail" id="detail" aria-label="Selected entry" hidden></aside>
+
+<!-- Phone tab bar -->
+<nav class="tabbar" id="tabbar" aria-label="Sections"></nav>
+
+<!-- Wall display: the map, the Now card and the newest entries; nothing to touch -->
+<div class="wall" id="wall" hidden>
+  <section class="w-now" id="wnow" aria-label="What is happening now"></section>
+  <section class="w-list" id="wlist" aria-label="Newest entries"></section>
+</div>
+
+<script src="vendor/maplibre-gl.js?v=5.6.0"></script>
+<script src="themes/switch.js?v=1.7.0"></script>
+<script src="themes/atlas/core.js?v=1.7.0"></script>
+<script src="themes/atlas/map.js?v=1.7.0"></script>
+<script src="themes/atlas/ui.js?v=1.7.0"></script>
+</body>
+</html>

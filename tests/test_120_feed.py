@@ -40,7 +40,7 @@ EXT = {n: read("web/ext/%s.js" % n) for n in ("wire", "hazards", "signals", "air
 check(tuple(map(int, VERSION.split("."))) >= (1, 2, 0), "VERSION is 1.2.0 or later (1.3.0: later releases keep the 1.2.0 Feed)")
 check(int((re.search(r'version: "1\.(\d+)"', APP) or [0, -1])[1]) >= 2, "GTX API version 1.2 or later")
 local = re.findall(r'(?:src|href)="((?:ext/|app\.js|style\.css)[^"]*)"', INDEX)
-check(len(local) == 9, "index.html loads style.css, seven extensions and app.js (%d)" % len(local))  # 1.5.3: outages.js
+check(len(local) == 10, "index.html loads style.css, eight extensions and app.js (%d)" % len(local))  # 1.5.3: outages.js; 1.6.0: fronts.js
 check(all(u.endswith("?v=" + VERSION) for u in local), "every local asset is cache-busted with ?v=" + VERSION)
 check('geo/theatres.json?v=%s' % VERSION in APP, "theatres.json is fetched relative, with ?v=" + VERSION)
 
@@ -221,7 +221,7 @@ check(len(b) == 1 and b[0]["title"] == "Routing drop: Syria" and b[0]["th"] == "
 ZONE_BLOCK = APP[APP.index("  // --- zone helpers"):APP.index("  // --- end zone helpers")]
 CORE = (line(APP, "  const isoMs = ") + ZONE_BLOCK + line(APP, "  const httpsUrl = ") + block(APP, "  function postKey(u) {")
         + APPFN + APP[APP.index("  // --- 1.4.0 title bar"):APP.index("  // --- end title bar")]  # 1.4.0: ccList, flags, titleBar
-        + block(APP, "  function streamItems() {") + line(APP, "  const postOnly = ") + line(APP, "  const inTheatre = ")
+        + block(APP, "  function notAhead(i, now) {") + block(APP, "  function streamItems() {") + line(APP, "  const postOnly = ") + line(APP, "  const inTheatre = ")
         + block(APP, "  function streamFiltered() {") + APP[APP.index("  // Core streams."):APP.index("  function buildRail() {")])
 CATS_SRC = APP[APP.index("  const CATS = {"):APP.index("};", APP.index("  const CATS = {")) + 3]
 NOW = 1795161600000  # 2026-11-20T08:00:00Z
@@ -373,8 +373,11 @@ check('matchMedia("(hover: hover) and (pointer: fine)")' in APP and "#gtip {" in
 check('title="Category: ${esc(cat)}"' in APP and 'data-h="6" title=' in INDEX, "tooltips: the title bar's category and the time range")
 check(".feed .tb {" in CSS and ".feed .tb .ct {" in CSS, "style.css styles the title bar")
 
-# 1.5.2: the GitHub Pages copy (and only it) adds "--GitHub" to the tab title
-check('if (PUBLIC && !/ --GitHub$/.test(document.title)) document.title += " --GitHub";' in APP and
-      APP.index("const PUBLIC = ") < APP.index('document.title += " --GitHub"') and APP.count("document.title") == 2,
-      "the tab title gains ' --GitHub' on a github.io host only, once, and nothing else sets the title")
+# 1.5.2 added "--GitHub" to the public copy's tab title here; 1.7.0 moved the title to themes/switch.js, which names
+# the copy on every theme page ("Ground Truth: Local / Server / GitHub"; tests/test_170_themes.py checks the rule)
+SWITCH = read("web/themes/switch.js")
+check("document.title" not in APP,
+      "app.js no longer sets the tab title")
+check('document.title = "Ground Truth: " + copy;' in SWITCH and SWITCH.count("document.title") == 1,
+      "themes/switch.js sets the tab title once, from the copy's host")
 print("%d checks passed" % ok)

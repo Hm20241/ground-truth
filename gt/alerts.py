@@ -538,6 +538,21 @@ def parse_sitrep(md):
             "messages": messages[:15], "incidents": incidents, "ended": ended}
 
 
+def _last_sunday(year, month):
+    d = dt.date(year + (month == 12), month % 12 + 1, 1) - dt.timedelta(days=1)
+    return d - dt.timedelta(days=(d.weekday() + 1) % 7)
+
+
+def kyiv_to_utc(t):
+    """Naive Kyiv wall time -> aware UTC. Kyiv is UTC+2, and UTC+3 from the last Sunday of March to the last Sunday of
+    October (01:00 UTC switches, as in the EU). The old rule ("+2 in Jan-Mar, Nov, Dec and after Oct 25") read late
+    March and late October an hour off, an alert an hour in the future. The repeated hour in October reads as summer."""
+    a = dt.datetime.combine(_last_sunday(t.year, 3), dt.time(1), dt.timezone.utc)
+    b = dt.datetime.combine(_last_sunday(t.year, 10), dt.time(1), dt.timezone.utc)
+    summer = t.replace(tzinfo=dt.timezone.utc) - dt.timedelta(hours=3)
+    return summer if a <= summer < b else t.replace(tzinfo=dt.timezone.utc) - dt.timedelta(hours=2)
+
+
 def parse_ubilling(d):
     """Fallback: oblast-level on/off only (no levels, no Russia/Poland)."""
     regions, unmatched = [], []
@@ -551,9 +566,7 @@ def parse_ubilling(d):
         nominal = r["id"] in ("UA-09", "UA-43", "UA-40")  # occupied: standing administrative alerts
         when = None
         try:
-            kyiv = dt.datetime.strptime(s.get("changed"), "%Y-%m-%d %H:%M:%S")
-            when = (kyiv - dt.timedelta(hours=2 if kyiv.month in (1, 2, 3, 11, 12) or kyiv.month == 10 and kyiv.day > 25 else 3)
-                    ).strftime("%Y-%m-%dT%H:%M:%SZ")  # Kyiv time, roughly; the fallback only needs minutes
+            when = kyiv_to_utc(dt.datetime.strptime(s.get("changed"), "%Y-%m-%d %H:%M:%S")).strftime("%Y-%m-%dT%H:%M:%SZ")
         except (TypeError, ValueError):
             pass
         regions.append(dict(r, name=r["en"], kind="nominal" if nominal else "alert", level=None, types=["air raid alert"],

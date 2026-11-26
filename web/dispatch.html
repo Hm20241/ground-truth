@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en" data-gt-theme="dispatch">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ground Truth</title>
+<!-- Ground Truth 1.7.0, theme "Dispatch": a light page that reads like a newspaper's live page. Read-only: GET requests only.
+     The page sits at the web root so api/, geo/, vendor/ and the icons stay relative; its own CSS and JS are in themes/dispatch/. -->
+<link rel="icon" href="favicon.svg?v=1.7.0" type="image/svg+xml">
+<link rel="icon" href="icon-32.png?v=1.7.0" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1.7.0">
+<link href="vendor/maplibre-gl.css?v=5.6.0" rel="stylesheet">
+<link href="themes/dispatch/dispatch.css?v=1.7.0" rel="stylesheet">
+</head>
+<body>
+<a class="skip" href="#main">Skip to the page</a>
+
+<header class="mast" id="mast">
+  <div class="wrap mast-row">
+    <a class="wordmark" href="#/" aria-label="Ground Truth, front page">Ground Truth</a>
+    <p class="strap">World conflict and disruption, from open sources</p>
+    <div class="mast-meta">
+      <span class="dateline"><span id="today">&nbsp;</span> <b id="clock">--:--</b></span>
+      <div class="zone" role="group" aria-label="Time zone for every time on the page">
+        <button type="button" data-tz="et" aria-pressed="true">Eastern</button><button type="button" data-tz="utc" aria-pressed="false">UTC</button>
+      </div>
+      <!-- live status and version on one line, the theme button directly under it -->
+      <div class="status">
+        <div class="status-line"><a class="live" id="live" href="#/sources" title="Source health"><i aria-hidden="true"></i><span id="livet">Loading</span></a><span class="ver" id="ver" title="Ground Truth version"></span></div>
+        <div class="themeslot" id="themeslot"></div>
+      </div>
+    </div>
+  </div>
+  <nav class="sections" aria-label="Sections">
+    <div class="wrap sections-row" id="nav"></div>
+  </nav>
+</header>
+
+<main id="main" tabindex="-1">
+
+  <!-- FRONT PAGE -->
+  <section class="view" id="v-home" data-view="home">
+    <div class="wrap">
+      <article class="lead-main" aria-labelledby="headline">
+        <p class="kicker"><span class="now">Now</span><span id="leadmeta">The analyst picture</span></p>
+        <h1 id="headline">Loading the picture</h1>
+        <p class="bluf" id="bluf"></p>
+        <p class="more"><a href="#/analysis">Read the full analyst picture</a></p>
+      </article>
+
+      <div class="rail">
+        <aside class="lead-side" aria-label="How serious, and what changed">
+          <div class="tension" id="tension"></div>
+          <h2 class="label">What changed</h2>
+          <ul class="changes" id="changes"></ul>
+          <p class="since" id="since"></p>
+        </aside>
+        <section class="latest" aria-labelledby="latest-h">
+          <div class="sec-head"><h2 id="latest-h">Latest on the map</h2><a href="#/map" class="all">Open the map</a></div>
+          <div class="feed compact" id="latestpins"></div>
+          <div class="sec-head second"><h2>Latest on the wire</h2><a href="#/feed" class="all">The full feed</a></div>
+          <p class="hint">Entries tagged with a topic. The full feed has everything.</p>
+          <div class="feed compact" id="latest"></div>
+        </section>
+      </div>
+
+      <div class="slot" id="slot-home">
+        <!-- The one map figure: it is moved between the front page, the map page and the wall view. -->
+        <figure class="mapfig" id="mapfig">
+          <div class="fig-head">
+            <h2 id="fig-h">Where</h2>
+            <div class="topics" id="topics" role="group" aria-label="What the map shows"></div>
+          </div>
+          <div class="mapbox">
+            <div id="map" aria-label="Map of events"></div>
+            <a class="mapopen" id="mapopen" href="#/map"><span>Open the map</span></a>
+            <button type="button" class="mapclose" id="mapclose" aria-label="Close the map and go back to the front page">Close</button>
+            <div class="maploading" id="maploading">Loading the map</div>
+          </div>
+          <figcaption id="mapcap">&nbsp;</figcaption>
+        </figure>
+      </div>
+
+      <section class="world" aria-labelledby="world-h">
+        <div class="sec-head"><h2 id="world-h">Theatre by theatre</h2><a href="#/conflict" class="all">Conflict section</a></div>
+        <div class="world-grid" id="world"></div>
+      </section>
+
+      <section class="briefs" aria-labelledby="briefs-h">
+        <div class="sec-head"><h2 id="briefs-h">Also on the watch</h2></div>
+        <div class="briefs-grid" id="briefs"></div>
+      </section>
+    </div>
+  </section>
+
+  <!-- MAP -->
+  <section class="view" id="v-map" data-view="map" hidden>
+    <div class="wrap mapwrap">
+      <div class="slot" id="slot-map"></div>
+      <aside class="inview" aria-labelledby="inview-h">
+        <div class="sec-head"><h2 id="inview-h">In view</h2><span class="count" id="inview-n"></span></div>
+        <p class="hint" id="inview-hint">Move the map: this list follows it.</p>
+        <div class="feed compact" id="inview"></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- FEED -->
+  <section class="view" id="v-feed" data-view="feed" hidden>
+    <div class="wrap feedwrap">
+      <header class="page-head">
+        <h1>The feed</h1>
+        <p class="standfirst" id="feedstand">Every dated entry from the event map, the news wire and Telegram, newest first.</p>
+      </header>
+      <div class="filters" id="filters">
+        <div class="filter">
+          <span class="flabel" id="fl-th">Theatre</span>
+          <div class="chips" id="thchips" role="group" aria-labelledby="fl-th"></div>
+          <select id="thsel" aria-labelledby="fl-th"></select>
+        </div>
+        <div class="filter">
+          <span class="flabel" id="fl-src">Source</span>
+          <div class="chips" id="srcchips" role="group" aria-labelledby="fl-src"></div>
+        </div>
+        <div class="filter">
+          <span class="flabel" id="fl-kind">Show</span>
+          <div class="chips" id="kindchips" role="group" aria-labelledby="fl-kind"></div>
+        </div>
+      </div>
+      <div class="feed full" id="feed" aria-live="off"></div>
+      <p class="feedmore"><button type="button" class="btn" id="feedmore">Show older entries</button></p>
+    </div>
+  </section>
+
+  <!-- SECTION PAGES (filled by dispatch-sections.js) -->
+  <section class="view" id="v-section" data-view="section" hidden>
+    <div class="wrap" id="section"></div>
+  </section>
+
+  <!-- WALL -->
+  <section class="view wall" id="v-wall" data-view="wall" hidden>
+    <div class="wall-lead">
+      <p class="wall-brand">Ground Truth <span id="wclock"></span></p>
+      <h1 id="wheadline"></h1>
+      <p class="wall-bluf" id="wbluf"></p>
+      <div class="tension" id="wtension"></div>
+      <ul class="wall-facts" id="wfacts"></ul>
+      <p class="wall-leave"><a href="#/home">Front page</a> · times are <span id="wzone">Eastern</span></p>
+    </div>
+    <div class="slot" id="slot-wall"></div>
+    <div class="wall-latest">
+      <h2>Latest</h2>
+      <div class="feed walllist" id="wlatest"></div>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar" aria-label="Main" id="tabbar">
+  <a href="#/" data-tab="home"><b>Now</b></a>
+  <a href="#/map" data-tab="map"><b>Map</b></a>
+  <a href="#/feed" data-tab="feed"><b>Feed</b></a>
+  <button type="button" id="tabsections" aria-expanded="false" aria-controls="sheet"><b>Sections</b></button>
+</nav>
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-head"><h2>Sections</h2><button type="button" class="btn" id="sheetclose">Close</button></div>
+  <div class="sheet-list" id="sheetlist"></div>
+</div>
+
+<footer class="foot">
+  <div class="wrap">
+    <p id="footnote">Ground Truth, Dispatch theme. Read-only: it shows the live data and changes nothing. Not a safety tool: follow official alerts.</p>
+    <p id="credits">Basemap © Esri. Event pins and front lines from a curated source map. Verified pins from GeoConfirmed and CIR Eyes on Russia, and from S2 Underground’s Iran kinetic events map (CC BY-NC-SA 4.0, layout changed). Headlines belong to their publishers.</p>
+  </div>
+</footer>
+
+<script src="vendor/maplibre-gl.js?v=5.6.0"></script>
+<script src="themes/switch.js?v=1.7.0"></script>
+<script src="themes/dispatch/dispatch.js?v=1.7.0"></script>
+<script src="themes/dispatch/dispatch-map.js?v=1.7.0"></script>
+<script src="themes/dispatch/dispatch-sections.js?v=1.7.0"></script>
+</body>
+</html>

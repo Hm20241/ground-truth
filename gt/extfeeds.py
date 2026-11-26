@@ -9,7 +9,7 @@ module never stops the server.
 
 ENABLED is what this release ships. GT_EXT_FEEDS (comma list, or "all") overrides it for local test runs.
 PUBLIC_OK only describes the source's terms; the public static mirror copies a fixed endpoint list
-(~/gt-public/live/publish_live.py), so a feed reaches it only when that list names it.
+(~/Projects/gt-public/live/publish_live.py), so a feed reaches it only when that list names it.
 """
 import importlib
 import os

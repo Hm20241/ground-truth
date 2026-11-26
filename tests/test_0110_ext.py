@@ -234,7 +234,8 @@ check(idx.count("?v=%s" % ver) >= 2 and all("?v=%s" % ver in l for l in ext), "p
 # so the page never shows an empty layer or tab for a feed the server does not run.
 EXT_MODULES = {"curated.js": ("geoconfirmed", "curated"), "hazards.js": ("hazards",), "wire.js": ("wire", "telegram"),
                "signals.js": ("signals",), "airspace.js": ("airspace",), "cyber.js": ("cyber",),
-               "outages.js": ("services", "disruption")}
+               "outages.js": ("services", "disruption"),
+               "fronts.js": ()}  # 1.6.0: battle fronts read the core source map, so the page always loads it
 files = sorted(n for n in os.listdir(os.path.join(PROJ, "web", "ext")) if n.endswith(".js"))
 check(set(files) == set(EXT_MODULES), "page: every extension file is mapped to its modules: %s" % files)
 check(all(m in extfeeds.ALL for ms in EXT_MODULES.values() for m in ms), "page: the map names only known modules")

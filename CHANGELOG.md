@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.7.0 (2026-11-25): four themes and a theme button
+- **Four ways to look at the same data.** A "Theme" button under the version and live status switches between them, and the browser remembers the choice.
+  - **Classic:** the page as it was, and still the default.
+  - **Dispatch:** a light page that reads like a newspaper. Headline and bottom line first, the map as one figure with five topic switches, the feed grouped by time, eight sections.
+  - **Atlas:** a full-screen map with search, nine topic buttons and one panel (Now, Feed, Topics, More).
+  - **Watch Floor:** a status board around the map: theatres by level, fronts, alerts, a time-stamped log and feed health, on six boards.
+- **How it is built:** a theme is one page at the web root (`index.html`, `dispatch.html`, `atlas.html`, `floor.html`) plus its own folder under `web/themes/`. `web/themes/switch.js` draws the button on every page; `web/themes/open.js` reopens the chosen theme on a plain visit. All URLs stay relative, so a copy served under a sub-path works unchanged.
+- **Same rules in every theme:** the three new themes merge the verified-pin sources with the source map's pins the way Classic does, and count the pins near a front line the same way (within 75 km, last 24 and 72 hours).
+- **Wall screens:** Dispatch at `#/wall`, Atlas with `?wall=1`, Watch Floor with `?wall`. No theme switches to its wall view by itself.
+- **Not everything is in the new themes yet.** Where a part of Classic is missing, the theme says "Not in this theme yet" and offers Classic.
+- **Tab title:** it now names the copy: "Ground Truth: GitHub" here, "Ground Truth: Server" on a self-hosted copy, "Ground Truth: Local" on `localhost`. (It replaces "--GitHub" from 1.5.2.)
+- **Fix:** warship name labels now switch off with the Ships layer.
+- New offline test `tests/test_170_themes.py`.
+
+## 1.6.0 (2026-11-24): battle fronts and map pin icons
+- **Battle fronts layer:** the front lines the source map's curator draws, restyled by kind (solid for a line of contact, dashed for a blockade or a supposed front, dotted for a defence line), with one marker per front and a list of the event pins within 75 km in the last 24 and 72 hours. Click a row to go there. These are the curator's lines, not a live trace.
+- **Pin icons:** from zoom 4 each event pin carries a small drawing for its kind (strike, aircraft, ship, bridge, rail, power and so on). The server names every icon the source map uses; ferry and bridge pins are no longer "Other".
+- `gt/mymaps.py` gives line overlays a `front_kind` and event pins a `glyph`; the page extension is `web/ext/fronts.js` (GTX API 1.5 adds glyph drawing for extensions).
+- New offline test `tests/test_160_fronts.py`.
+
+## 1.5.6 (2026-11-23): no Feed row in the future
+- A flood alert sorted by its forecast end sat at the top of the Feed as "in 22h". No timed row or map pin now sorts after the moment it was read; the source's own time stays in the row's tooltip.
+- A time written as "YYYY-MM-DD HH:MM" is read as UTC, not as the browser's zone.
+- The Kyiv-time fallback for air-raid alerts uses the EU daylight-saving rule.
+
 ## 1.5.5 (2026-11-21): Cloudflare Radar platform outages and cloud-region anomalies on the websites and AI / cloud layers (self-hosted only)
 - **`gt/services.py` 1.1** shows the two kinds of Radar record that 1.5.4 left out:
   - **Platform outages:** one online service going down. Each goes to its provider's layer: websites for services such as Microsoft 365, GitHub or Slack, AI / cloud for cloud providers.

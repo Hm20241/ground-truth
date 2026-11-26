@@ -106,6 +106,8 @@ out.dstEnd = [P.fmtT(T("2026-11-01T05:30:00Z")), P.zoneAbbr(T("2026-11-01T05:30:
 out.dayEt = [P.fmtDay("2026-11-19"), P.fmtDay(Date.UTC(2026, 10, 19)), P.when("2026-11-19")];
 out.whenEt = [P.when(t), P.when(t, false), P.when("2026-11-20T03:12:00Z"), P.when(null), P.when(""), P.when("garbage")];
 out.naive = [P.isoMs("2026-11-20T03:12:00") === t, P.isoMs("2026-11-20T03:12") === T("2026-11-20T03:12:00Z"), P.isoMs("2026-11-19T22:12:00-05:00") === t, P.isoMs("2026-11-19") === Date.UTC(2026, 10, 19)];
+// a space instead of the T: Chrome and node read "2026-11-20 03:12:00" as the browser's own zone (hours off, maybe ahead)
+out.naiveSpace = [P.isoMs("2026-11-20 03:12:00") === t, P.isoMs("2026-11-20 03:12") === t, P.isoMs("2026-11-20 03:12:00.25") === t + 250, P.isoMs("2026-11-20 03:12:00+02:00") === t - 7200000];
 out.ago = [P.ago(NOW - 20000), P.ago(NOW - 45 * 60000), P.ago(NOW - 90 * 60000), P.ago(NOW - 3 * 86400000), P.ago(NOW + 2 * 3600000), P.ago(NOW + 20 * 60000), P.ago(NOW + 20000)];
 out.axisEt = [P.axisLabel(T("2026-11-20T05:00:00Z")), P.axisLabel(T("2026-11-20T17:00:00Z")), P.axisLabel(T("2026-11-20T06:00:00Z")), P.axisLabel(T("2026-11-20T00:00:00Z"))];
 out.altEt = P.altTime(t);
@@ -143,6 +145,7 @@ if o:
     check(o["dayEt"] == ["11/19", "11/19", "11/19"], "a date-only value stays its own day in Eastern: %s" % o["dayEt"])
     check(o["whenEt"] == ["11/19 10:12 PM · 3h ago", "11/19 10:12 PM", "11/19 10:12 PM · 3h ago", "–", "–", "–"], "when(): %s" % o["whenEt"])
     check(all(o["naive"]), "isoMs: no-zone times are UTC, offsets and dates as before: %s" % o["naive"])
+    check(o.get("naiveSpace") == [True] * 4, "isoMs: a no-zone 'YYYY-MM-DD HH:MM[:SS]' is UTC too, never the browser's zone; with an offset it keeps it: %s" % o.get("naiveSpace"))
     check(o["ago"] == ["just now", "45m ago", "2h ago", "3d ago", "in 2h", "in 20m", "just now"], "ago(), past and future: %s" % o["ago"])
     check(o["axisEt"] == ["11/20", "noon", "", ""], "Eastern chart ticks: midnight date, noon: %s" % o["axisEt"])
     check(o["altEt"] == "11/20 03:12Z", "Eastern tooltip shows UTC: %s" % o["altEt"])
@@ -168,9 +171,45 @@ if o:
         runs.append(rr.stdout.strip() if rr.returncode == 0 else "ERR " + rr.stderr[:200])
     check(runs[0] == runs[1] == r.stdout.strip() and not runs[0].startswith("ERR"), "same output whatever the browser's own time zone (Chicago, Kolkata)")
 
+# ---------- no Feed row in the future (notAhead / pinNotAhead, run from app.js's own source) ----------
+check("notAhead(i); });" in APP and "st._d = d; st._its = its;" in APP.split("notAhead(i); });")[1][:80], "streamItems runs every stream item through notAhead before caching it")
+check("S.events.features.forEach((f) => pinNotAhead(f.properties, now));" in APP.split("function mergeEvents()")[1].split("function loadLive()")[0],
+      "mergeEvents runs every map pin (source map and extension pins) through pinNotAhead")
+check("aheadNote(i.ahead)" in APP and "aheadNote(p.ts_ahead)" in APP, "a clamped row's tooltip names the time the source gave")
+na = APP[APP.index("  function notAhead(i, now) {"):APP.index("  function streamItems() {")]
+NA_HARNESS = r"""
+const NOW = Date.UTC(2026, 10, 24, 2, 35);  // 2026-11-24 02:35Z = 9:35 PM EST on 11/23, the evening of the live report
+Date.now = () => NOW;
+const fmtD = (t) => "D" + t, fmtT = (t) => "T" + t;
+eval(%s + "\nglobalThis.aheadNote = aheadNote;");
+const H = 3600000, out = {};
+// GDACS flood with a forecast end (live: to 2026-11-25T01:00Z, 22 h ahead); a Kyiv wall time read as UTC (+2 h); a past
+// item; a date-only row (its own rule, dayAt); a non-finite time (dropped earlier by streamItems' filter)
+const its = [{ ts: Date.UTC(2026, 10, 25, 1) }, { ts: NOW + 2 * H }, { ts: NOW - H }, { ts: NOW + 20 * H, day: true }, { ts: NaN }].map((i) => notAhead(i));
+out.items = its.map((i) => [i.ts === NOW ? "now" : i.ts - NOW, i.ahead == null ? null : i.ahead - NOW]);
+out.again = notAhead(its[0], NOW + H).ts === NOW;  // a cached row stays where it was clamped
+const pins = [{ ts_ms: NOW + 3 * H, ts_source: "kml" }, { ts_ms: NOW - H, ts_source: "x-snowflake" }, { ts_ms: NOW + 5 * H, ts_source: "date" }, { ts_ms: null }];
+pins.forEach((p) => pinNotAhead(p, NOW));
+out.pins = pins.map((p) => [p.ts_ms === NOW ? "now" : p.ts_ms == null ? null : p.ts_ms - NOW, p.ts_ahead == null ? null : p.ts_ahead - NOW]);
+out.note = [aheadNote(NOW + H), aheadNote(undefined)];
+console.log(JSON.stringify(out));
+""" % json.dumps(na)
+nr = subprocess.run([NODE, "-e", NA_HARNESS], capture_output=True, text=True, timeout=60) if NODE else None
+no = json.loads(nr.stdout) if nr and nr.returncode == 0 and nr.stdout.strip() else {}
+check(bool(no), "notAhead harness ran" + ("" if no else ": " + ((nr.stderr if nr else "") or "")[:300]))
+if no:
+    H = 3600000
+    check(no["items"] == [["now", 22 * H + 25 * 60000], ["now", 2 * H], [-H, None], [20 * H, None], [None, None]],
+          "notAhead: a flood's forecast end and a +2 h wall-clock slip sit at now (source time kept); past and date-only rows untouched: %s" % no["items"])
+    check(no["again"] is True, "notAhead: a row already clamped stays put on a later pass")
+    check(no["pins"] == [["now", 3 * H], [-H, None], [5 * H, None], [None, None]], "pinNotAhead: a timed pin ahead of now sits at now; past, date-only and undated pins untouched: %s" % no["pins"])
+    check(no["note"][0].startswith(" · the source gave D") and no["note"][1] == "", "aheadNote: tooltip text only for a clamped row: %s" % no["note"])
+
 EXT_HARNESS = r"""
 const fs = require("fs"), vm = require("vm"), path = require("path");
 const dir = process.argv[1], FX = JSON.parse(process.argv[2]);
+const NOW = Date.UTC(2026, 10, 24, 2, 35);  // the live report: 2026-11-24 02:35Z
+Date.now = () => NOW;
 const noop = () => {}, el = () => null;
 globalThis.window = globalThis;
 globalThis.document = { addEventListener: noop, getElementById: el, querySelector: el, querySelectorAll: () => [], createElement: () => ({ style: {} }) };
@@ -186,6 +225,7 @@ for (const f of ["hazards", "cyber"]) vm.runInThisContext(fs.readFileSync(path.j
 GTX.S.feeds = FX;
 const out = {};
 for (const st of streams.filter((x) => x.key === "cyber" || x.key === "hazards")) out[st.key] = st.items(st.data()).map((i) => [i.id, !!i.day]);
+out.gdacsTs = Object.fromEntries(streams.find((x) => x.key === "hazards").items(FX.hazards).map((i) => [i.id, new Date(i.ts).toISOString()]));
 process.stdout.write(JSON.stringify(out));
 """
 EFX = {"cyber": {"items": [
@@ -197,15 +237,27 @@ EFX = {"cyber": {"items": [
     {"geometry": {"type": "Point", "coordinates": [10, 10]}, "properties": {"id": "DR1", "type": "DR", "from": "2025-12-21T00:00:00Z", "to": "2026-11-18T00:00:00Z"}},
     {"geometry": {"type": "Point", "coordinates": [10, 10]}, "properties": {"id": "WF1", "type": "WF", "from": "2026-11-19T00:00:00Z", "to": "2026-11-20T00:00:00Z"}},
     {"geometry": {"type": "Point", "coordinates": [10, 10]}, "properties": {"id": "EQ1", "type": "EQ", "from": "2026-11-20T00:00:00Z", "to": "2026-11-20T00:00:00Z"}},
-    {"geometry": {"type": "Point", "coordinates": [10, 10]}, "properties": {"id": "FL1", "type": "FL", "from": "2026-11-10T00:00:00Z", "to": "2026-11-20T06:12:00Z"}}]}}}
+    {"geometry": {"type": "Point", "coordinates": [10, 10]}, "properties": {"id": "FL1", "type": "FL", "from": "2026-11-10T00:00:00Z", "to": "2026-11-20T06:12:00Z"}},
+    # the live record of 2026-11-24 02:35Z: GDACS gives the flood's end a day ahead
+    {"geometry": {"type": "Point", "coordinates": [113.9, -0.8]}, "properties": {"id": "FL1104253", "type": "FL", "name": "Flood in Indonesia", "alert": "Green",
+     "from": "2026-10-24T01:00:00Z", "to": "2026-11-25T01:00:00Z", "modified": "2026-11-23T23:06:20Z", "current": True}},
+    {"geometry": {"type": "Point", "coordinates": [10, 10]}, "properties": {"id": "TC1", "type": "TC", "from": "2026-11-22T00:00:00Z", "to": "2026-11-26T12:00:00Z"}},
+    {"geometry": {"type": "Point", "coordinates": [10, 10]}, "properties": {"id": "FL2", "type": "FL", "from": "2026-11-22T01:00:00Z", "to": "2026-11-25T01:00:00Z", "modified": "2026-11-24T06:00:00Z"}},
+    {"geometry": {"type": "Point", "coordinates": [10, 10]}, "properties": {"id": "DR2", "type": "DR", "from": "2026-03-21T00:00:00Z", "to": "2026-11-25T00:00:00Z"}}]}}}
 er = subprocess.run([NODE, "-e", EXT_HARNESS, os.path.join(ROOT, "web", "ext"), json.dumps(EFX)], capture_output=True, text=True, timeout=60) if NODE else None
 eo = json.loads(er.stdout) if er and er.returncode == 0 and er.stdout.strip() else {}
 check(bool(eo), "extension stream harness ran" + ("" if eo else ": " + ((er.stderr if er else "") or "")[:300]))
 if eo:
     check(eo.get("cyber") == [["cy:kev:CVE-1", True], ["cy:atk:1", True], ["cy:rw:1", False], ["cy:kev:CVE-2", False]],
           "cyber: KEV and press-attack dates (UTC midnight) are date-only rows; claims and timed entries are not: %s" % eo.get("cyber"))
-    check(eo.get("hazards") == [["gd:DR1", True], ["gd:WF1", True], ["gd:EQ1", False], ["gd:FL1", False]],
+    check(eo.get("hazards") == [["gd:DR1", True], ["gd:WF1", True], ["gd:EQ1", False], ["gd:FL1", False], ["gd:FL1104253", False], ["gd:TC1", False], ["gd:FL2", False], ["gd:DR2", True]],
           "GDACS: droughts and wildfires (dates only) are date-only rows; quakes and floods are not: %s" % eo.get("hazards"))
+    g = eo.get("gdacsTs") or {}
+    check(g.get("gd:FL1104253") == "2026-11-23T23:06:20.000Z", "GDACS: a flood whose end is still ahead (live FL1104253, to 11-25 01:00Z) sorts by its last update, not 22 h in the future: %s" % g.get("gd:FL1104253"))
+    check(g.get("gd:TC1") == "2026-11-24T02:35:00.000Z" and g.get("gd:FL2") == "2026-11-24T02:35:00.000Z",
+          "GDACS: an end still ahead with no update time, or an update time ahead too, sits at now: %s %s" % (g.get("gd:TC1"), g.get("gd:FL2")))
+    check(g.get("gd:FL1") == "2026-11-20T06:12:00.000Z" and g.get("gd:EQ1") == "2026-11-20T00:00:00.000Z", "GDACS: an end already past still sorts the event (latest episode)")
+    check(g.get("gd:DR2") == "2026-11-25T00:00:00.000Z", "GDACS: a drought (date only) keeps its day; dayAt keeps it out of the future")
 check("GTX.fmtDay(i.ts_ms || i.ts) : when(i.ts)" in EXT["cyber.js"] and "From ${span(p, p.from)}" in EXT["hazards.js"], "Cyber tab and GDACS popup show those dates as days")
 
 print("%d checks passed" % (n - len(fails)) if not fails else "%d of %d checks FAILED" % (len(fails), n))

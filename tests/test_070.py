@@ -125,6 +125,16 @@ u = alerts.parse_ubilling(load("ubilling_sample.json"))
 ids = {x["id"]: x["kind"] for x in u["regions"]}
 check(u["unmatched"] == [] and ids.get("UA-09") == "nominal" and ids.get("UA-40") == "nominal", "fallback: all names map, occupied = nominal")
 check(ids.get("UA-12") == "alert" and "UA-46" not in ids, "fallback: Dnipropetrovsk on, Lviv off")
+# Kyiv wall time ("changed") -> UTC with the EU switch dates. The old rule took +2 for all of March and for October
+# 26-31, so late March (after the switch) and late October (before it, in 2027) read an hour late: in the future.
+K = lambda s: alerts.kyiv_to_utc(dt.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")).strftime("%Y-%m-%dT%H:%MZ")
+check(K("2026-11-24 04:30:00") == "2026-11-24T02:30Z" and K("2026-07-01 12:00:00") == "2026-07-01T09:00Z", "Kyiv: +2 in winter, +3 in summer")
+check(K("2026-03-29 02:59:00") == "2026-03-29T00:59Z" and K("2026-03-29 04:00:00") == "2026-03-29T01:00Z", "Kyiv: spring switch on the last Sunday of March (03-29 in 2026)")
+check(K("2026-03-30 12:00:00") == "2026-03-30T09:00Z", "Kyiv: late March after the switch is +3 (the old rule said 10:00Z, an hour ahead)")
+check(K("2027-10-28 12:00:00") == "2027-10-28T09:00Z" and K("2027-10-31 05:00:00") == "2027-10-31T03:00Z", "Kyiv: 2027 switches on 10-31, so 10-28 is still +3 (the old rule said 10:00Z)")
+check(K("2026-10-25 03:30:00") == "2026-10-25T00:30Z" and K("2026-10-25 04:00:00") == "2026-10-25T02:00Z", "Kyiv: autumn switch; the repeated hour reads as summer")
+uu = alerts.parse_ubilling({"states": {"Дніпропетровська область": {"alertnow": True, "changed": "2026-03-30 12:00:00"}}})
+check([x["since"] for x in uu["regions"]] == ["2026-03-30T09:00:00Z"], "fallback: a late-March 'changed' is +3 (%s)" % uu["regions"])
 
 # ---- Israel (Tzofar history + HFC messages); the lists are the sample, the clock is fixed
 cities = alerts._list_from("cities", load("tz_cities_sample.json"), 10)

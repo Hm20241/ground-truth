@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve this checkout's web/ against a running instance's API, read-only. v1.1, 2026-11-20 (Ground Truth 1.2.0).
+"""Serve this checkout's web/ against a running instance's API, read-only. v1.2, 2026-11-24 (1.2: GT_WEB picks the folder served).
 
 A page change can be tried on the real data before it is deployed, without running any feed locally (no third-party
 calls, no Firecrawl or AISStream use). Static files come from web/; every GET under /api/ is passed to
@@ -19,7 +19,7 @@ import urllib.parse
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-WEB = os.path.join(ROOT, "web")
+WEB = os.environ.get("GT_WEB") or os.path.join(ROOT, "web")  # 1.2: GT_WEB serves another copy of web/ (design prototypes)
 UPSTREAM = os.environ.get("GT_UPSTREAM", "http://127.0.0.1:8790/").rstrip("/") + "/"
 PORT = int(os.environ.get("GT_PORT", "8793"))
 PASS_HEADERS = ("Content-Type", "Cache-Control", "ETag", "Last-Modified")

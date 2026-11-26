@@ -572,3 +572,24 @@ button.clock:focus-visible, #tzchips .chip:focus-visible { outline: 2px solid va
 .ou-act li .t { font-weight: 500; overflow-wrap: anywhere; }
 .ou-act li .t a { color: inherit; }
 .ou-act li.nl { cursor: default; }
+
+/* 1.6.0: pin glyphs and the battle-fronts list */
+.glico { width: 16px; height: 16px; vertical-align: -3px; }
+.frlist { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+.frlist:empty { display: none; }
+.frrow { display: flex; align-items: center; gap: 6px; width: 100%; padding: 3px 6px; border: 1px solid transparent; border-radius: 5px; background: none; color: var(--text, #d7dbe0); font: 11.5px var(--mono); text-align: left; cursor: pointer; }
+.frrow:hover, .frrow:focus-visible { border-color: #ff4d4d66; background: #ff4d4d14; }
+.frrow .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.frrow .ct { color: var(--muted); }
+.frrow .ct.hot { color: #ff8a8a; font-weight: 600; }
+
+/* 1.7.0: themes. The theme button sits under the version / live pill; themes/switch.js draws it and reads these. */
+:root {
+  --gtt-size: 12px; --gtt-h: 25px; --gtt-radius: 99px; --gtt-bg: var(--panel-2); --gtt-fg: var(--text); --gtt-line: var(--line-2);
+  --gtt-accent: var(--accent); --gtt-menu-bg: var(--panel-2); --gtt-menu-fg: var(--text); --gtt-menu-line: var(--line-2); --gtt-hover: rgba(255, 255, 255, .08);
+}
+.livewrap { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; flex: none; }
+.themeslot { display: flex; }
+.themeslot .gtt-btn { padding: 0 9px; }
+@media (min-width: 901px) { :root { --gtt-h: 22px; } .livewrap { gap: 4px; } }
+@media (max-width: 900px) { :root { --gtt-h: 22px; } .livewrap { gap: 1px; } .themeslot .gtt-k { display: none; } }

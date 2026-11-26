@@ -1,7 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-gt-theme="classic">
 <head>
 <meta charset="utf-8">
+<!-- 1.7.0: themes. A plain visit opens the theme this browser chose last (themes/open.js); this page is Classic -->
+<script src="themes/open.js?v=1.7.0"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ground Truth</title>
 <!-- 1.5.1: icon files beside the page (relative, so they work under /gt/ and on github.io); Safari and iOS skip an inline SVG icon -->
@@ -11,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800&family=Overpass+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link href="vendor/maplibre-gl.css?v=5.6.0" rel="stylesheet">
-<link href="style.css?v=1.5.5" rel="stylesheet">
+<link href="style.css?v=1.7.0" rel="stylesheet">
 </head>
 <body>
 <div class="app">
@@ -19,7 +21,7 @@
     <button class="icon-btn only-narrow" id="btnRail" aria-label="Theatres and layers" aria-controls="rail" aria-expanded="false">☰</button>
     <div class="brand" title="Ground Truth: a global conflict watch floor built from open sources"><span class="mark"></span><div><b>GROUND TRUTH</b><small>Global conflict watch floor</small></div></div>
     <button type="button" class="clock" id="clock"><span id="utc">--:--:--</span><small id="clockz">ET</small></button>
-    <div class="live" id="live"><span class="ver" id="livev"></span><i class="ldot" aria-hidden="true"></i><span class="lbl" aria-live="polite"><span class="lt" id="livet">Connecting</span><span class="ldown" id="liven"></span></span></div>
+    <div class="livewrap"><div class="live" id="live"><span class="ver" id="livev"></span><i class="ldot" aria-hidden="true"></i><span class="lbl" aria-live="polite"><span class="lt" id="livet">Connecting</span><span class="ldown" id="liven"></span></span></div><span class="themeslot" id="themeslot"></span></div>
     <div class="kpis" id="kpis"></div>
   </header>
   <!-- 1.5.0: news ticker: the newest timed Feed items (app.js renderTicker) -->
@@ -98,13 +100,16 @@
 <!-- H3 hexagon decoder for the GPSJAM layer (ext/airspace.js); h3-js 4.5.0, Apache-2.0, from the npm tarball -->
 <script src="vendor/h3-js.umd.js?v=4.5.0"></script>
 <!-- page extensions (web/ext/): load before app.js, which runs their queued setup -->
-<script src="ext/curated.js?v=1.5.5"></script>
-<script src="ext/airspace.js?v=1.5.5"></script>
-<script src="ext/hazards.js?v=1.5.5"></script>
-<script src="ext/signals.js?v=1.5.5"></script>
-<script src="ext/cyber.js?v=1.5.5"></script>
-<script src="ext/outages.js?v=1.5.5"></script>
-<script src="ext/wire.js?v=1.5.5"></script>
-<script src="app.js?v=1.5.5"></script>
+<script src="ext/curated.js?v=1.7.0"></script>
+<script src="ext/airspace.js?v=1.7.0"></script>
+<script src="ext/hazards.js?v=1.7.0"></script>
+<script src="ext/signals.js?v=1.7.0"></script>
+<script src="ext/cyber.js?v=1.7.0"></script>
+<script src="ext/outages.js?v=1.7.0"></script>
+<script src="ext/wire.js?v=1.7.0"></script>
+<script src="ext/fronts.js?v=1.7.0"></script>
+<!-- 1.7.0: theme button under the version / live pill (shared by every theme page) -->
+<script src="themes/switch.js?v=1.7.0" data-mount="#themeslot"></script>
+<script src="app.js?v=1.7.0"></script>
 </body>
 </html>

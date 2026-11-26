@@ -30,7 +30,7 @@
    stream and the post-text button.
    1.5.1: a date-only Feed row never sorts into the future (dayAt): a source ahead of the page's zone (Taiwan MND) can
    name a day that has not begun here yet.
-   1.5.2: on the GitHub Pages copy the tab and window title read "Ground Truth --GitHub".
+   1.5.2: on the GitHub Pages copy the tab and window title read "Ground Truth --GitHub". (1.7.0: "Ground Truth: GitHub", set in themes/switch.js.)
    1.5.3: Feed groups Power, Web, AI / cloud and Cell for the outage layers (ext/outages.js).
    1.5.4: no change here (cache-busting only); ext/outages.js 1.1 labels the Cloudflare Radar API links.
    1.5.5: no change here (cache-busting only); ext/outages.js 1.2: Cloudflare Radar platform / cloud-region records. */
@@ -171,9 +171,9 @@
   // 1.4.2: a core layer's first visibility follows its checkbox, or its default before the list is drawn
   const layVis = (k) => { const el = document.querySelector(`#layers input[data-layer="${k}"]`), row = LAYERS.find((l) => l[0] === k); return { visibility: (el ? el.checked : !row || row[3]) ? "visible" : "none" }; };
   const GROUPS = {
-    events: ["ev-halo", "ev-pt", "ev-label"], overlays: ["ov-fill", "ov-line", "ov-border", "ov-lane"], front: ["front-fill", "front-line"],
+    events: ["ev-halo", "ev-pt", "ev-ico", "ev-label"], overlays: ["ov-fill", "ov-line", "ov-border", "ov-lane"], front: ["front-fill", "front-line"],
     thermal: ["th-pt"], ukmto: ["uk-pt"], mil: ["mil-pt", "mil-label"], gdelt: ["gd-pt"], czib: ["cz-fill", "cz-line"], cables: ["cab-line"],
-    ships: ["ship-trk", "ship-pt", "ship-arrow", "ship-listed", "ais-nocov", "ais-nocov-label"], choke: ["pw-pt", "pw-label"], outages: ["out-fill", "out-line"], advisories: ["adv-fill", "adv-line"], gfw: ["gfw-fill", "gfw-line", "gfw-gap"],
+    ships: ["ship-trk", "ship-pt", "ship-mil-lbl", "ship-arrow", "ship-listed", "ais-nocov", "ais-nocov-label"], choke: ["pw-pt", "pw-label"], outages: ["out-fill", "out-line"], advisories: ["adv-fill", "adv-line"], gfw: ["gfw-fill", "gfw-line", "gfw-gap"],
     alerts: ["ar-fill", "ar-line", "ar-dash"], israel: ["il-fill", "il-line", "il-halo", "il-pt", "il-label"],
     embassy: ["em-pt", "em-label"],
   };
@@ -254,6 +254,52 @@
       map.addImage("ac-" + r + sfx, { width: 96, height: 96, data: c.getContext("2d").getImageData(0, 0, 96, 96).data }, { pixelRatio: 2 });
     }));
   }
+  // 1.6.0: pin glyphs. A source-map pin carries a My Maps icon; ICON_GLYPH names each code after the map's own
+  // icon file (1571-fire, 1569-ferry, 1812-hunting = a rifleman firing, 1830-mormon = a trumpeter ...), read from
+  // the map page on 2026-11-24 (gt/mymaps.py ICONS). The glyphs are drawn here in a 24-unit box, not copied.
+  // fill: even-odd paths (so eye sockets and windows cut out), stroke: [path, width] with round caps.
+  const GLYPHS = {
+    megaphone: { fill: "M3 9.5H7.5L17 4.5V19.5L7.5 14.5H3Z M7.2 15.6L9.6 21H12.4L10.3 16.3Z", stroke: [["M19.6 9.2Q21.4 12 19.6 14.8", 1.6]] },
+    fire: { fill: "M12.6 2C13.4 6.2 18 8.4 18 14A6 6 0 0 1 6 14C6 11 7.6 9.4 8.8 7.6C9.3 9.6 10.2 10.6 11.2 10.8C11 7.6 11.2 4.4 12.6 2Z M12 13.2C13 15 14.4 15.6 14.4 17.4A2.4 2.4 0 0 1 9.6 17.4C9.6 15.8 11 15 12 13.2Z" },
+    plane: { fill: "M12 1.8C12.9 1.8 13.3 3 13.3 4.6V9L21.5 14.2V16.2L13.3 13.7V18.4L15.8 20.3V21.9L12 20.8L8.2 21.9V20.3L10.7 18.4V13.7L2.5 16.2V14.2L10.7 9V4.6C10.7 3 11.1 1.8 12 1.8Z" },
+    officer: { fill: "M7.2 5.9L8.6 2.6H15.4L16.8 5.9Z M12 6.6A3.3 3.3 0 1 1 11.99 6.6Z M4.6 21.4C4.6 16.4 7.6 14 12 14C16.4 14 19.4 16.4 19.4 21.4Z" },
+    truck: { fill: "M1.8 6.5H14V16.5H1.8Z M15.2 9.5H19.2L22.2 12.8V16.5H15.2Z M6 15.2A2.5 2.5 0 1 1 5.99 15.2Z M18.2 15.2A2.5 2.5 0 1 1 18.19 15.2Z" },
+    gunner: { fill: "M16.4 4A2.7 2.7 0 1 1 16.39 4Z M12.4 10.4H19.6L20.2 21.4H13Z M1.8 8.6H13.4V10.6L1.8 9.9Z M9.4 10.4H11.4V13.2H9.4Z" },
+    ship: { fill: "M2.6 13.4H21.4L18.6 18.6H5.4Z M6.2 8.8H17.8V12.4H6.2Z M10.4 4.6H13.6V7.8H10.4Z", stroke: [["M2.6 21.4Q4.2 19.8 5.8 21.4T9 21.4T12.2 21.4T15.4 21.4T18.6 21.4T21.8 21.4", 1.5]] },
+    wreck: { fill: "M3.4 13.6L19.6 6.4L18.4 13.2L8.4 17.8Z M9.8 9.6L7 3.4L8.9 2.7L12.2 8.6Z", stroke: [["M2.6 21.4Q4.2 19.8 5.8 21.4T9 21.4T12.2 21.4T15.4 21.4T18.6 21.4T21.8 21.4", 1.5], ["M14.2 15.4L17.8 19", 1.5], ["M17.8 15.4L14.2 19", 1.5]] },
+    skull: { fill: "M12 2.4C7.4 2.4 4.8 5.4 4.8 9.2C4.8 11.6 6 13.3 7.8 14.2V16.6H16.2V14.2C18 13.3 19.2 11.6 19.2 9.2C19.2 5.4 16.6 2.4 12 2.4Z M9.2 7.4A1.9 1.9 0 1 0 9.21 7.4Z M14.8 7.4A1.9 1.9 0 1 0 14.81 7.4Z M12 11.2L10.9 13.4H13.1Z", stroke: [["M4.6 18.2L19.4 22", 2], ["M19.4 18.2L4.6 22", 2]] },
+    bridge: { fill: "M1.8 13H22.2V15.6H1.8Z M6 4.4H8.2V20.6H6Z M15.8 4.4H18V20.6H15.8Z", stroke: [["M1.8 12L7.1 5", 1.3], ["M7.1 5Q12 13.4 16.9 5", 1.3], ["M16.9 5L22.2 12", 1.3]] },
+    helicopter: { fill: "M4.6 12.4C4.6 9.6 7.4 8.4 10.6 8.4C14.6 8.4 16.8 10.4 16.8 13C16.8 15.2 14.8 16.2 12 16.2H8.2C6 16.2 4.6 14.6 4.6 12.4Z M16 10.8L22.2 9.2V11.4L16.6 13.6Z M10 5.6H11.8V8.6H10Z", stroke: [["M2.6 5.4H19.2", 1.7], ["M5.6 19.6H16", 1.5], ["M7.8 16.2V19.6", 1.3], ["M13 16.2V19.6", 1.3]] },
+    train: { fill: "M6.4 2.6H17.6A2.4 2.4 0 0 1 20 5V15.4A2.4 2.4 0 0 1 17.6 17.8H6.4A2.4 2.4 0 0 1 4 15.4V5A2.4 2.4 0 0 1 6.4 2.6Z M6.4 5.4H11.2V10.4H6.4Z M12.8 5.4H17.6V10.4H12.8Z M8 12.8A1.4 1.4 0 1 0 8.01 12.8Z M16 12.8A1.4 1.4 0 1 0 16.01 12.8Z", stroke: [["M7.6 18.4L5.4 22", 1.6], ["M16.4 18.4L18.6 22", 1.6]] },
+    bolt: { fill: "M13.8 1.8L5.6 13.2H11L9.4 22.2L18.4 10.2H12.8Z" },
+    swords: { stroke: [["M4 3.6L17.2 16.8", 2.2], ["M20 3.6L6.8 16.8", 2.2], ["M14.4 19.2L19.6 14", 2], ["M9.6 19.2L4.4 14", 2], ["M17.6 17.2L20.6 20.4", 2.4], ["M6.4 17.2L3.4 20.4", 2.4]] },
+    anchor: { stroke: [["M12 3.2A1.9 1.9 0 1 1 11.99 3.2Z", 1.7], ["M12 7V20.6", 2.2], ["M8 10.4H16", 2], ["M4.2 13.6C4.8 18.4 8.4 20.6 12 20.6C15.6 20.6 19.2 18.4 19.8 13.6", 2]] },
+    shield: { fill: "M12 2.2L20.2 5.2V11C20.2 16.2 16.6 20 12 21.8C7.4 20 3.8 16.2 3.8 11V5.2Z M12 5.4L6.6 7.4V11C6.6 14.6 8.8 17.2 12 18.6Z" },
+  };
+  const ICON_GLYPH = { 1830: "megaphone", 1571: "fire", 1504: "plane", 1657: "officer", 1722: "truck", 1812: "gunner", 1569: "ship",
+    1864: "wreck", 1556: "skull", 1528: "bridge", 1593: "helicopter", 1716: "train", 1660: "bolt" };
+  // pins from the other curated sources have no map icon: the clear categories borrow one, the rest stay a plain dot
+  const CAT_GLYPH = { strike: "fire", energy: "bolt", maritime: "ship", casualty: "skull", aviation: "plane", drone: "plane", forces: "officer" };
+  const glyphOf = (p) => (p.source && p.source !== "map" ? "" : ICON_GLYPH[p.icon] || (GLYPHS[p.glyph] ? p.glyph : "")) || CAT_GLYPH[p.category] || "";
+  // A glyph on a canvas: ink colour, optional disc behind it ({fill, ring}); the glyph fills `scale` of the box.
+  function drawGlyph(name, px, ink, disc, scale) {
+    const c = document.createElement("canvas"), sh = GLYPHS[name]; c.width = c.height = px;
+    const g = c.getContext("2d");
+    if (disc) {
+      g.beginPath(); g.arc(px / 2, px / 2, px / 2 - (disc.ring ? 1.5 : 0.5), 0, Math.PI * 2); g.fillStyle = disc.fill; g.fill();
+      if (disc.ring) { g.lineWidth = Math.max(2, px / 22); g.strokeStyle = disc.ring; g.stroke(); }
+    }
+    if (!sh) return c;
+    const k = (px / 24) * (scale || (disc ? 0.62 : 1));
+    g.translate(px / 2 - 12 * k, px / 2 - 12 * k); g.scale(k, k); g.lineCap = g.lineJoin = "round";
+    g.fillStyle = g.strokeStyle = ink;
+    if (sh.fill) g.fill(new Path2D(sh.fill), "evenodd");
+    (sh.stroke || []).forEach(([d, w]) => { g.lineWidth = w; g.stroke(new Path2D(d)); });
+    return c;
+  }
+  const mapImage = (id, c) => map.hasImage(id) || map.addImage(id, { width: c.width, height: c.height, data: c.getContext("2d").getImageData(0, 0, c.width, c.height).data }, { pixelRatio: 2 });
+  const PIN_INK = "#0d0f11";
+  const glyphUrl = (name, col) => drawGlyph(name, 40, PIN_INK, { fill: col }).toDataURL();
   // Planespotters photo API, asked by the browser: their terms want server clients to send a contact address, and the
   // image must load from their CDN into the viewer's browser, unchanged, credited, the thumbnail linking to its photo page.
   const PHOTOS = new Map(); // hex -> Promise<html>, this session only (their terms allow caching answers for 24 h)
@@ -279,6 +325,8 @@
 
   map.on("load", () => {
     addAircraftImages(); addShipImages();
+    // 1.6.0: a pin badge ("pin-<glyph>-<rrggbb>": category-coloured disc, dark glyph) is drawn the first time a pin asks for it
+    map.on("styleimagemissing", (e) => { const m = /^pin-([a-z]+)-([0-9a-f]{6})$/.exec(e.id); if (m && GLYPHS[m[1]]) mapImage(e.id, drawGlyph(m[1], 64, PIN_INK, { fill: "#" + m[2] })); });
     ["cables", "advisories", "outages", "gfw", "czib", "front", "alertreg", "ilarea", "overlays", "gdelt", "thermal", "gfwgap", "aisbox", "pw", "shiptrk", "ships", "ukmto", "events", "mil", "embpt", "ilpt"].forEach((id) => map.addSource(id, { type: "geojson", data: empty }));
     map.addLayer({ id: "cab-line", type: "line", source: "cables", layout: layVis("cables"), paint: { "line-color": "#22d3ee", "line-opacity": 0.28, "line-width": 0.8 } });
     map.addLayer({ id: "adv-fill", type: "fill", source: "advisories", layout: layVis("advisories"), paint: { "fill-color": ["match", ["get", "level"], 4, "#f05252", "#f2853d"], "fill-opacity": ["match", ["get", "level"], 4, 0.12, 0.07] } });
@@ -351,9 +399,14 @@
     map.addLayer({ id: "ev-halo", type: "circle", source: "events", filter: ["==", ["get", "recent"], true], paint: {
       "circle-radius": 14, "circle-color": ["get", "col"], "circle-opacity": 0.18, "circle-blur": 0.6 } });
     map.addLayer({ id: "ev-pt", type: "circle", source: "events", paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 3.6, 6, 6, 10, 8], "circle-color": ["get", "col"],
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 3.6, 4, 7, 6, 9.5, 10, 12], "circle-color": ["get", "col"],  // 1.6.0: room for the glyph
       "circle-stroke-color": ["case", ["has", "thermal"], "#ff7a1a", "#0d0f11"], "circle-stroke-width": ["case", ["has", "thermal"], 2.6, 1.2],
       "circle-opacity": ["case", ["get", "est"], 0.75, 1] } });
+    // 1.6.0: the badge covers its dot exactly from zoom 4 (a 64 px image at pixelRatio 2 is 32 px wide, so size = radius / 16);
+    // the dot stays underneath for the click, the thermal ring and the dark edge
+    map.addLayer({ id: "ev-ico", type: "symbol", source: "events", minzoom: 4, filter: ["!=", ["get", "pin"], ""], layout: {
+      "icon-image": ["get", "pin"], "icon-size": ["interpolate", ["linear"], ["zoom"], 4, 7 / 16, 6, 9.5 / 16, 10, 12 / 16],
+      "icon-allow-overlap": true, "icon-ignore-placement": true }, paint: { "icon-opacity": ["case", ["get", "est"], 0.75, 1] } });
     map.addLayer({ id: "ev-label", type: "symbol", source: "events", minzoom: 5.5, layout: {
       "text-field": ["get", "title"], "text-size": 11, "text-offset": [0, 1.1], "text-anchor": "top", "text-max-width": 12, "text-font": ["Open Sans Regular"] },
       paint: { "text-color": "#cfd5db", "text-halo-color": "#0d0f11", "text-halo-width": 1.4 } });
@@ -485,7 +538,7 @@
     if (p.ukmto) extra += `<div class="post">⚓ <b>UKMTO incidents within 60 km:</b> ${p.ukmto.map((u) => `#${u.num} ${esc(u.type)} (${esc(u.date)})`).join(", ")}</div>`;
     // 1.5.0: no "Load post text" on the public copy: GitHub Pages has no api/xpost, so the button could only fail
     const html = `<div class="pop"><h5>${esc(p.title)}</h5>
-      <div class="meta"><span style="color:${cat[1]}">●</span> ${esc(cat[0])} · ${p.ts_ms ? (p.ts_source === "date" ? fmtDay(p.ts_ms) + " (day only)" : fmtD(p.ts_ms) + " " + fmtT(p.ts_ms) + (p.ts_source === "batch-estimate" ? " (est.)" : "") + " · " + ago(p.ts_ms)) : "undated"} · ${esc(where || (THEATRES[p.theatre] || [p.theatre])[0])}</div>
+      <div class="meta">${glyphOf(p) ? `<img class="glico" src="${glyphUrl(glyphOf(p), cat[1])}" alt="">` : `<span style="color:${cat[1]}">●</span>`} ${esc(cat[0])}${!p.source && p.icon_label && p.icon_label !== "Other" ? ` · map pin: ${esc(p.icon_label)}` : ""} · ${p.ts_ms ? (p.ts_source === "date" ? fmtDay(p.ts_ms) + " (day only)" : fmtD(p.ts_ms) + " " + fmtT(p.ts_ms) + (p.ts_source === "batch-estimate" ? " (est.)" : "") + " · " + ago(p.ts_ms)) : "undated"} · ${esc(where || (THEATRES[p.theatre] || [p.theatre])[0])}</div>
       ${p.graphic >= 4 ? `<div class="stale">Warning: the linked footage is graphic (${esc(p.source_label || "source")} level ${p.graphic} of 5).</div>` : ""}
       <div>${({ x: "𝕏", reddit: "Reddit", telegram: "Telegram" })[p.platform] || "Web"}${p.handle ? ` · <b>${esc(p.handle)}</b>` : ""} · ${p.link_private || !p.url ? `<span class="muted">${p.url ? "private channel link (members only)" : "no source link"}</span>` : `<a href="${esc(p.url)}" target="_blank" rel="noopener">Open source ↗</a>`}</div>
       ${extra}
@@ -572,6 +625,8 @@
       seen.add(p.id); extra.push(f);
     }));
     S.events = extra.length ? { ...S.eventsBase, features: S.eventsBase.features.concat(extra) } : S.eventsBase;
+    const now = Date.now();
+    S.events.features.forEach((f) => pinNotAhead(f.properties, now));  // 1.5.6: no pin dated after now (see notAhead)
   }
   function loadLive() {
     api("feed/mil").then((r) => {
@@ -716,9 +771,7 @@
   // The server sends timestamps only; the page works out "sirens now" etc. on its own clock, so the public copy
   // (refreshed every ~10 min) shows an old siren as past, never as live.
   const PUBLIC = /\.github\.io$/i.test(location.hostname);
-  // 1.5.2, asked for: add "--GitHub" to the GitHub page's title bar / tab text, only for GitHub. Self-hosted copies and
-  // the Home Assistant frame keep "Ground Truth".
-  if (PUBLIC && !/ --GitHub$/.test(document.title)) document.title += " --GitHub";
+  // 1.7.0: the tab title ("Ground Truth: Local / Server / GitHub") is set for every theme in themes/switch.js
   const AL_POLL = PUBLIC ? 60000 : 10000;
   const AR_COL = { red: "#f05252", yellow: "#f2b33d", nominal: "#6b7280", launch: "#c084fc" };
   const IL_COL = { siren: "#f05252", shelter: "#f2853d", early: "#fde047", ended: "#3ecf8e", recent: "#8a929b" };
@@ -734,7 +787,7 @@
   const tzT = (ms, tz) => new Date(ms).toLocaleTimeString("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit" });
   const span = (s) => { const m = Math.max(0, Math.round(s / 60)); return m < 60 ? m + " min" : Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min"; };
   const agoS = (s) => (s < 120 ? Math.max(0, Math.round(s)) + " s ago" : span(s) + " ago");
-  const isoMs = (s) => (s ? Date.parse(/T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(s) ? s + "Z" : s) : null);  // 1.3.0: a time with no zone is the server's UTC, never the browser's
+  const isoMs = (s) => (s ? Date.parse(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(s) ? s.replace(" ", "T") + "Z" : /T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(s) ? s + "Z" : s) : null);  // 1.3.0: a time with no zone is the server's UTC, never the browser's (1.5.6: "YYYY-MM-DD HH:MM" too, which Chrome reads as browser-local)
   const httpsUrl = (u) => (/^https:\/\//i.test(u || "") ? u : null);
   const REDUCED = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
   let REG = new Map(); // ISO 3166-2 code -> region shape (Natural Earth, simplified)
@@ -1021,13 +1074,14 @@
       return true;
     });
   }
+  const pinOf = (p) => { const g = glyphOf(p); return g ? "pin-" + g + "-" + (CATS[p.category] || CATS.other)[1].slice(1).toLowerCase() : ""; };
   function render() {
     if (!S.events) return;
     const list = filtered();
     const newest = Math.max(...S.events.features.map((f) => f.properties.ts_ms || 0));
     const ids = new Set(list.map((f) => f.properties.id));
     map.getSource("events").setData({ type: "FeatureCollection", features: list.map((f) => ({ ...f, properties: { ...f.properties,
-      col: (CATS[f.properties.category] || CATS.other)[1], recent: !!f.properties.ts_ms && newest - f.properties.ts_ms < 6 * 3600000,
+      col: (CATS[f.properties.category] || CATS.other)[1], pin: pinOf(f.properties), recent: !!f.properties.ts_ms && newest - f.properties.ts_ms < 6 * 3600000,
       est: f.properties.ts_source === "batch-estimate" } })) });
     map.getSource("overlays").setData({ type: "FeatureCollection", features: S.events.features.filter((f) => f.properties.kind === "overlay" && (S.theatre === "global" || f.properties.theatre === S.theatre)) });
     safeFeed(list);
@@ -1113,7 +1167,7 @@
   const feedOff = new Set((() => { try { return JSON.parse(localStorage.getItem("gt-feed-off") || "[]"); } catch (err) { return []; } })());
   // country -> [theatre, lon, lat, name], from tools/build_theatres.py (the server's own placement rule)
   let TH = { a3: {}, a2: {}, names: {} };
-  fetch("geo/theatres.json?v=1.5.5").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
+  fetch("geo/theatres.json?v=1.7.0").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
   function country(k) {
     if (!k) return null;
     const s = String(k).trim(), u0 = s.toUpperCase();  // ISO-3, ISO-2, or a name ("Côte d’Ivoire", "Mexico Travel Advisory")
@@ -1361,6 +1415,20 @@
     if (!REDUCED) requestAnimationFrame(tickFrame);
   }
   // ---------- end ticker
+  // Not in the future: a timed Feed item (stream row or map pin) never sorts or shows later than the moment it was read.
+  // A source can give a time that has not come yet (GDACS floods end a forecast day ahead; a wall-clock time read in
+  // the wrong zone runs hours ahead), and the row then sat "in 22h" above every newer item. Such a time is kept in
+  // `ahead` for the row's tooltip, and the row sits at now. Date-only rows have their own rule (dayAt). TFRs keep
+  // theirs: they sort by when the FAA issued them, and their future start and end stay in the row's "from X to Y".
+  function notAhead(i, now) {
+    now = now || Date.now();
+    if (!i.day && Number.isFinite(i.ts) && i.ts > now) { i.ahead = i.ts; i.ts = now; }
+    return i;
+  }
+  function pinNotAhead(p, now) {
+    if (p && p.ts_source !== "date" && Number.isFinite(p.ts_ms) && p.ts_ms > now) { p.ts_ahead = p.ts_ms; p.ts_ms = now; }
+  }
+  const aheadNote = (t) => (t ? ` · the source gave ${fmtD(t)} ${fmtT(t)}, after the time it was read` : "");
   function streamItems() {
     const out = [];
     STREAMS.forEach((st) => {
@@ -1369,7 +1437,7 @@
       if (st._d !== d) {
         let its = [];
         try { its = (st.items(d) || []).filter((i) => i && Number.isFinite(i.ts) && i.ts > 0 && i.title); } catch (err) { console.error("GTX stream " + st.key, err); }
-        its.forEach((i) => { i.group = i.group || st.group; i.label = i.label || st.label; i.src = st.key; i.pk = postOnly(i.url); i.cn = ccList(i.cc); });
+        its.forEach((i) => { i.group = i.group || st.group; i.label = i.label || st.label; i.src = st.key; i.pk = postOnly(i.url); i.cn = ccList(i.cc); notAhead(i); });
         st._d = d; st._its = its;
       }
       for (const i of st._its) out.push(i);
@@ -1402,7 +1470,7 @@
     const sea = p.sea && !["offshore", "open ocean"].includes(p.sea) ? p.sea : "";
     // 1.4.0: the country moves up into the title bar; a sea stays in the meta line unless the bar already names it
     const ks = ccList([p.country, p.country_name]), named = ks.length || p.country_name;
-    const day = p.ts_source === "date", when = `<span class="time"${p.ts_ms ? ` data-ts="${day ? dayAt(p.ts_ms) : p.ts_ms}"${day ? ' data-day="1" title="Date only: the day as the source gives it, in its own calendar"' : ` title="${esc(altTime(p.ts_ms))}"`}` : ""}>${!p.ts_ms ? "–" : day ? fmtDay(p.ts_ms) : fmtD(p.ts_ms) + " " + fmtT(p.ts_ms)}</span>`
+    const day = p.ts_source === "date", when = `<span class="time"${p.ts_ms ? ` data-ts="${day ? dayAt(p.ts_ms) : p.ts_ms}"${day ? ' data-day="1" title="Date only: the day as the source gives it, in its own calendar"' : ` title="${esc(altTime(p.ts_ms) + aheadNote(p.ts_ahead))}"`}` : ""}>${!p.ts_ms ? "–" : day ? fmtDay(p.ts_ms) : fmtD(p.ts_ms) + " " + fmtT(p.ts_ms)}</span>`
       + (p.ts_ms ? `<span class="ag">${day ? "date only" : ago(p.ts_ms)}</span>` : "");
     const bar = titleBar(ks, p.country_name ? ["", p.country_name] : sea ? ["🌊", sea] : ["🌐", thName(p.theatre) || "Global"], catName, when);
     const where = named ? sea : "";
@@ -1420,7 +1488,7 @@
     const cat = i.cat && i.cat !== "other" && CATS[i.cat], g = FG[i.group] || FG.map, c = cat ? cat[1] : g[1], u = linkUrl(i.url);
     const ks = i.cn || [], nm = new Set(ks.map((k) => k.name));  // 1.4.0: a where that only lists the bar's countries is dropped
     const where = i.where && !String(i.where).split(/\s*,\s*/).every((w) => nm.has(w)) ? i.where : "";
-    const when = `<span class="time" data-ts="${i.day ? dayAt(i.ts) : i.ts}"${i.day ? ' data-day="1" title="Date only: the day as the source gives it, in its own calendar"' : ` title="${esc(altTime(i.ts))}"`}>${i.day ? fmtDay(i.ts) : fmtD(i.ts) + " " + fmtT(i.ts)}</span><span class="ag">${i.day ? "date only" : ago(i.ts)}</span>`;
+    const when = `<span class="time" data-ts="${i.day ? dayAt(i.ts) : i.ts}"${i.day ? ' data-day="1" title="Date only: the day as the source gives it, in its own calendar"' : ` title="${esc(altTime(i.ts) + aheadNote(i.ahead))}"`}>${i.day ? fmtDay(i.ts) : fmtD(i.ts) + " " + fmtT(i.ts)}</span><span class="ag">${i.day ? "date only" : ago(i.ts)}</span>`;
     return `<li class="sx${i.ll ? "" : " nl"}" data-sx="${n}" style="--c:${c}">${titleBar(ks, ["🌐", thName(i.th) || "Global"], cat ? cat[0] : g[0], when)}<div class="t">${u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(i.title)}</a>` : esc(i.title)}</div><div class="m">
       ${where ? `<span>${esc(where)}</span>` : ""}
       <span class="badge src" style="border-color:${(FG[i.group] || FG.map)[1]}">${esc(i.label)}</span>${i.badge ? `<span class="badge">${esc(i.badge)}</span>` : ""}${trTag(i)}${i.ll ? VM_BTN : ""}</div></li>`;
@@ -2041,7 +2109,8 @@
 
   // ---------- 0.11.0: extension API (web/ext/*.js) ----------
   window.GTX = {
-    version: "1.4", map, S, api, esc, fmtT, fmtD, fmtDay, when, ago, nf, isoMs, showPopup, THEATRES, CATS, country, dayMs,
+    version: "1.5", GLYPHS, drawGlyph, mapImage, glyphOf, glyphUrl,  // 1.5: glyph drawing for extensions (1.6.0)
+    map, S, api, esc, fmtT, fmtD, fmtDay, when, ago, nf, isoMs, showPopup, THEATRES, CATS, country, dayMs,
     zone: () => ZONE,  // 1.3: "et" or "utc"
     below: { events: "ev-halo", sirens: "il-halo" },  // beforeId values for map.addLayer: under curated pins / under sirens
     // {key, label, feed, on, ids: [map layer ids], click: [clickable ids], clickBefore, after: layer key, count: fn, legend: html}

@@ -23,12 +23,19 @@ NS = {"k": "http://www.opengis.net/kml/2.2"}
 UA = "GroundTruth/0.2 (personal OSINT dashboard)"
 TWITTER_EPOCH_MS = 1288834974657
 
-# My Maps icon code -> (category, label). 1830/1571/1504/1657/1722 checked visually; rest inferred from usage.
+# My Maps icon code -> (category, label, glyph). 1.6.0: every code is named after the map's own icon file
+# (icons/onion/<code>-<name>_4x.png on the map page, read 2026-11-24): 1830-mormon (a trumpeter), 1571-fire,
+# 1504-airport-plane, 1657-police-officer, 1722-truck, 1812-hunting (a rifleman firing), 1569-ferry,
+# 1864-shipwreck, 1556-death-skull, 1528-bridge, 1593-helicopter, 1716-train, 1660-power-lightning.
+# The glyph is the page's drawing of that icon (web/app.js GLYPHS). Before 1.6.0, 1569 and 1528 read "Other".
 ICONS = {
-    "1830": ("report", "News / statement"), "1571": ("strike", "Strike / fire"), "1504": ("drone", "Drone / air"),
-    "1812": ("missile", "Missile / air defence"), "1864": ("maritime", "Maritime"), "1593": ("aviation", "Aviation"),
-    "1556": ("casualty", "Casualties"), "1657": ("forces", "Personnel / forces"), "1722": ("forces", "Vehicles / equipment"),
-    "1660": ("energy", "Infrastructure"), "1569": ("other", "Other"),
+    "1830": ("report", "News / statement", "megaphone"), "1571": ("strike", "Strike / fire", "fire"),
+    "1504": ("drone", "Aircraft / drone", "plane"), "1812": ("missile", "Firing / air defence", "gunner"),
+    "1864": ("maritime", "Ship hit / wreck", "wreck"), "1569": ("maritime", "Ship / naval movement", "ship"),
+    "1593": ("aviation", "Helicopter", "helicopter"), "1556": ("casualty", "Casualties", "skull"),
+    "1657": ("forces", "Personnel / forces", "officer"), "1722": ("forces", "Vehicles / equipment", "truck"),
+    "1660": ("energy", "Power / infrastructure", "bolt"), "1528": ("energy", "Bridge", "bridge"),
+    "1716": ("energy", "Rail", "train"),
 }
 
 CATEGORIES = {
@@ -124,6 +131,31 @@ def overlay_type(name):
     return "other"
 
 
+# 1.6.0: battle fronts. The map's own legend: "Red Lines represent frontlines, Yellow represents supposed front
+# lines. The Blue line represents shared NATO/RU Borders." So a front is a red or yellow LINE, never a polygon
+# and never a line the name marks as something else (a bridge span's damage state, a river, a border).
+FRONT_RED, FRONT_YELLOW = "#A52714", "#FFD600"
+FRONT_KINDS = [
+    ("blockade", r"blockade"),
+    ("defense", r"defen[cs]e (chain|line)|perimeter"),
+    ("contact", r"front"),
+]
+
+
+def front_kind(name, stroke, otype, npoints):
+    """contact / blockade / defense / supposed for a line overlay that is a front by the map's legend, else None."""
+    col = (stroke or "").upper()
+    if col not in (FRONT_RED, FRONT_YELLOW) or otype in ("damage", "bridge", "river", "border", "lane", "airbase"):
+        return None
+    if col == FRONT_YELLOW:
+        return "supposed"
+    n = (name or "").lower()
+    for kind, rx in FRONT_KINDS:
+        if re.search(rx, n):
+            return kind
+    return "contact" if npoints >= 3 else None  # an unnamed red line; a 2-point red stub is a marker, not a front
+
+
 def _style_parts(style):
     s = (style or "").lstrip("#")
     parts = s.split("-")
@@ -174,15 +206,19 @@ def parse(kml_bytes):
         loc = geo.locate(anchor[0], anchor[1])
         props = {"title": name, "map_day": map_day, **loc, **{k: v for k, v in st.items() if k != "style"}}
         if geom["type"] == "Point" and src.get("url"):
-            icon_cat, icon_label = ICONS.get(st.get("icon"), ("other", "Other"))
+            icon_cat, icon_label, glyph = ICONS.get(st.get("icon"), ("other", "Other", ""))
             cat, tags = classify(name, icon_cat)
-            props.update(kind="event", category=cat, tags=tags, icon_label=icon_label, **src)
+            props.update(kind="event", category=cat, tags=tags, icon_label=icon_label, glyph=glyph, **src)
             if src.get("platform") == "x":
                 ms = snowflake_ms(src["post_id"])
                 props.update(ts_ms=ms, ts_source="x-snowflake")
             key = src["url"]
         else:
             props.update(kind="overlay", overlay_type=overlay_type(name), note=re.sub(r"<[^>]+>", " ", desc).strip()[:300] or None)
+            if geom["type"] == "LineString":
+                fk = front_kind(name, st.get("stroke"), props["overlay_type"], len(geom["coordinates"]))
+                if fk:
+                    props["front_kind"] = fk
             key = "%s|%s|%s" % (name, geom["type"], json.dumps(geom["coordinates"])[:200])
         props["id"] = hashlib.sha1(key.encode()).hexdigest()[:16]
         feats.append({"type": "Feature", "geometry": geom, "properties": props})

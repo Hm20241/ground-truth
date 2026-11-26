@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en" data-gt-theme="floor">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ground Truth</title>
+<link rel="icon" href="favicon.svg?v=1.7.0" type="image/svg+xml">
+<link rel="icon" href="icon-32.png?v=1.7.0" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1.7.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800&family=Overpass+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="vendor/maplibre-gl.css?v=5.6.0" rel="stylesheet">
+<link href="themes/floor/floor.css?v=1.7.0" rel="stylesheet">
+</head>
+<body data-board="conflict" data-pane="board">
+<a class="skip" href="#pLog">Skip to the log</a>
+
+<header class="top">
+  <div class="brand"><span class="mark" aria-hidden="true"></span><b>Ground Truth</b><small>Watch floor</small></div>
+  <nav class="boards" id="boards" aria-label="Boards"></nav>
+  <button type="button" class="tbtn boardpick" id="boardPick" aria-haspopup="dialog"><span id="boardPickName">Conflict</span><i aria-hidden="true">▾</i></button>
+  <div class="topr">
+    <!-- feed light and version on one line, the theme button directly under them -->
+    <div class="stat" id="stat">
+      <div class="stat1">
+        <button type="button" class="tbtn syslight" id="sysLight" title="Source health. Opens the list of feeds."><i class="dot ldot" aria-hidden="true"></i><span class="ltxt">Checking feeds</span></button>
+        <span class="statline"><i class="dot ldot" aria-hidden="true"></i><span class="ltxt">Checking feeds</span></span>
+        <span class="ver" title="Ground Truth version"></span>
+      </div>
+      <div class="stat2" id="themeTop"></div>
+    </div>
+    <button type="button" class="tbtn" id="wallBtn" aria-pressed="false" title="Wall view: bigger type, no controls, the map tours the theatres by itself">Wall view</button>
+    <button type="button" class="tbtn clock" id="clock" title="Times on this page. Press to switch between Eastern and UTC."><span id="clockT">--:--:--</span><small id="clockZ">ET</small></button>
+  </div>
+</header>
+
+<div class="scroller" id="scroller">
+<section class="strip" id="strip" aria-label="The picture now"></section>
+
+<main class="grid" id="grid">
+  <div class="col col-l">
+    <section class="panel p-a" id="pA" aria-labelledby="pAh"><div class="ph"><h2 id="pAh"></h2><span class="ph-r" id="pAr"></span></div><div class="pb" id="pAb"></div></section>
+    <section class="panel p-b" id="pB" aria-labelledby="pBh"><div class="ph"><h2 id="pBh"></h2><span class="ph-r" id="pBr"></span></div><div class="pb" id="pBb"></div></section>
+  </div>
+  <div class="col col-c">
+    <section class="panel p-map" id="pMap" aria-labelledby="pMh">
+      <div class="ph"><h2 id="pMh">Map</h2>
+        <div class="views" id="views" role="group" aria-label="What the map shows"></div>
+        <button type="button" class="ibtn widebtn" id="wideMap" aria-pressed="false" title="Wider map">⤢<span class="sr">Wider map</span></button>
+      </div>
+      <div class="mapwrap">
+        <div id="map" aria-label="Map"></div>
+        <div class="mapfocus" id="mapFocus"></div>
+        <div class="tour" id="tour" hidden><b id="tourName"></b><span id="tourSub"></span><i class="tourbar"><i id="tourBar"></i></i></div>
+        <button type="button" class="tbtn keybtn" id="keyBtn" aria-expanded="false" aria-controls="legend">Map key</button>
+        <div class="legend" id="legend"></div>
+      </div>
+    </section>
+    <section class="panel p-c" id="pC" aria-labelledby="pCh"><div class="ph"><h2 id="pCh"></h2><span class="ph-r" id="pCr"></span></div><div class="pb" id="pCb"></div></section>
+  </div>
+  <div class="col col-r">
+    <section class="panel p-log" id="pLog" aria-labelledby="pLh" tabindex="-1">
+      <div class="ph"><h2 id="pLh">Log</h2><span class="ph-r" id="logCount"></span>
+        <button type="button" class="ibtn widebtn" id="wideLog" aria-pressed="false" title="Wider log, with summaries">⤢<span class="sr">Wider log</span></button>
+      </div>
+      <div class="logbar" id="logbar"></div>
+      <ol class="log pb" id="log"></ol>
+    </section>
+    <section class="panel p-sys" id="pSys" aria-labelledby="pSh"><div class="ph"><h2 id="pSh">Systems</h2><span class="ph-r" id="sysR"></span></div>
+      <!-- phone only: the same light, version and theme button as the top bar -->
+      <div class="sysver" id="sysVer">
+        <div class="stat1"><span class="statline"><i class="dot ldot" aria-hidden="true"></i><span class="ltxt">Checking feeds</span></span><span class="ver" title="Ground Truth version"></span></div>
+        <div class="stat2" id="themeSys"></div>
+      </div>
+      <div class="pb" id="sysB"></div></section>
+  </div>
+</main>
+</div>
+
+<nav class="bbar" id="bbar" aria-label="Parts of this board">
+  <button type="button" data-pane="board" aria-current="true"><i aria-hidden="true">▦</i>Board</button>
+  <button type="button" data-pane="map"><i aria-hidden="true">◎</i>Map</button>
+  <button type="button" data-pane="log"><i aria-hidden="true">≡</i>Log</button>
+  <button type="button" data-pane="sys"><i aria-hidden="true">●</i>Systems</button>
+</nav>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerH" hidden>
+  <div class="ph"><h2 id="drawerH"></h2><button type="button" class="ibtn" id="drawerX">✕<span class="sr">Close</span></button></div>
+  <div class="pb" id="drawerB"></div>
+</aside>
+
+<script src="vendor/maplibre-gl.js?v=5.6.0"></script>
+<script src="vendor/h3-js.umd.js?v=4.5.0"></script>
+<script src="themes/switch.js?v=1.7.0"></script>
+<script src="themes/floor/core.js?v=1.7.0"></script>
+<script src="themes/floor/map.js?v=1.7.0"></script>
+<script src="themes/floor/panels.js?v=1.7.0"></script>
+<script src="themes/floor/board.js?v=1.7.0"></script>
+</body>
+</html>

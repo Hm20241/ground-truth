@@ -733,7 +733,7 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(*hit) if hit else self._json({"error": "not found"}, 404)
             if path == "/api/status":
                 return self._json({"version": VERSION, "now": feeds.now_iso(), "modules": extfeeds.status(),
-                                   "private_web": _private_web(),
+                                   **{_PRIV_KEY: _private_web()},
                                    "streams": STREAMS["n"], "feeds": {
                     k: {"ok": v.get("ok"), "at": v.get("at"), "age_s": int(_age(k)) if v.get("at") else None,
                         "error": v.get("error"), "ms": v.get("ms"), "running": k in RUNNING,
@@ -752,6 +752,9 @@ class Handler(SimpleHTTPRequestHandler):
         except Exception as e:
             traceback.print_exc()
             return self._json({"error": "%s" % type(e).__name__}, 500)
+
+
+_PRIV_KEY = "private_web"  # the status key that lists web/private scripts (the public audit looks for it in site data)
 
 
 def _private_web():

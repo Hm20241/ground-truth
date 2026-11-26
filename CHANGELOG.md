@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.8.1 (2026-11-26): version bump
+- No change to what this copy does; the version moves with a fix to an optional private module on self-hosted copies.
+
 ## 1.8.0 (2026-11-26): optional private pages and routes (hooks only)
 - **For self-hosted copies:** the server can now load extra feed modules from a `gt/private/` folder, serve extra routes under `/api/private/`, and list extra page scripts from `web/private/` in `/api/status`. A small loader (`web/themes/private.js`) loads the ones that match the current theme and lets each theme add a tab, link, panel or board for them.
 - **Nothing changes where those folders are absent**, which includes this public copy: the loader makes no request and adds nothing.

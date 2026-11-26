@@ -235,6 +235,7 @@ check(idx.count("?v=%s" % ver) >= 2 and all("?v=%s" % ver in l for l in ext), "p
 EXT_MODULES = {"curated.js": ("geoconfirmed", "curated"), "hazards.js": ("hazards",), "wire.js": ("wire", "telegram"),
                "signals.js": ("signals",), "airspace.js": ("airspace",), "cyber.js": ("cyber",),
                "outages.js": ("services", "disruption"),
+               "airnow.js": ("airnow",),  # 1.7.2: EPA AirNow air quality
                "fronts.js": ()}  # 1.6.0: battle fronts read the core source map, so the page always loads it
 files = sorted(n for n in os.listdir(os.path.join(PROJ, "web", "ext")) if n.endswith(".js"))
 check(set(files) == set(EXT_MODULES), "page: every extension file is mapped to its modules: %s" % files)

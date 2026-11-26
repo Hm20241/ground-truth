@@ -1,5 +1,5 @@
 /* "Watch Floor" theme: the shell. Top bar (with the version, feed light and theme button), headline strip, the three
-   board panels, the log, systems, the side drawer, the phone's bottom bar and the wall tour. */
+   board panels, the news ticker, the log, systems, the side drawer, the phone's bottom bar and the wall tour. */
 (() => {
   "use strict";
   const WF = window.WF, { $, esc, nf, D, S } = WF, B = WF.BOARDS;
@@ -101,6 +101,62 @@
     });
     if (LOG.length > shown.length) rows.push(`<li><button type="button" class="more" data-act="more" data-k="more">Show ${nf(Math.min(120, LOG.length - shown.length))} more</button></li>`);
     put($("log"), rows.join(""));
+  }
+
+  // ---------- news ticker (1.7.2) ----------
+  // The newest timed entries of the Conflict log (map pins, plus news wire and Telegram where this copy carries them),
+  // newest first, on every board. Day-only pins are left out: they have no clock time. An entry with a place flies the
+  // map to it and opens its popup; one without opens its source. The crawl is driven by a frame clock, not a CSS
+  // animation, so new data swaps the entries in place and the crawl carries on from the entry it was showing.
+  // It stops under the pointer, on keyboard focus and when paused (remembered in this browser). With reduced motion,
+  // or when the entries do not fill the band, it does not move and is a strip to scroll or swipe.
+  const TK_N = 30, TK_KEY = "gt-floor-ticker-paused";
+  const RM = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
+  const tk = { x: 0, w: 0, at: 0, hover: false, focus: false, map: new Map(), user: (() => { try { return localStorage.getItem(TK_KEY) === "1"; } catch (e) { return false; } })() };
+  const tkItem = (i, copy) => { const u = WF.url(i.url), tag = i.tag && i.tag !== "Other" ? i.tag : WF.KIND_NAME[i.kind] || "", key = copy ? ' tabindex="-1"' : ` data-k="tk-${esc(i.id)}"`;
+    const body = `<i class="tk-bar" aria-hidden="true"></i><time title="${esc(WF.when(i.t))}">${esc(WF.agoShort(i.t))}</time>${tag ? `<span class="tk-g">${esc(tag)}</span>` : ""}<span class="tk-t">${esc(i.title)}</span>`;
+    return i.ll || !u ? `<button type="button" class="tk-i s${i.sev}" data-tk="${esc(i.id)}"${key}${i.ll ? ' title="Show on the map"' : ""}>${body}</button>`
+      : `<a class="tk-i s${i.sev}" href="${esc(u)}" target="_blank" rel="noopener"${key}>${body}</a>`; };
+  function tkMeasure() {
+    const el = $("ticker"), a = $("tkA"), view = $("tkView");
+    el.classList.remove("still"); tk.w = a.offsetWidth;
+    const still = RM.matches || !tk.map.size || tk.w <= view.clientWidth;
+    el.classList.toggle("still", still);
+    if (still) { tk.x = 0; $("tkTrack").style.transform = ""; } else { view.scrollLeft = 0; tk.x %= tk.w; $("tkTrack").style.transform = `translate3d(${-tk.x}px,0,0)`; }
+    tk.speed = 3.4 * parseFloat(getComputedStyle(document.documentElement).fontSize);  // 3.4 rem a second: scales with the wall view's type
+  }
+  function renderTicker() {
+    const a = $("tkA"), b = $("tkB");
+    const items = D.events ? WF.logAll().filter((i) => !i.noTime && Number.isFinite(i.t) && i.title).sort((x, y) => y.t - x.t).slice(0, TK_N) : [];
+    tk.map = new Map(items.map((i) => [i.id, i]));
+    if (!items.length) { put(a, `<span class="tk-none">${D.events ? "No timed entries right now." : WF.ERR.events ? "The log could not be loaded." : "Loading…"}</span>`); put(b, ""); tkMeasure(); return; }
+    // the entry now at the left edge, so the crawl carries on from it after the swap
+    let hold = null;
+    if (tk.w) for (const e of a.children) if (e.offsetLeft + e.offsetWidth > tk.x) { hold = [e.getAttribute("data-k"), tk.x - e.offsetLeft]; break; }
+    put(a, items.map((i) => tkItem(i, false)).join("")); put(b, items.map((i) => tkItem(i, true)).join(""));
+    const again = hold && hold[0] ? a.querySelector(`[data-k="${CSS.escape(hold[0])}"]`) : null;
+    if (again) tk.x = again.offsetLeft + hold[1];
+    tkMeasure();
+  }
+  function tkFrame(now) {
+    const dt = Math.min(100, now - (tk.at || now)); tk.at = now;
+    if (tk.w > 0 && !$("ticker").classList.contains("still") && !((tk.user && !S.wall) || tk.hover || tk.focus)) {
+      tk.x = (tk.x + (tk.speed * dt) / 1000) % tk.w; $("tkTrack").style.transform = `translate3d(${-tk.x}px,0,0)`; }
+    requestAnimationFrame(tkFrame);
+  }
+  const tkPauseLabel = () => { const b = $("tkPause"); b.setAttribute("aria-pressed", String(tk.user)); b.textContent = tk.user ? "Play" : "Pause"; };
+  function tickerBoot() {
+    const view = $("tkView");
+    $("tkPause").addEventListener("click", () => { tk.user = !tk.user; try { localStorage.setItem(TK_KEY, tk.user ? "1" : "0"); } catch (e) { /* private window */ } tkPauseLabel(); });
+    view.addEventListener("mouseenter", () => { tk.hover = true; }); view.addEventListener("mouseleave", () => { tk.hover = false; });
+    view.addEventListener("focusin", (e) => { tk.focus = true; if ($("ticker").classList.contains("still")) return;
+      view.scrollLeft = 0;  // the browser scrolls a focused entry into view by itself; the crawl does that instead
+      const t = e.target.closest(".tk-i"); if (t && $("tkA").contains(t) && (t.offsetLeft < tk.x || t.offsetLeft + t.offsetWidth > tk.x + view.clientWidth)) { tk.x = Math.max(0, t.offsetLeft - 24); $("tkTrack").style.transform = `translate3d(${-tk.x}px,0,0)`; } });
+    view.addEventListener("focusout", () => { tk.focus = false; });
+    view.addEventListener("click", (e) => { const t = e.target.closest("[data-tk]"), i = t && tk.map.get(t.getAttribute("data-tk")); if (i && i.ll) { toMap(); WF.focus(i.ll, i.h); } });
+    if (RM.addEventListener) RM.addEventListener("change", tkMeasure);
+    if (window.ResizeObserver) { const ro = new ResizeObserver(tkMeasure); ro.observe(view); ro.observe($("tkA")); } else window.addEventListener("resize", tkMeasure);
+    tkPauseLabel(); requestAnimationFrame(tkFrame);
   }
 
   // ---------- systems: which feeds are fresh ----------
@@ -237,7 +293,7 @@
   WF.tourTo = (i) => { tourI = i - 1; tourStep(); };  // for the screenshots
 
   // ---------- render and boot ----------
-  function render() { renderTop(); renderStrip(); renderPanels(); renderMapHead(); renderLog(); renderSys(); }
+  function render() { renderTop(); renderStrip(); renderPanels(); renderMapHead(); renderLog(); renderSys(); renderTicker(); }
   WF.render = render;
   WF.onData = (name) => WF.mapData(name);
   WF.actions = { setBoard, setTheatre, setPane, setWide, setWall };
@@ -256,7 +312,8 @@
   WF.onMapReady = () => { if (S.wall) tourStart(); };
   CORE.forEach((n) => WF.load(n));
   tick(); setInterval(tick, 1000);
+  tickerBoot();
   render();
   setInterval(() => { [...CORE, ...B[S.board].need].forEach((n) => WF.load(n)); }, 120000);
-  setInterval(() => { renderStrip(); renderSys(); }, 30000);
+  setInterval(() => { renderStrip(); renderSys(); renderTicker(); }, 30000);
 })();

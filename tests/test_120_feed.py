@@ -40,7 +40,7 @@ EXT = {n: read("web/ext/%s.js" % n) for n in ("wire", "hazards", "signals", "air
 check(tuple(map(int, VERSION.split("."))) >= (1, 2, 0), "VERSION is 1.2.0 or later (1.3.0: later releases keep the 1.2.0 Feed)")
 check(int((re.search(r'version: "1\.(\d+)"', APP) or [0, -1])[1]) >= 2, "GTX API version 1.2 or later")
 local = re.findall(r'(?:src|href)="((?:ext/|app\.js|style\.css)[^"]*)"', INDEX)
-check(len(local) == 10, "index.html loads style.css, eight extensions and app.js (%d)" % len(local))  # 1.5.3: outages.js; 1.6.0: fronts.js
+check(len(local) == 11, "index.html loads style.css, nine extensions and app.js (%d)" % len(local))  # 1.5.3: outages.js; 1.6.0: fronts.js; 1.7.2: airnow.js
 check(all(u.endswith("?v=" + VERSION) for u in local), "every local asset is cache-busted with ?v=" + VERSION)
 check('geo/theatres.json?v=%s' % VERSION in APP, "theatres.json is fetched relative, with ?v=" + VERSION)
 

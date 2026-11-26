@@ -6,11 +6,11 @@
 <meta name="color-scheme" content="dark">
 <title>Ground Truth</title>
 <!-- Ground Truth 1.7.0, the Atlas theme: this page plus themes/atlas/. Icons, vendor/ and geo/ are the ones Classic uses. -->
-<link rel="icon" href="favicon.svg?v=1.7.1" type="image/svg+xml">
-<link rel="icon" href="icon-32.png?v=1.7.1" sizes="32x32" type="image/png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1.7.1">
+<link rel="icon" href="favicon.svg?v=1.7.2" type="image/svg+xml">
+<link rel="icon" href="icon-32.png?v=1.7.2" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1.7.2">
 <link href="vendor/maplibre-gl.css?v=5.6.0" rel="stylesheet">
-<link href="themes/atlas/atlas.css?v=1.7.1" rel="stylesheet">
+<link href="themes/atlas/atlas.css?v=1.7.2" rel="stylesheet">
 </head>
 <body>
 <a class="skip" href="#body">Skip to the summary</a>
@@ -25,6 +25,13 @@
   </form>
   <div class="pills" id="pills" role="group" aria-label="What the map shows"></div>
 </div>
+
+<!-- News ticker (1.7.2): the newest timed entries, in a slim strip over the map. Desk: along the bottom, right of the
+     panel. Phone: under the topic pills. Wall: along the bottom. themes/atlas/ui.js fills it. -->
+<section class="ticker" id="ticker" aria-label="Latest entries, newest first">
+  <button type="button" class="tk-pause" id="tkpause" data-act="tickerpause" aria-pressed="false" aria-label="Pause the ticker"></button>
+  <div class="tk-view" id="tkview"><div class="tk-track" id="tktrack"></div></div>
+</section>
 
 <!-- The one sheet: a side panel on a desk, a bottom sheet on a phone -->
 <section class="sheet" id="sheet" aria-label="Ground Truth">
@@ -58,9 +65,9 @@
 </div>
 
 <script src="vendor/maplibre-gl.js?v=5.6.0"></script>
-<script src="themes/switch.js?v=1.7.1"></script>
-<script src="themes/atlas/core.js?v=1.7.1"></script>
-<script src="themes/atlas/map.js?v=1.7.1"></script>
-<script src="themes/atlas/ui.js?v=1.7.1"></script>
+<script src="themes/switch.js?v=1.7.2"></script>
+<script src="themes/atlas/core.js?v=1.7.2"></script>
+<script src="themes/atlas/map.js?v=1.7.2"></script>
+<script src="themes/atlas/ui.js?v=1.7.2"></script>
 </body>
 </html>

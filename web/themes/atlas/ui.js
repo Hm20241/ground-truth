@@ -22,9 +22,9 @@
     $("grab").setAttribute("aria-label", "Sheet height: " + (st === "peek" ? "low" : st === "full" ? "full" : "half") + ". Activate to change it.");
   }
   A.pad = () => {
-    if (UI.mode === "wall") return { left: 690, right: 590, top: 60, bottom: 60 };
-    if (UI.mode === "phone") return { top: 120, bottom: Math.min(sheetPx(UI.sheet), sheetPx("half")) + TAB_H, left: 0, right: 0 };
-    return { left: UI.collapsed ? 0 : UI.panelW + 24, right: S.sel ? 400 : 0, top: 110, bottom: 0 };
+    if (UI.mode === "wall") return { left: 690, right: 590, top: 60, bottom: 130 };
+    if (UI.mode === "phone") return { top: 172, bottom: Math.min(sheetPx(UI.sheet), sheetPx("half")) + TAB_H, left: 0, right: 0 };
+    return { left: UI.collapsed ? 0 : UI.panelW + 24, right: S.sel ? 400 : 0, top: 110, bottom: 64 };
   };
   function layout() {
     const m = modeNow(), was = UI.mode; UI.mode = m;
@@ -32,7 +32,7 @@
     root.style.setProperty("--panel-w", UI.panelW + "px");
     $("wall").hidden = m !== "wall"; $("reopen").hidden = !(m === "desk" && UI.collapsed);
     if (m === "phone") setSheet(UI.sheet);
-    if (m !== was) { UI.detail = m === "phone" && !!S.sel; render(); renderDetail(); if (m === "wall") startWall(); else { stopWall(); if (was === "wall") A.map.jumpTo({ center: [30, 34], zoom: m === "phone" ? 1.6 : 2.4, padding: A.pad() }); } }
+    if (m !== was) { tkKey = ""; renderTicker(); UI.detail = m === "phone" && !!S.sel; render(); renderDetail(); if (m === "wall") startWall(); else { stopWall(); if (was === "wall") A.map.jumpTo({ center: [30, 34], zoom: m === "phone" ? 1.6 : 2.4, padding: A.pad() }); } }
   }
   addEventListener("resize", layout);
 
@@ -339,6 +339,7 @@
   let rt = null;
   const renderSoon = () => { clearTimeout(rt); rt = setTimeout(() => { render(); if (S.sel && S.byId.has(S.sel.id)) S.sel = S.byId.get(S.sel.id); }, 80); };
   A.on("data", renderSoon);
+  A.on("data", () => renderTicker()); A.on("view", () => renderTicker());
   A.on("zone", () => { tick(); render(); renderDetail(); });
 
   function setTopic(k) {
@@ -369,6 +370,7 @@
     else if (act === "morerows") { UI.limit += 60; render(); }
     else if (act === "lede") { UI.ledeOpen = !UI.ledeOpen; render(); }
     else if (act === "tz") A.setZone(v);
+    else if (act === "tickerpause") { tkPaused = !tkPaused; LS.set("ticker", tkPaused ? "paused" : "run"); renderTicker(); }
     else if (act === "theme" || act === "classic") { if (window.GTTheme) GTTheme.go(act === "classic" ? "classic" : v); }
     else if (act === "wallpref") { LS.set("wall", v === "on" ? "on" : "off"); if (new URLSearchParams(location.search).has("wall")) history.replaceState(null, "", location.pathname); layout(); render(); }
     else if (act === "close") closeDetail();
@@ -405,6 +407,36 @@
   grab.addEventListener("pointerup", endDrag); grab.addEventListener("pointercancel", endDrag);
   grab.addEventListener("click", () => { if (grab.dataset.dragged) return; setSheet(UI.sheet === "peek" ? "half" : UI.sheet === "half" ? "full" : "half"); });
   grab.addEventListener("keydown", (e) => { const o = ["peek", "half", "full"], i = o.indexOf(UI.sheet); if (e.key === "ArrowUp" && i < 2) setSheet(o[i + 1]); else if (e.key === "ArrowDown" && i > 0) setSheet(o[i - 1]); });
+
+  // ---------- news ticker (1.7.2) ----------
+  // The newest timed entries from the one entry list: event pins, plus the news wire and Telegram where this copy has them;
+  // with a topic picked, that topic's timed entries. An item opens its entry the way a feed row does. The strip is built
+  // twice for a seamless loop; the second copy is hidden from assistive technology and from the Tab key.
+  const tk = $("ticker"), tkTrack = $("tktrack"), TK_N = 30;
+  let tkKey = "", tkPaused = LS.get("ticker", "run") === "paused", tkHalf = 0, tkDur = 0;
+  const tickerList = () => S.entries.filter((e) => !e.dateOnly && (S.topic === "all" ? e.group === "pins" || e.group === "wire" || e.group === "telegram" : e.topics.includes(S.topic))).slice(0, TK_N);
+  const tkTag = (e) => (e.group === "pins" ? "Map pin" : e.src || e.kind);
+  function renderTicker() {
+    const list = tickerList(), still = A.REDUCED, key = UI.mode + "|" + still + "|" + list.map((e) => e.id).join();
+    tk.classList.toggle("paused", tkPaused); tk.classList.toggle("still", still); tk.inert = UI.mode === "wall";
+    const pb = $("tkpause"); pb.hidden = still || !list.length; pb.innerHTML = ico(tkPaused ? "play" : "pause"); pb.setAttribute("aria-pressed", String(tkPaused)); pb.setAttribute("aria-label", tkPaused ? "Start the ticker" : "Pause the ticker");
+    if (key === tkKey) { tkTrack.querySelectorAll(".tk-item").forEach((b) => { const e = S.byId.get(b.dataset.id), w = b.querySelector(".tk-when"); if (e && w) w.textContent = A.ago(e.ts); }); return; }
+    tkKey = key;
+    if (!list.length) { tkTrack.innerHTML = `<span class="tk-quiet">${S.loaded.has("events") || S.failed.has("events") ? "No timed entries right now." : "Loading…"}</span>`; tkTrack.style.animation = "none"; tkHalf = 0; return; }
+    // where the strip was, in pixels, so new data does not send it back to the start
+    const an = tkTrack.getAnimations ? tkTrack.getAnimations()[0] : null, was = an && tkHalf && tkDur ? (((an.currentTime || 0) % tkDur) / tkDur) * tkHalf : 0;
+    const group = (copy) => `<div class="tk-group"${copy ? ' aria-hidden="true"' : ""}>${list.map((e) => `<button type="button" class="tk-item" data-act="sel" data-id="${esc(e.id)}"${copy ? ' tabindex="-1"' : ""}><span class="tk-when">${esc(A.ago(e.ts))}</span><span class="tk-tag"${toneCol(e.tone) ? ` style="color:${toneCol(e.tone)}"` : ""}>${esc(tkTag(e))}</span><span class="tk-title">${esc(e.title)}</span></button>`).join("")}</div>`;
+    tkTrack.style.animation = ""; tkTrack.innerHTML = group(false) + (still ? "" : group(true));
+    if (still) { tkHalf = 0; return; }
+    tkHalf = tkTrack.firstElementChild.offsetWidth; tkDur = (tkHalf / (UI.mode === "wall" ? 90 : 60)) * 1000;
+    tkTrack.style.setProperty("--tk-s", Math.round(tkDur) + "ms");
+    const an2 = tkTrack.getAnimations ? tkTrack.getAnimations()[0] : null; if (an2 && tkHalf) an2.currentTime = ((was % tkHalf) / tkHalf) * tkDur;
+  }
+  // keyboard focus pauses the strip (CSS); the strip is moved so the focused item sits at its start, in view
+  $("tkview").addEventListener("focusin", (ev) => { const b = ev.target.closest && ev.target.closest(".tk-item"), an = tkTrack.getAnimations ? tkTrack.getAnimations()[0] : null;
+    $("tkview").scrollLeft = 0; if (b && an && tkHalf && !A.REDUCED && b.matches(":focus-visible")) an.currentTime = (Math.max(0, b.offsetLeft - 20) / tkHalf) * tkDur; });
+  $("tkview").addEventListener("focusout", () => { if (!A.REDUCED) $("tkview").scrollLeft = 0; });
+  setInterval(renderTicker, 60000);
 
   // ---------- clock ----------
   function tick() { const n = Date.now(); $("clock").textContent = A.fmtT(n) + (S.zone === "utc" ? "" : " " + A.zoneAbbr()); if (UI.mode === "wall") { const c = $("wclock"); if (c) c.innerHTML = wallClock(); } }

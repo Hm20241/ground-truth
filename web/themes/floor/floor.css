@@ -21,7 +21,7 @@ html { font-size: 16px; }
 html.wall { font-size: 1.146vw; }
 html, body { height: 100%; margin: 0; }
 body { background: var(--ground); color: var(--text); font: 400 .9375rem/1.4 var(--sans); font-variant-numeric: tabular-nums;
-  display: grid; grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; -webkit-text-size-adjust: 100%; }
+  display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); overflow: hidden; -webkit-text-size-adjust: 100%; }  /* top bar, ticker, strip, board */
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: inherit; }
 a { color: inherit; }
 h2 { margin: 0; font: 700 .875rem/1 var(--sans); letter-spacing: .09em; text-transform: uppercase; color: var(--text); }
@@ -64,6 +64,27 @@ body .gtt-menu .gtt-item small, body .gtt-menu .gtt-foot { font-size: .875rem; }
 .sysver { display: none; }
 .dot { display: inline-block; width: .625rem; height: .625rem; border-radius: 50%; background: var(--grey); flex: none; }
 .dot.green { background: var(--green); } .dot.amber { background: var(--amber); } .dot.red { background: var(--red); }
+
+/* ---------- news ticker (1.7.2): an ops-room crawl of the newest timed log entries, under the top bar ---------- */
+.ticker { display: flex; align-items: center; gap: .6rem; height: 2.25rem; padding: 0 var(--gap); min-width: 0; background: #0a0d10; border-bottom: 1px solid var(--line); }
+.tk-lab { display: inline-flex; align-items: center; gap: .4rem; flex: none; font: 700 .875rem/1 var(--sans); letter-spacing: .09em; text-transform: uppercase; }
+.tk-view { flex: 1 1 auto; min-width: 0; height: 100%; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 1.25rem, #000 calc(100% - 1.25rem), transparent); mask-image: linear-gradient(90deg, transparent, #000 1.25rem, #000 calc(100% - 1.25rem), transparent); }
+.tk-track { position: relative; display: flex; width: max-content; height: 100%; will-change: transform; }
+.tk-set { display: flex; flex: none; height: 100%; }
+.tk-i { display: inline-flex; align-items: center; gap: .5rem; flex: none; height: 100%; padding: 0 1rem 0 0; margin-right: 1rem; border-right: 1px solid var(--line); white-space: nowrap; color: var(--text); text-decoration: none; font-size: .9375rem; }
+.tk-i:hover .tk-t { text-decoration: underline; text-underline-offset: 3px; }
+.tk-i:focus-visible { outline-offset: -2px; }
+.tk-i .tk-bar { width: .3rem; height: 1.1rem; background: var(--line2); flex: none; }
+.tk-i.s2 .tk-bar { background: var(--red); } .tk-i.s1 .tk-bar { background: var(--amber); }
+.tk-i time { font: 400 .875rem/1 var(--mono); color: var(--muted); }
+.tk-i .tk-g { font-size: .875rem; font-weight: 600; color: var(--muted); }
+.tk-i.s2 .tk-g { color: var(--red); } .tk-i.s1 .tk-g { color: var(--amber); }
+.tk-i .tk-t { font-weight: 600; max-width: 34rem; overflow: hidden; text-overflow: ellipsis; }
+.tk-none { display: inline-flex; align-items: center; height: 100%; color: var(--muted); font-size: .875rem; white-space: nowrap; }
+.tk-pause { flex: none; height: 1.75rem; }
+/* not moving (reduced motion, or too few entries to fill the band): a strip to scroll or swipe, no second copy */
+.ticker.still .tk-view { overflow-x: auto; scrollbar-width: none; } .ticker.still .tk-view::-webkit-scrollbar { display: none; }
+.ticker.still #tkB, .ticker.still .tk-pause { display: none; }
 
 /* ---------- headline strip ---------- */
 .strip { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0; margin: var(--gap) var(--gap) 0; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
@@ -262,7 +283,9 @@ table.feeds td small { display: block; color: var(--muted); font-size: .875rem; 
 
 /* ---------- phone and narrow tablet: one column, bottom bar ---------- */
 @media (max-width: 1100px) {
-  body { grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; }
+  body { grid-template-rows: auto auto minmax(0, 1fr) auto; overflow: hidden; }  /* top bar, ticker, the pane, bottom bar */
+  .ticker { height: calc(2.75rem + 1px); padding-right: 0; } .tk-lab { display: none; }
+  .tk-pause { height: 2.75rem; min-width: 4.5rem; justify-content: center; border-width: 0 0 0 1px; border-radius: 0; }
   :root { --gtt-h: 2.75rem; --gtt-size: .9375rem; }
   .top { gap: .25rem .5rem; height: auto; flex-wrap: wrap; padding: .25rem var(--gap); }
   .topr { display: contents; }
@@ -326,6 +349,7 @@ html.wall .boards button { border-bottom-color: transparent; background: none; p
 html.wall .picmore, html.wall .mapfocus { display: none; }
 html.wall .stat, html.wall .sysver, html.wall .gtt-menu { display: none; }  /* no version, light or theme button on the wall */
 html.wall .pic .kick { padding-right: 0; }
+html.wall .tk-pause { display: none; }  /* the wall's ticker always runs: nothing to press there */
 html.wall body { cursor: none; }
 @media (prefers-reduced-motion: reduce) { .tourbar i.run { animation: none; width: 100%; } }
 

@@ -15,11 +15,12 @@ import importlib
 import os
 import re
 
-ALL = ("geoconfirmed", "curated", "hazards", "wire", "telegram", "signals", "airspace", "cyber", "services", "disruption")
+ALL = ("geoconfirmed", "curated", "hazards", "wire", "telegram", "signals", "airspace", "cyber", "services", "disruption", "airnow")
 ENABLED = ("geoconfirmed", "curated", "hazards",  # 0.11.0: Phase A (verified pins, natural hazards)
            "wire", "telegram",  # 0.12.0: Phase B (news wire, Telegram)
            "signals", "airspace", "cyber",  # 0.13.0: Phase C (strategic signals, airspace, cyber and routing)
-           "services", "disruption")  # 1.5.3: outage layers (websites, AI / cloud, power, cell networks)
+           "services", "disruption",  # 1.5.3: outage layers (websites, AI / cloud, power, cell networks)
+           "airnow")  # 1.7.2: EPA AirNow air-quality monitors
 META = {}     # feed -> {"module", "version", "every", "public_ok", "non_commercial"}
 ERRORS = {}   # module or module:feed -> reason
 

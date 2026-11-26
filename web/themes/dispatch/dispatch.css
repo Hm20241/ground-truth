@@ -374,4 +374,43 @@ body[data-view="wall"] { padding-bottom: 0; overflow: hidden; }
   .sheet-list a[aria-current] { color: var(--accent); }
   .sheet-list a[data-nav="wall"] { display: none; }
 }
+
+/* ---------- the "Latest" strip under the masthead (1.7.2): a newspaper's latest line, not a TV crawl ---------- */
+:root { --tick: 40px; }
+.tick { background: var(--paper); border-bottom: 1px solid var(--ink); }
+.tick-row { display: flex; align-items: center; gap: 14px; height: var(--tick); }
+.tick-label { flex: none; background: var(--accent); color: #fff; font: 700 14px/1.2 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 8px 3px; border-radius: 2px; }
+.tick-view { flex: 1; min-width: 0; height: 100%; overflow: hidden; position: relative; }
+.tick-view.still { overflow-x: auto; overflow-y: hidden; }   /* reduced motion: a strip to scroll or swipe */
+.tick-track { display: flex; width: max-content; height: 100%; will-change: transform; }
+.tick-run { display: flex; align-items: stretch; flex: none; min-width: var(--tick-vw, 0); }
+.tick-i { display: inline-flex; align-items: center; gap: 9px; flex: none; margin: 0; padding: 0 18px; border: 0; border-right: 1px solid var(--rule); background: none; color: var(--ink); text-decoration: none; white-space: nowrap; cursor: pointer; }
+span.tick-i { cursor: default; }
+.tick-i:hover { background: var(--paper-2); color: var(--ink); }
+.tick-i:hover .tick-t { text-decoration: underline; text-underline-offset: 3px; }
+.tick-i:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
+.tick-ago { font: 700 14px/1.2 var(--sans); font-variant-numeric: tabular-nums; color: var(--accent); }
+.tick-tag { font: 400 14px/1.2 var(--sans); color: var(--ink-3); }
+.tick-tag .dot { margin-right: 6px; }
+.tick-t { font: 700 16px/1.2 var(--serif); }
+.tick-empty { align-self: center; font-size: 15px; font-style: italic; color: var(--ink-3); }
+.tick-btn { flex: none; border: 1px solid var(--ink); background: transparent; border-radius: 3px; padding: 0 12px; min-height: 28px; min-width: 64px; font-size: 14px; font-weight: 600; }
+.tick-btn:hover, .tick-btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+@media (max-width: 900px) {
+  :root { --tick: 44px; }
+  .tick-row { gap: 10px; padding-right: 0; }
+  .tick-btn { min-height: 44px; border-width: 0 0 0 1px; border-radius: 0; padding: 0 14px; }
+  .tick-i { padding: 0 14px; }
+  body[data-view="map"] .mapfig { top: var(--tick); }   /* the full-screen map starts under the strip */
+}
+/* wall view: no controls, sized as a share of the screen like the rest of the wall */
+body[data-view="wall"] { --tick: 3.3vw; }
+body[data-view="wall"] .tick-row { max-width: none; padding: 0 2.2vw; gap: 1.2vw; }
+body[data-view="wall"] .wall { height: calc(100vh - var(--tick) - 1px); }
+body[data-view="wall"] .tick-btn { display: none; }
+body[data-view="wall"] .tick-label { font-size: 1.15vw; padding: 0.2vw 0.7vw; }
+body[data-view="wall"] .tick-ago, body[data-view="wall"] .tick-tag { font-size: 1.15vw; }
+body[data-view="wall"] .tick-t { font-size: 1.4vw; }
+body[data-view="wall"] .tick-i { padding: 0 1.4vw; gap: 0.7vw; }
+body[data-view="wall"] .tick-tag .dot { width: 0.75vw; height: 0.75vw; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }

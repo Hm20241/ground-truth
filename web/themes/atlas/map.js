@@ -155,7 +155,7 @@
     put("cab", idOf(d.cables), () => (d.cables || {}).geojson || empty());
     put("pw", idOf(d.portwatch), () => fc(((d.portwatch || {}).chokepoints || []).filter((c) => c.pinned || (c.avg7 || {}).total >= 20).map((c) => { const chg = (c.change_vs_year_pct || {}).total;
       return pt([c.lon, c.lat], { pw: c.id, tone: chg == null ? "slate" : chg <= -50 ? "red" : chg <= -20 ? "amber" : "blue" }); })));
-    put("ship", idOf(d.ships), () => fc(((d.ships || {}).points || []).map((p) => pt([p[0], p[1]], { sog: p[2], cls: p[4], name: p[5] || "", dest: p[8] || "", flag: p[10] || "" }))));
+    put("ship", idOf(d.ships), () => fc(((d.ships || {}).points || []).map((p) => pt([p[0], p[1]], { sog: p[2], cls: p[4], name: p[5] || "", heard: p[7] || "", dest: p[8] || "", flag: p[10] || "" }))));
     put("th", idOf(d.firms), () => fc(((d.firms || {}).points || []).map((p) => pt([p[0], p[1]], { frp: p[2] }))));
   }
   A.on("data", sync); A.on("view", sync);
@@ -168,12 +168,13 @@
     if (l === "mil-pt") return { ...base, title: p.flight ? String(p.flight).trim() : p.reg || p.hex, kind: "Military aircraft", label: "Military aircraft", glyph: "plane", src: "adsb.lol",
       facts: [["Type", p.tname || p.type || "–"], ["Operator", p.owner || "–"], ["Height", p.alt != null ? A.nf(p.alt) + " ft" : "–"], ["Speed", p.gs != null ? Math.round(p.gs) + " knots" : "–"]],
       note: "Position as last heard from the aircraft's own transmitter. Aircraft photos are not in this theme yet. They are in the Classic theme.", classic: true };
-    if (l === "ship-pt") return { ...base, title: p.name || "Unnamed ship", kind: "Ship", label: "Ship, " + (p.cls || "type unknown"), glyph: "ship", src: "AIS volunteers",
-      facts: [["Flag", p.flag || "–"], ["Speed", p.sog != null ? p.sog + " knots" : "–"], ["Destination as sent", p.dest || "–"]], note: "Tracks, sanctions lists and ship details are not in this theme yet. They are in the Classic theme.", classic: true };
-    if (l === "pw-pt") { const c = ((S.d.portwatch || {}).chokepoints || []).find((x) => x.id === p.pw); if (!c) return null; const chg = c.change_vs_year_pct || {};
+    if (l === "ship-pt") { const hm = A.isoMs(p.heard);   // 1.7.3: the card says when the position was heard
+      return { ...base, title: p.name || "Unnamed ship", kind: "Ship", label: "Ship, " + (p.cls || "type unknown"), glyph: "ship", src: "AIS volunteers",
+      facts: [["Flag", p.flag || "–"], ["Speed", p.sog != null ? p.sog + " knots" : "–"], ["Destination as sent", p.dest || "–"], ["Position heard", Number.isFinite(hm) ? `${A.fmtT(hm)} (${A.ago(hm)})` : "time not given"]], note: "Tracks, sanctions lists and ship details are not in this theme yet. They are in the Classic theme.", classic: true }; }
+    if (l === "pw-pt") { const c = ((S.d.portwatch || {}).chokepoints || []).find((x) => x.id === p.pw); if (!c) return null; const chg = c.change_vs_year_pct || {}, a7 = c.avg7 || {}, y7 = c.year_ago7 || {}, n = (v) => (v == null ? "–" : v);
       return { ...base, title: c.name, kind: "Chokepoint", label: "Chokepoint traffic", glyph: "anchor", src: "IMF PortWatch", tone: p.tone,
-        facts: [["Ships a day, last 7 days", `${c.avg7.total} (tankers ${c.avg7.tanker})`], ["Same week last year", `${c.year_ago7.total} (tankers ${c.year_ago7.tanker})`],
-          ["Change", chg.total == null ? "too few to compare" : `${chg.total > 0 ? "+" : ""}${chg.total}% all ships` + (chg.tanker == null ? "" : `, ${chg.tanker > 0 ? "+" : ""}${chg.tanker}% tankers`)], ["Counted through", c.last_day]] }; }
+        facts: [["Ships a day, last 7 days", `${n(a7.total)} (tankers ${n(a7.tanker)})`], ["Same week last year", `${n(y7.total)} (tankers ${n(y7.tanker)})`],
+          ["Change", chg.total == null ? "too few to compare" : `${chg.total > 0 ? "+" : ""}${chg.total}% all ships` + (chg.tanker == null ? "" : `, ${chg.tanker > 0 ? "+" : ""}${chg.tanker}% tankers`)], ["Counted through", c.last_day || "–"]] }; }
     if (l === "il-pt") return { ...base, title: p.name, kind: "Siren in Israel", label: p.now ? "Siren in the last 10 minutes" : "Siren in the last 24 hours", glyph: "megaphone", tone: p.tone, ts: p.t * 1000, src: "Home Front Command (Tzeva Adom)",
       note: "Not a safety service: follow official alerts if you are there. Shelter countdowns are not in this theme yet. They are in the Classic theme.", classic: true };
     if (l === "ar-fill") return { ...base, title: p.name, kind: "Alert region", label: p.rkind === "alert" ? "Air-raid alert" : "Standing warning (" + p.rkind + ")", glyph: "megaphone", src: "alerts.in.ua" };

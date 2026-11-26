@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.3 (2026-11-26): ship feed fixes and a full code audit
+- **Ships (AIS):** when the provider is slow to answer, the server now tries once more with a longer wait, so a slow handshake no longer costs a whole run. A connection that hears nothing counts as a failure (it used to report "fresh" with no ships). A crash in the ship list is fixed. The pages now say when the ship feed's last refresh failed and how old the newest position is.
+- **Server:** one unexpected error can no longer stop every feed from refreshing; cache files are written safely; an empty FAA reply no longer wipes the flight-restriction map. JSON replies are gzip-compressed for clients that ask (the ship feed goes from about 400 KB to 130 KB).
+- **Classic:** one bad reply no longer stops the layers after it; the live push reconnects by itself; feed values are escaped and only http(s) addresses become links.
+- **Dispatch, Atlas, Watch Floor:** feeds now refresh on their own schedule (ships were loaded once and never again in Dispatch and Atlas); a failed load recovers; Watch Floor's map view buttons load their own data.
+- **Analyst (self-hosted copies):** runs every 15 minutes and rewrites its picture when the news feed has moved.
+- 8 new test suites.
+
 ## 1.7.2 (2026-11-25): a news ticker in every theme; EPA air monitors
 - **Ticker in Dispatch, Atlas and Watch Floor,** each in its theme's own look: a paper "Latest" strip, a glass pill over the map, an ops band under the top bar. It carries the 30 newest timed entries the copy has (on this copy: event pins), with pause, hover and keyboard hold, and no movement when the system asks for reduced motion. Classic keeps the ticker it has had since 1.5.0.
 - **New source for self-hosted copies:** EPA AirNow air-quality monitors (`gt/airnow.py`, no key needed). Classic shows monitors reading AQI 101 or more as a map layer, with an "Air" tab of counts by category. The data are preliminary and belong to the reporting agencies; read AirNow's Data Exchange Guidelines before you redistribute them. This Pages copy carries it too.

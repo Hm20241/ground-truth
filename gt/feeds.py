@@ -693,14 +693,15 @@ def ships_view(vessels, reg, st, now, ais, mid):
             if len(v.get("trk") or []) >= 2:
                 tracks[mmsi] = [[p[0], p[1]] for p in v["trk"]]
         if hit:
-            if set(marks) & set("SG"):  # area counts: sanctioned or shadow fleet; a port-state detention alone is common
+            if box and set(marks) & set("SG"):  # 1.7.3: a listed warship outside every box has no area (was a KeyError)
+                # area counts: sanctioned or shadow fleet; a port-state detention alone is common
                 counts[box]["listed"] += 1
             listed.append(dict(card, lists=hit.get("lists") or [], list_name=hit.get("name") or "", url=hit.get("url") or "",
                                match="IMO" if v.get("imo") and hit.get("imo") == v.get("imo") else "MMSI"))
     if len(pts) > MAX_SHIP_POINTS:  # keep listed ships, tankers and cargo first, then ships under way
         pts.sort(key=lambda p: (not p[11], SHIP_RANK.get(p[4], 9), (p[2] or 0) < 1))
         pts = pts[:MAX_SHIP_POINTS]
-    order = lambda c: (min(("SGD".index(m) for m in c["marks"] if m in "SGD"), default=3), c["area"], -(c["sog"] or 0))
+    order = lambda c: (min(("SGD".index(m) for m in c["marks"] if m in "SGD"), default=3), c["area"] or "", -(c["sog"] or 0))
     tankers.sort(key=order)
     listed.sort(key=order)
     military.sort(key=lambda c: (c["flag"] or "~", c["name"]))

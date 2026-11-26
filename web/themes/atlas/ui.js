@@ -162,12 +162,22 @@
     conflict: [["dot", "red", "Fighting: strikes, drones, missiles, forces"], ["dot", "blue", "At sea"], ["dot", "amber", "Energy and infrastructure"], ["dot", "slate", "Statements and reports"], ["line", "red", "Front line (solid), blockade or defence line (dashed)"], ["area", "red", "Occupied area in Ukraine (DeepState)", ["front"]], ["area", "slate", "Status unknown, and other areas drawn on the source map"]],
     alerts: [["area", "red", "Air-raid alert, red"], ["area", "amber", "Air-raid alert, yellow"], ["area", "slate", "Standing warning"], ["dot", "red", "Siren in Israel, last 10 minutes"], ["dot", "slate", "Siren in Israel, last 24 hours"], ["ring", "amber", "US embassy alert, last 3 days"]],
     air: [["dot", "slate", "Military aircraft (red when it reports an emergency)", ["mil"]], ["area", "blue", "US flight restriction", ["tfr"]], ["ring", "red", "Emergency code being sent now", ["squawk"]], ["ring", "slate", "Emergency code, ended", ["squawk"]]],
-    sea: [["ring", "red", "Attack at sea", ["ukmto"]], ["ring", "blue", "Other incident or advisory at sea", ["ukmto"]], ["dot", "red", "Chokepoint, traffic down by half or more", ["portwatch"]], ["dot", "amber", "Chokepoint, down by a fifth or more", ["portwatch"]], ["dot", "blue", "Chokepoint, near normal, and merchant ships", ["portwatch", "ships"]], ["dot", "amber", "Tankers", ["ships"]]],
+    sea: [["ring", "red", "Attack at sea", ["ukmto"]], ["ring", "blue", "Other incident or advisory at sea", ["ukmto"]], ["dot", "red", "Chokepoint, traffic down by half or more", ["portwatch"]], ["dot", "amber", "Chokepoint, down by a fifth or more", ["portwatch"]], ["dot", "blue", "Chokepoint, near normal, and merchant ships", ["portwatch", "ships"]], ["dot", "amber", "Tankers", ["ships"]], ["dot", "red", "Military ships that transmit (larger dot)", ["ships"]]],
     outages: [["area", "amber", "Internet outage (stronger when ongoing)", ["outages"]], ["dot", "amber", "Power, mobile, website or cloud outage, active", ["power", "cellular", "websites", "cloud"]], ["dot", "slate", "The same, ended", ["power", "cellular", "websites", "cloud"]], ["line", "slate", "Undersea cables", ["cables"]]],
     cyber: [["area", "amber", "Ransomware claims and reported attacks, 7 days (stronger with more)", ["cyber"]]],
     hazards: [["ring", "amber", "Earthquake in a watched area", ["quakes"]], ["ring", "slate", "Other earthquake, magnitude 4 or more", ["quakes"]], ["dot", "amber", "Disaster alert, orange", ["hazards"]], ["dot", "red", "Disaster alert, red, and fires seen from space", ["hazards", "firms"]], ["dot", "slate", "Disaster alert, green", ["hazards"]]],
     official: [["area", "red", "US travel advisory: do not travel", ["advisories"]], ["area", "amber", "US travel advisory: reconsider travel", ["advisories"]], ["ring", "amber", "US embassy alert, last 3 days"]],
   };
+  // 1.7.3: how old the ship positions are, said in words. The newest "heard" time in the reply, worked out once per reply.
+  const shipAt = new WeakMap();
+  const shipNewest = (d) => { if (!shipAt.has(d)) { let m = 0; (d.points || []).forEach((p) => { const t = A.isoMs(p && p[7]); if (t > m) m = t; }); shipAt.set(d, m); } return shipAt.get(d); };
+  function shipNote(d, st) {
+    if (!A.has("ships")) return "";
+    if (!d) return `<div class="empty">${S.failed.has("ships") ? "Ship positions did not load. They will be tried again." : "Loading ship positions…"}</div>`;
+    const m = shipNewest(d), heard = m ? `The newest position was heard ${A.ago(m)}.` : "";
+    if (st && st.ok === false) return `<div class="empty">The server's last refresh of the ship feed failed, so the map shows the positions from before it. ${esc(heard || "They may be old.")}</div>`;
+    return `<p class="muted small" style="margin-top:10px">${esc(heard)}${S.failed.has("ships") ? " The last try to refresh them got no answer." : ""}</p>`;
+  }
   function topicExtra(k) {
     const d = S.d, s = d.summary || {};
     if (k === "conflict") return `<div class="tiles">${tile(nf(s.events_24h), "map pins in 24 hours")}${tile(nf(s.events_6h), "in 6 hours")}${tile(S.fronts.length, "front lines drawn")}${tile(nf(s.thermal_corroborated), "pins matched by a satellite fire")}</div>` +
@@ -182,9 +192,9 @@
         stub("GPS jamming", "A map of where aircraft reported degraded GPS over the last day.", ["gpsjam"]) + stub("Conflict-zone airspace warnings on the map", "The areas regulators warn airlines away from, as shapes.", ["czib"]) + stub("Aircraft photos and types legend", "A photo of the airframe and a colour per role.", ["mil"]); }
     if (k === "sea") { const cps = ((d.portwatch || {}).chokepoints || []).filter((c) => c.pinned || (c.avg7 || {}).total >= 20).slice(0, 8), st = (d.status || {}).feeds || {};
       return `<div class="tiles">${tile(nf(s.ukmto_incidents_7d), "incidents at sea, 7 days", ["ukmto"])}${tile(nf((d.ships || {}).count), "ships heard", ["ships"])}${tile(nf((s.listed_ships_heard || {}).heard_1h), "ships on a sanctions or watch list, last hour", ["ships"])}</div>` +
-        (st.ships && !st.ships.ok ? `<div class="empty">The ship feed reported an error at its last run, so ship positions may be old.</div>` : "") +
+        shipNote(d.ships, st.ships) +
         `<section class="sec"><h2>Chokepoints <small>ships a day, IMF PortWatch</small></h2>` + (cps.length ? `<table class="table"><thead><tr><th>Passage</th><th class="n">7-day average</th><th class="n">Against last year</th></tr></thead><tbody>${cps.map((c) => { const g = (c.change_vs_year_pct || {}).total;
-          return `<tr><td>${esc(c.name)}</td><td class="n">${esc(c.avg7.total)}</td><td class="n">${g == null ? "–" : `<span class="state${g <= -50 ? " hot" : g <= -20 ? " warm" : ""}">${g > 0 ? "+" : ""}${g}%</span>`}</td></tr>`; }).join("")}</tbody></table>` : loading("portwatch")) + `</section>` +
+          return `<tr><td>${esc(c.name)}</td><td class="n">${esc((c.avg7 || {}).total ?? "–")}</td><td class="n">${g == null ? "–" : `<span class="state${g <= -50 ? " hot" : g <= -20 ? " warm" : ""}">${g > 0 ? "+" : ""}${esc(g)}%</span>`}</td></tr>`; }).join("")}</tbody></table>` : d.portwatch ? `<p class="muted">No chokepoint figures right now.</p>` : loading("portwatch")) + `</section>` +
         stub("Ship tracks, sanctions rings and satellite ship counts", "Tanker tracks, a ring on listed ships and the satellite count for seas with no receivers.", ["ships", "vessellists", "gfw"]); }
     if (k === "outages") { const o = s.internet_outages || {}, act = (n) => S.entries.filter((e) => e.sub === n && e.active).length;
       return `<div class="tiles">${tile(o.countries_with_outages ?? "–", "countries with internet outages", ["outages"])}${tile(d.power ? act("power") : "–", "power outages active", ["power"])}${tile(d.cellular ? act("cellular") : "–", "mobile network cuts active", ["cellular"])}${tile((d.cloud || !A.has("cloud")) && (d.websites || !A.has("websites")) ? act("cloud") + act("websites") : "–", "cloud and website incidents active", ["cloud", "websites"])}</div>` +
@@ -273,8 +283,8 @@
     const q = S.q.trim().toLowerCase(), places = [];
     Object.entries(A.REGIONS).forEach(([k, v]) => { if (v[0].toLowerCase().includes(q)) places.push({ act: "page", v: "region:" + k, title: v[0], meta: "Region" }); });
     S.fronts.forEach((f) => { if ((f.title + " " + f.place).toLowerCase().includes(q)) places.push({ act: "sel", id: f.id, title: f.title, meta: f.kind + (f.place ? " · " + f.place : "") }); });
-    ((S.d.portwatch || {}).chokepoints || []).forEach((c) => { if (c.name.toLowerCase().includes(q)) places.push({ act: "place", v: `${c.lon},${c.lat},5`, title: c.name, meta: "Chokepoint" }); });
-    S.cc.forEach((c) => { if (c.name.toLowerCase().includes(q)) places.push({ act: "place", v: `${c.ll[0]},${c.ll[1]},4.6`, title: c.name, meta: "Country" }); });
+    ((S.d.portwatch || {}).chokepoints || []).forEach((c) => { if (String(c.name || "").toLowerCase().includes(q)) places.push({ act: "place", v: `${c.lon},${c.lat},5`, title: c.name, meta: "Chokepoint" }); });
+    S.cc.forEach((c) => { if (c.ll && String(c.name || "").toLowerCase().includes(q)) places.push({ act: "place", v: `${c.ll[0]},${c.ll[1]},4.6`, title: c.name, meta: "Country" }); });
     const list = A.feed({ topic: "all", allGroups: true, noFilter: true, q });
     return `<div class="view-top"><h2 class="view-h">Results for “${esc(S.q.trim())}”<small>${places.length} place${places.length === 1 ? "" : "s"}, ${nf(list.length)} entr${list.length === 1 ? "y" : "ies"} across every source loaded</small></h2><button type="button" class="btn" data-act="clearq">Clear</button></div>` +
       (places.length ? `<section class="sec" style="margin-top:10px"><h2>Places</h2><div class="rows">${places.slice(0, 6).map((p) => `<button type="button" class="row" data-act="${p.act}" ${p.id ? `data-id="${p.id}"` : `data-v="${esc(p.v)}"`}><span class="disc plain">${ico("pin")}</span><span class="r-main"><span class="r-title">${esc(p.title)}</span><span class="r-meta">${esc(p.meta)}</span></span></button>`).join("")}</div></section>` : "") +
@@ -337,7 +347,7 @@
     $("qclear").hidden = !S.q;
   }
   let rt = null;
-  const renderSoon = () => { clearTimeout(rt); rt = setTimeout(() => { render(); if (S.sel && S.byId.has(S.sel.id)) S.sel = S.byId.get(S.sel.id); }, 80); };
+  const renderSoon = () => { clearTimeout(rt); rt = setTimeout(() => { if (S.sel && S.byId.has(S.sel.id)) S.sel = S.byId.get(S.sel.id); render(); }, 80); };   // 1.7.3: the open card takes the new data before the sheet is drawn, not after
   A.on("data", renderSoon);
   A.on("data", () => renderTicker()); A.on("view", () => renderTicker());
   A.on("zone", () => { tick(); render(); renderDetail(); });
@@ -393,7 +403,7 @@
   const setW = (w) => { UI.panelW = Math.min(640, Math.max(340, Math.round(w))); root.style.setProperty("--panel-w", UI.panelW + "px"); LS.set("panel", UI.panelW); $("resize").setAttribute("aria-valuenow", UI.panelW); };
   const rz = $("resize"); rz.setAttribute("aria-valuemin", 340); rz.setAttribute("aria-valuemax", 640); rz.setAttribute("aria-valuenow", UI.panelW);
   rz.addEventListener("pointerdown", (e) => { rz.setPointerCapture(e.pointerId); root.classList.add("resizing"); const move = (m) => setW(m.clientX - 12);
-    const up = () => { rz.removeEventListener("pointermove", move); rz.removeEventListener("pointerup", up); root.classList.remove("resizing"); }; rz.addEventListener("pointermove", move); rz.addEventListener("pointerup", up); });
+    const up = () => { rz.removeEventListener("pointermove", move); rz.removeEventListener("pointerup", up); rz.removeEventListener("pointercancel", up); root.classList.remove("resizing"); }; rz.addEventListener("pointermove", move); rz.addEventListener("pointerup", up); rz.addEventListener("pointercancel", up); });   // 1.7.3: a cancelled drag also lets go
   rz.addEventListener("keydown", (e) => { if (e.key === "ArrowLeft") setW(UI.panelW - 20); else if (e.key === "ArrowRight") setW(UI.panelW + 20); });
   rz.addEventListener("dblclick", () => setW(420));
 
@@ -459,7 +469,7 @@
   }
   let wt = null;
   function wallStep() {
-    const list = wallList(); if (!list.length) return;
+    const list = wallList(); if (!list.length || UI.mode !== "wall") return;   // 1.7.3: the first step is on a timer and could land after the wall was left
     UI.wallI = (UI.wallI + 1) % (list.length + 1);
     document.querySelectorAll(".w-item").forEach((el, i) => el.classList.toggle("on", i === UI.wallI));
     if (UI.wallI === list.length) { A.mark(null); if (!A.REDUCED) A.map.easeTo({ center: [30, 30], zoom: 1.9, padding: A.pad(), duration: 3000 }); return; }  // one beat on the whole world

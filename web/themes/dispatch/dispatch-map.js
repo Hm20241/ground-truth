@@ -154,7 +154,7 @@
     map.addLayer({ id: "ar-line", type: "line", source: "alertreg", paint: { "line-color": ["get", "col"], "line-width": 1, "line-opacity": 0.7 } });
     map.addLayer({ id: "jam-fill", type: "fill", source: "jam", paint: { "fill-color": ["get", "col"], "fill-opacity": 0.32 } });
     map.addLayer({ id: "base-ref", type: "raster", source: "ref", paint: { "raster-opacity": 0.95 } });
-    map.addLayer({ id: "ship-dot", type: "circle", source: "ships", paint: { "circle-radius": zoomW(1.2, 2.4, 4), "circle-color": ["get", "col"], "circle-opacity": 0.75 } });
+    map.addLayer({ id: "ship-dot", type: "circle", source: "ships", paint: { "circle-radius": zoomW(1.9, 2.8, 4.2), "circle-color": ["get", "col"], "circle-opacity": 0.9 } });   // 1.7.3: was 1.2 px at 0.75, close to invisible at world zoom
     const isLine = ["==", ["geometry-type"], "LineString"], round = { "line-cap": "round", "line-join": "round" };
     map.addLayer({ id: "fr-case", type: "line", source: "fronts", filter: isLine, layout: round, paint: { "line-color": "#fff", "line-opacity": 0.9, "line-width": zoomW(4.6, 6.6, 8.4) } });
     map.addLayer({ id: "fr-line", type: "line", source: "fronts", filter: ["all", isLine, ["==", ["get", "kind"], "contact"]], layout: round, paint: { "line-color": ["get", "col"], "line-width": zoomW(2.4, 3.6, 4.8) } });
@@ -205,12 +205,19 @@
     map.getSource("alertreg").setData(fc(alertRegions().filter((r) => regions.has(r.id)).sort((a, b) => (a.level === "red") - (b.level === "red"))
       .map((r) => ({ type: "Feature", geometry: regions.get(r.id).geometry, properties: { id: r.id, col: r.level === "red" ? RED : AMBER } }))));
   }
+  // 1.7.3: a source is rebuilt only when its feed is a new copy (each fetch makes a new object), not at every reload
+  // and topic change; and it is rebuilt as soon as a new copy arrives ("feed" below), so a popup, which looks its
+  // entry up by position in the feed, always reads the copy the dots were drawn from.
+  const drawn = {};
+  const fresh = (name) => { const d = S.feeds[name]; if (!d || drawn[name] === d) return false; drawn[name] = d; return true; };
+  // the time of the newest ship position in a copy of the ships feed, worked out once per copy
+  G.shipsAt = (sh) => { if (sh._newest == null) { let m = 0; (sh.points || []).forEach((p) => { const t = Date.parse(p[7]); if (t > m) m = t; }); sh._newest = m; } return sh._newest; };
   function drawTopicFeeds() {
     if (!ready) return;
     const F = S.feeds, now = Date.now();
-    if (F.front && F.front.geojson) map.getSource("deepstate").setData(fc(F.front.geojson.features.filter((f) => /occupied|CADR/i.test(f.properties.label || ""))));
-    if (F.mil && F.mil.geojson) map.getSource("mil").setData(fc(F.mil.geojson.features.map((f) => pt(f.geometry.coordinates, { hex: f.properties.hex, img: f.properties.role === "helicopter" ? "ac-heli" : "ac-plane", rot: f.properties.role === "helicopter" ? 0 : Number(f.properties.track) || 0 }))));
-    if (F.gpsjam && window.h3) {
+    if (fresh("front") && F.front.geojson) map.getSource("deepstate").setData(fc(F.front.geojson.features.filter((f) => /occupied|CADR/i.test(f.properties.label || ""))));
+    if (fresh("mil") && F.mil.geojson) map.getSource("mil").setData(fc(F.mil.geojson.features.map((f) => pt(f.geometry.coordinates, { hex: f.properties.hex, img: f.properties.role === "helicopter" ? "ac-heli" : "ac-plane", rot: f.properties.role === "helicopter" ? 0 : Number(f.properties.track) || 0 }))));
+    if (F.gpsjam && window.h3 && fresh("gpsjam")) {
       const feats = [];
       (F.gpsjam.items || []).forEach(([h, lv]) => {
         if (lv !== "high" && lv !== "medium") return;
@@ -220,23 +227,22 @@
       });
       map.getSource("jam").setData(fc(feats));
     }
-    if (F.ukmto) map.getSource("ukmto").setData(fc((F.ukmto.items || []).filter((i) => i.coord).map((i, n) => {
+    if (fresh("ukmto")) map.getSource("ukmto").setData(fc((F.ukmto.items || []).filter((i) => i.coord).map((i, n) => {
       const age = now - Date.parse(i.date + "T00:00:00Z");
       return pt(i.coord, { n, img: /attack|hijack/i.test(i.type) ? "uk-hot" : "uk-cool", op: age < 8 * 864e5 ? 1 : 0.45 });
     })));
-    if (F.portwatch) map.getSource("choke").setData(fc((F.portwatch.chokepoints || []).map((c, n) => {
+    if (fresh("portwatch")) map.getSource("choke").setData(fc((F.portwatch.chokepoints || []).map((c, n) => {
       const ch = (c.change_vs_year_pct || {}).total;
       return pt([c.lon, c.lat], { n, col: ch != null && ch <= -50 ? RED : SEA, label: c.name + (ch != null ? "\n" + (ch > 0 ? "+" : "") + ch + "% on last year" : "") });
     })));
-    if (F.ships) map.getSource("ships").setData(fc((F.ships.points || []).map((p, n) => pt([p[0], p[1]], { n, col: p[4] === "tanker" ? INK : "#5b7f99" }))));
-    if (F.quakes && F.quakes.geojson) map.getSource("quakes").setData(fc(F.quakes.geojson.features.map((f, n) => pt(f.geometry.coordinates, { n, mag: f.properties.mag || 4, col: f.properties.watch ? RED : INK }))));
-    if (F.hazards && F.hazards.geojson) map.getSource("hazards").setData(fc(F.hazards.geojson.features.filter((f) => f.properties.type !== "EQ").map((f, n) => pt(f.geometry.coordinates, { n: F.hazards.geojson.features.indexOf(f), alert: f.properties.alert, col: f.properties.alert === "Red" ? RED : f.properties.alert === "Orange" ? AMBER : GREY }))));
+    if (fresh("ships")) map.getSource("ships").setData(fc((F.ships.points || []).map((p, n) => pt([p[0], p[1]], { n, col: p[4] === "tanker" ? INK : "#5b7f99" }))));
+    if (fresh("quakes") && F.quakes.geojson) map.getSource("quakes").setData(fc(F.quakes.geojson.features.map((f, n) => pt(f.geometry.coordinates, { n, mag: f.properties.mag || 4, col: f.properties.watch ? RED : INK }))));
+    if (fresh("hazards") && F.hazards.geojson) map.getSource("hazards").setData(fc(F.hazards.geojson.features.filter((f) => f.properties.type !== "EQ").map((f, n) => pt(f.geometry.coordinates, { n: F.hazards.geojson.features.indexOf(f), alert: f.properties.alert, col: f.properties.alert === "Red" ? RED : f.properties.alert === "Orange" ? AMBER : GREY }))));
   }
   function drawAll() { drawEvents(); drawAlerts(); drawTopicFeeds(); renderCaption(); renderInView(); }
 
   function loadTopicFeeds() {
-    const names = [...(TOPICS[topic].feeds || [])];
-    if (topic === "conflict") names.push("front");
+    const names = topicFeeds();
     const jobs = names.map((n) => G.need(n).catch(() => null));
     if (topic === "air" && !window.h3) jobs.push(G.statusKnown.then(() => {
       if (G.absent("gpsjam")) return null;   // the hexagon decoder is only for GPS interference
@@ -286,8 +292,9 @@
     } else if (topic === "sea") {
       const u = F.ukmto || {}, sh = F.ships || {};
       h = `<b>Sea.</b> Incidents reported to UKMTO${u.located != null ? ` (${nf(u.located)} placed; the last 7 days at full strength)` : ""}, chokepoints with their traffic against a year ago, and the map’s own sea events. `
-        + `${sh.points ? `Small dots are ${nf(sh.points.length)} ships heard by volunteer receivers: none in the Gulf or Red Sea means no coverage there, not no ships.` : ""}` + notLoaded(["ukmto", "portwatch", "ships"]) + notHere(["ukmto", "portwatch", "ships"])
-        + row(lg("pinx red", "Attack or hijack"), lg("pinx sea", "Other incident or sea event"), lg("ring sea", "Chokepoint"), lg("ring red", "Chokepoint down by half or more"), lg("ln dash", "Blockade line"));
+        + `${sh.points ? `Small dots are ${nf(sh.points.length)} ships heard by volunteer receivers: none in the Gulf or Red Sea means no coverage there, not no ships.${G.shipsAt(sh) ? ` Newest position heard ${esc(G.when(G.shipsAt(sh)))} ${G.zlabel()}.` : ""}${sh._ok === false ? ` <span class="warn">The last refresh of the ship feed failed; these are the positions it had.</span>` : ""}` : ""}` + notLoaded(["ukmto", "portwatch", "ships"]) + notHere(["ukmto", "portwatch", "ships"])
+        + row(lg("pinx red", "Attack or hijack"), lg("pinx sea", "Other incident or sea event"), lg("ring sea", "Chokepoint"), lg("ring red", "Chokepoint down by half or more"), lg("ln dash", "Blockade line"),
+          sh.points ? `<span class="lg"><i class="dot" style="width:7px;height:7px;background:#5b7f99" aria-hidden="true"></i>Ship heard</span><span class="lg"><i class="dot" style="width:7px;height:7px;background:${INK}" aria-hidden="true"></i>Tanker</span>` : "");
     } else if (topic === "outages") {
       const o = s.internet_outages || {};
       h = `<b>Outages.</b> Pins are the map’s energy, infrastructure and communications events. ${o.countries_with_outages != null ? `${nf(o.countries_with_outages)} countries had internet outages in ${nf(o.window_h)} hours: ` : ""}`
@@ -333,12 +340,13 @@
     const p = hit.properties, id = hit.layer.id, F = S.feeds, at = hit.geometry.type === "Point" ? hit.geometry.coordinates : e.lngLat;
     if (id === "ev-pin") { const c = eventCard(p.id); if (c) showPopup(c.ll, c.html); return; }
     if (id.startsWith("fr-")) { const f = FRONTS.find((x) => x.id === p.id); if (f) showPopup(id === "fr-ico" ? f.mid : e.lngLat, frontCard(f)); return; }
-    if (id === "uk-ico") { const i = (F.ukmto.items || []).filter((x) => x.coord)[p.n]; if (i) showPopup(at, card(`Maritime incident · ${esc(i.type || "")}`, i.where || "At sea", [esc(G.fmtDate(i.date)), esc(String(i.text || "").replace(/^.*?Incident Time:\s*\d{3,4}\s*UTC\s*/i, ""))], link(i.url, "Open the UKMTO notice"))); return; }
-    if (id === "cp-dot") { const c = (F.portwatch.chokepoints || [])[p.n]; if (c) showPopup(at, card("Chokepoint", c.name, [`${nf((c.last || {}).total)} ships on ${esc(G.fmtDate(c.last_day))}; ${nf((c.avg7 || {}).total)} a day over 7 days.`, `Same week last year: ${nf((c.year_ago7 || {}).total)} a day${(c.change_vs_year_pct || {}).total != null ? ` (${c.change_vs_year_pct.total > 0 ? "+" : ""}${c.change_vs_year_pct.total}%)` : ""}.`, `<span class="muted">IMF PortWatch, about 3 days behind.</span>`])); return; }
+    if (id === "uk-ico") { const i = ((F.ukmto || {}).items || []).filter((x) => x.coord)[p.n]; if (i) showPopup(at, card(`Maritime incident · ${esc(i.type || "")}`, i.where || "At sea", [esc(G.fmtDate(i.date)), esc(String(i.text || "").replace(/^.*?Incident Time:\s*\d{3,4}\s*UTC\s*/i, ""))], link(i.url, "Open the UKMTO notice"))); return; }
+    if (id === "cp-dot") { const c = ((F.portwatch || {}).chokepoints || [])[p.n]; if (c) showPopup(at, card("Chokepoint", c.name, [`${nf((c.last || {}).total)} ships on ${esc(G.fmtDate(c.last_day))}; ${nf((c.avg7 || {}).total)} a day over 7 days.`, `Same week last year: ${nf((c.year_ago7 || {}).total)} a day${(c.change_vs_year_pct || {}).total != null ? ` (${c.change_vs_year_pct.total > 0 ? "+" : ""}${nf(c.change_vs_year_pct.total)}%)` : ""}.`, `<span class="muted">IMF PortWatch, about 3 days behind.</span>`])); return; }
     if (id === "mil-ico") { const a = (F.mil.geojson.features.find((x) => x.properties.hex === p.hex) || {}).properties; if (a) showPopup(at, card(`Military aircraft · ${esc(a.role || "")}`, a.tname || a.type || "Type unknown", [esc(a.owner || ""), `${a.flight ? "Callsign " + esc(String(a.flight).trim()) + " · " : ""}${a.alt != null ? esc(String(a.alt)) + (isNaN(a.alt) ? "" : " ft") : ""}${a.gs ? " · " + nf(Math.round(a.gs)) + " kt" : ""}`])); return; }
-    if (id === "qk-dot") { const q = F.quakes.geojson.features[p.n].properties; showPopup(at, card(q.watch ? "Earthquake · on the watch list" : "Earthquake", `Magnitude ${q.mag}, ${q.place || ""}`, [`${esc(G.when(G.isoMs(q.time)))} ${G.zlabel()} · ${nf(q.depth_km)} km deep`, q.watch_reason ? esc(q.watch_reason) : ""], link(q.url, "Open the record"))); return; }
-    if (id === "hz-dot") { const h = F.hazards.geojson.features[p.n].properties; showPopup(at, card(`${esc(h.type_label || "Hazard")} · ${esc(h.alert || "")} alert`, h.event_name || h.name || "", [esc(h.severity || ""), esc(String(h.name || "").slice(0, 160))], link(h.url, "Open GDACS"))); return; }
-    if (id === "ship-dot") { const sp = (F.ships.points || [])[p.n]; if (sp) showPopup(at, card("Ship", sp[5] || "Name not heard", [`${esc(sp[4] || "type unknown")}${sp[10] ? " · flag " + esc(sp[10]) : ""}`, sp[8] ? "Bound for " + esc(sp[8]) : ""])); return; }
+    if (id === "qk-dot") { const q = (F.quakes.geojson.features[p.n] || {}).properties; if (q) showPopup(at, card(q.watch ? "Earthquake · on the watch list" : "Earthquake", `Magnitude ${q.mag}, ${q.place || ""}`, [`${esc(G.when(G.isoMs(q.time)))} ${G.zlabel()} · ${nf(q.depth_km)} km deep`, q.watch_reason ? esc(q.watch_reason) : ""], link(q.url, "Open the record"))); return; }
+    if (id === "hz-dot") { const h = (F.hazards.geojson.features[p.n] || {}).properties; if (h) showPopup(at, card(`${esc(h.type_label || "Hazard")} · ${esc(h.alert || "")} alert`, h.event_name || h.name || "", [esc(h.severity || ""), esc(String(h.name || "").slice(0, 160))], link(h.url, "Open GDACS"))); return; }
+    if (id === "ship-dot") { const sp = ((F.ships || {}).points || [])[p.n], t = sp ? Date.parse(sp[7]) : NaN; if (sp) showPopup(at, card("Ship", sp[5] || "Name not heard", [`${esc(sp[4] || "type unknown")}${sp[10] ? " · flag " + esc(sp[10]) : ""}`, sp[8] ? "Bound for " + esc(sp[8]) : "",
+      t ? `Heard ${esc(G.when(t))} ${G.zlabel()} (${esc(G.ago(t))})` : ""])); return; }   // 1.7.3: when the position was heard
     if (id === "ar-fill") { const r = alertRegions().find((x) => x.id === p.id); if (r) showPopup(e.lngLat, card(`Air-raid alert · ${esc(r.level || "")}`, r.en || r.name, [r.since ? `Since ${esc(G.when(G.isoMs(r.since)))} ${G.zlabel()} (${esc(r.duration || "")})` : "", `<span class="muted">Not a safety tool: follow official alerts.</span>`])); }
   }
   G.on("show", (pid) => {
@@ -360,6 +368,7 @@
         const u = (F.ukmto.items || []).filter((i) => i.coord && inb(i.coord)).slice(0, 12);
         html = (u.length ? `<h3 class="grp"><span>Maritime incidents (UKMTO)</span></h3>` + u.map((i) => `<article class="entry"><time class="e-time">${esc(G.fmtDate(i.date))}</time><div class="e-body"><p class="e-kick"><i class="dot ${/attack|hijack/i.test(i.type) ? "f-violent" : "f-sea"}"></i>${esc(i.type || "")}</p><h3 class="e-title">${link(i.url, esc(i.where || "At sea")) || esc(i.where || "At sea")}</h3><p class="e-sum">${esc(String(i.text || "").replace(/^.*?Incident Time:\s*\d{3,4}\s*UTC\s*/i, "").slice(0, 200))}…</p></div></article>`).join("") : "") + (n ? `<h3 class="grp"><span>Event pins</span></h3>` : "") + html;
       }
+      if (topic === "sea" && F.ships) what += `, ${nf((F.ships.points || []).filter((p) => inb([p[0], p[1]])).length)} ships`;   // 1.7.3: the ships in view are counted, as aircraft are
       if (topic === "air" && F.mil) { const m = F.mil.geojson.features.filter((f) => inb(f.geometry.coordinates)); what = `event pin${n === 1 ? "" : "s"}, ${nf(m.length)} military aircraft`; }
     } else if (topic === "hazards") {
       const q = ((F.quakes || {}).geojson || { features: [] }).features.filter((f) => inb(f.geometry.coordinates)).sort((a, c) => c.properties.mag - a.properties.mag);
@@ -404,7 +413,10 @@
     });
   }
   G.on("route", applyView);
-  G.on("data", () => { syncTopics(); drawAll(); if (wall.on && ready && wall.i === 0) wallStep(); });
+  const topicFeeds = () => [...(TOPICS[topic].feeds || []), ...(topic === "conflict" ? ["front"] : [])];
+  // 1.7.3: at each reload the open topic asks again for its feeds that are due (they were fetched once and never again)
+  G.on("data", () => { syncTopics(); drawAll(); if (ready && ["home", "map", "wall"].includes(S.route.view) && topicFeeds().some(G.due)) loadTopicFeeds(); if (wall.on && ready && wall.i === 0) wallStep(); });
+  G.on("feed", () => { drawTopicFeeds(); });
   G.on("render", () => { renderCaption(); renderInView(); });
   window.addEventListener("resize", () => requestAnimationFrame(() => map.resize()));
   $("mapclose").addEventListener("click", () => { location.hash = "#/"; });

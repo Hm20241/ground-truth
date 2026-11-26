@@ -89,7 +89,12 @@
   if (!WF.S.wall) { window.addEventListener("pagehide", markSeen); document.addEventListener("visibilitychange", () => { if (document.hidden) markSeen(); }); }
 
   // ---------- data ----------
-  const api = (WF.api = (p) => fetch("api/" + p, { cache: "no-store" }).then((r) => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status)))));
+  // 1.7.3: a request that never answers is given up after 60 seconds. Without this a hung connection kept its name in
+  // WF.LOADING for good, and that feed was never asked for again on a screen left running.
+  const API_MS = 60000;
+  const api = (WF.api = (p) => { const c = window.AbortController ? new AbortController() : null, t = c ? setTimeout(() => c.abort(), API_MS) : 0;
+    return fetch("api/" + p, { cache: "no-store", signal: c ? c.signal : undefined }).then((r) => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+      .then((j) => { clearTimeout(t); return j; }, (e) => { clearTimeout(t); throw (e && e.name === "AbortError" ? new Error("no answer in 60 s") : e); }); });
   let raf = 0;
   WF.renderSoon = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; if (WF.render) WF.render(); }); };
   // name -> [path, pick]: pick takes the reply to the part the page uses
@@ -177,7 +182,9 @@
     }
     WF.LOADING.add(name);
     const [path, pick] = SRC[name];
-    return api(path).then((r) => { take(name, pick(r)); delete WF.ERR[name]; }, (e) => { WF.ERR[name] = e.message || "failed"; })
+    // 1.7.3: .catch, so a reply the page cannot read (take or pick throwing) is an error like any other and the name
+    // leaves WF.LOADING; before, it stayed there and the feed was never asked for again
+    return api(path).then((r) => { take(name, pick(r)); delete WF.ERR[name]; }).catch((e) => { WF.ERR[name] = e && e.name === "TypeError" && !/fetch|network|load/i.test(e.message) ? "the reply could not be read" : (e && e.message) || "failed"; })
       .then(() => { WF.LOADING.delete(name);
         if (name === "status" && !statusDone) { statusDone = true; const held = [...HELD]; HELD.clear(); held.forEach((n) => WF.load(n)); }
         if (WF.onData) WF.onData(EXTRA.includes(name) ? "events" : name); WF.renderSoon(); });

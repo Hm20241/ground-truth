@@ -95,14 +95,19 @@
   let statusDone; const statusKnown = new Promise((res) => { statusDone = res; });
   const absent = (name) => { const known = (S.status || {}).feeds; return !!known && !CORE_KEYS.includes(name) && !(name in known); };
 
-  // Feeds a section or a map topic needs, fetched on first use and kept for three minutes.
-  const feedAt = {}, feedWait = {};
+  // Feeds a section or a map topic needs, fetched on first use and kept for two and a half minutes: a little under
+  // the three-minute reload, so each reload gets a new copy (1.7.3; at three minutes exactly every other reload was
+  // answered from the copy in hand). due() says a feed should be asked for again: never tried, or last tried that long
+  // ago, whether that try worked or failed. The open section and map topic ask again for what is due at each reload,
+  // so a feed that failed once comes back and a long-open page does not keep old figures (1.7.3).
+  const FEED_TTL = 150000, feedAt = {}, feedWait = {}, feedTry = {};
+  const due = (name) => !absent(name) && !feedWait[name] && Date.now() - (feedTry[name] || 0) >= FEED_TTL;
   const need = (name) => statusKnown.then(() => (absent(name) ? Promise.reject(new Error(name + " is not on this copy")) : fetchFeed(name)));
   function fetchFeed(name) {
-    if (S.feeds[name] && Date.now() - feedAt[name] < 180000) return Promise.resolve(S.feeds[name]);
+    if (S.feeds[name] && Date.now() - feedAt[name] < FEED_TTL) return Promise.resolve(S.feeds[name]);
     if (feedWait[name]) return feedWait[name];
-    feedWait[name] = api("feed/" + name).then((j) => { S.feeds[name] = j.data || {}; S.feeds[name]._ok = j.ok; S.feeds[name]._at = j.at; feedAt[name] = Date.now(); delete feedWait[name]; delete S.failed[name]; return S.feeds[name]; },
-      (e) => { delete feedWait[name]; S.failed[name] = true; if (S.feeds[name]) return S.feeds[name]; throw e; });
+    feedWait[name] = api("feed/" + name).then((j) => { S.feeds[name] = j.data || {}; S.feeds[name]._ok = j.ok; S.feeds[name]._at = j.at; feedAt[name] = feedTry[name] = Date.now(); delete feedWait[name]; delete S.failed[name]; emit("feed", name); return S.feeds[name]; },
+      (e) => { delete feedWait[name]; feedTry[name] = Date.now(); S.failed[name] = true; if (S.feeds[name]) return S.feeds[name]; throw e; });
     return feedWait[name];
   }
 
@@ -167,13 +172,13 @@
     const out = [];
     ((S.events || {}).features || []).forEach((f) => {
       const p = f.properties;
-      if (p.kind !== "event" || !p.ts_ms) return;
+      if (p.kind !== "event" || !p.ts_ms || !Number.isFinite(p.ts_ms)) return;
       const day = p.ts_source === "date";
       out.push({ id: "p" + p.id, pid: p.id, ts: day ? dayAt(p.ts_ms) : p.ts_ms, day: day ? p.ts_ms : 0, title: p.title, url: httpUrl(p.url), src: "pin", srcLabel: p.handle ? (/^r\//.test(p.handle) ? "" : "@") + p.handle : pinSource(p) ? "" : "Source map", from: pinSource(p),
         place: p.sea && !["offshore", "open ocean"].includes(p.sea) ? p.sea : p.country_name, theatre: p.theatre, cat: p.category, ll: f.geometry && f.geometry.coordinates });
     });
     [["wire", "w"], ["telegram", "t"]].forEach(([name, k]) => ((S.feeds[name] || {}).items || []).forEach((i) => {
-      if (!i.ts_ms || !i.title) return;
+      if (!Number.isFinite(i.ts_ms) || !i.ts_ms || !i.title) return;   // 1.7.3: a time that is not a number would stop the whole list drawing
       out.push({ id: k + i.id, ts: i.ts_ms, title: i.title, url: httpUrl(i.url), src: name, srcLabel: i.source_label || (name === "wire" ? "News wire" : "Telegram"),
         theatre: i.theatre && THEATRES[i.theatre] ? i.theatre : "", cat: i.category, summary: name === "wire" ? i.summary : "" });
     }));
@@ -198,7 +203,7 @@
   const SECTIONS = ["conflict", "air", "sea", "outages", "hazards", "official", "analysis", "sources"];
   function parseHash() {
     const h = location.hash.replace(/^#\/?/, ""), [name, qs] = h.split("?"), q = {};
-    (qs || "").split("&").forEach((kv) => { const [k, v] = kv.split("="); if (k) q[k] = decodeURIComponent(v || ""); });
+    (qs || "").split("&").forEach((kv) => { const [k, v] = kv.split("="); if (k) { try { q[k] = decodeURIComponent(v || ""); } catch (e) { q[k] = ""; } } });   // 1.7.3: a broken %-code in the address no longer stops the page
     let n = name || "";
     if (!n) n = "home";   // the wall view never starts by itself: it opens from #/wall or the "Wall view" link
     if (!NAV.some(([k]) => k === n)) n = "home";
@@ -420,7 +425,7 @@
   window.addEventListener("hashchange", route);
 
   window.GT2 = { S, $, esc, nf, api, need, on, emit, THEATRES, FAMILY, CATS, cat, fam, thName, fmtTime, fmtDay, fmtShort, fmtDate, plural, when, ago, isoMs, zlabel, zText,
-    entryHtml, groupedHtml, sentences, level, levelWord, tensionHtml, httpUrl, render, store, absent, statusKnown, NOT_HERE, PINSRC, pinSource, pinStats, dayOnly };
+    entryHtml, groupedHtml, sentences, level, levelWord, tensionHtml, httpUrl, render, store, absent, due, statusKnown, NOT_HERE, PINSRC, pinSource, pinStats, dayOnly };
 
   // The version beside the live light, the theme button directly under it (themes/switch.js draws the button).
   if (window.GTTheme) { $("ver").textContent = window.GTTheme.version ? "v" + window.GTTheme.version : ""; window.GTTheme.mount($("themeslot")); }
@@ -431,5 +436,7 @@
     setTimeout(() => store.set("seen", String(Date.now())), 30000);
   });
   setInterval(() => { if (!document.hidden) loadCore(); }, 180000);
+  // 1.7.3: a tab that was hidden skips its reloads; when it is shown again it reloads at once, not up to 3 minutes later
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && S.loadedAt && Date.now() - S.loadedAt >= 180000) loadCore(); });
   setInterval(renderMast, 15000);
 })();

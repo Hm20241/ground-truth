@@ -24,8 +24,12 @@
     $("boardPickName").textContent = B[S.board].name;
     const feeds = Object.values((D.status || {}).feeds || {}), bad = feeds.filter((f) => !f.ok).length, stale = feeds.filter((f) => f.ok && f.stale).length;
     // the light is drawn three times: a button in the desk top bar, a plain line in the phone's top bar and in its Systems pane
-    const lcls = "dot ldot " + (!feeds.length ? "" : bad ? "red" : stale ? "amber" : "green");
-    const ltxt = !feeds.length ? (WF.ERR.status ? "Feed status not loaded" : "Checking feeds") : `${feeds.length - bad - stale} of ${feeds.length} feeds fresh`;
+    // 1.7.3: when the newest status request failed, the light goes amber and says since when; before, the last good
+    // count ("41 of 42 feeds fresh") stayed up for as long as the server did not answer
+    const lost = feeds.length && WF.ERR.status, seen = WF.ms((D.status || {}).now);
+    const lcls = "dot ldot " + (!feeds.length ? "" : lost ? "amber" : bad ? "red" : stale ? "amber" : "green");
+    const ltxt = !feeds.length ? (WF.ERR.status ? "Feed status not loaded" : "Checking feeds") : lost ? "No feed status since " + (Number.isFinite(seen) ? WF.fmtT(seen) : "the last check")
+      : `${feeds.length - bad - stale} of ${feeds.length} feeds fresh`;
     document.querySelectorAll(".ldot").forEach((e) => { if (e.className !== lcls) e.className = lcls; });
     document.querySelectorAll(".ltxt").forEach((e) => { if (e.textContent !== ltxt) e.textContent = ltxt; });
     $("wallBtn").setAttribute("aria-pressed", String(S.wall));
@@ -184,8 +188,9 @@
     const rows = feedRows(), ok = rows.filter((r) => r.st === "green").length, off = rows.filter((r) => r.st !== "green");
     if (!rows.length) { put($("sysB"), `<p class="note">${WF.ERR.status ? "Could not load feed status (" + esc(WF.ERR.status) + ")." : "Loading…"}</p>`); return; }
     put($("sysR"), `<button type="button" class="linkbtn hidephone" data-act="systems" data-k="sysall">All feeds</button>`);
+    const seen = WF.ms((D.status || {}).now), lostAt = WF.ERR.status ? (Number.isFinite(seen) ? WF.fmtT(seen) : "the last check") : "";  // 1.7.3: said in Systems too, the one place the wall view shows feed health
     const an = D.analysis ? `Analyst picture written ${esc(WF.ago(WF.ms(D.analysis.generated_at)))}.` : "";
-    put($("sysB"), `<div class="sysline"><b>${ok}<small> of ${rows.length}</small></b><div class="txt">${off.length ? `<strong>${off.map((r) => esc(r.name) + " (" + r.word.toLowerCase() + ")").join(", ")}.</strong>` : "<strong>Every feed is fresh.</strong>"} ${an}</div></div>
+    put($("sysB"), `<div class="sysline"><b>${ok}<small> of ${rows.length}</small></b><div class="txt">${lostAt ? `<strong>No feed status since ${esc(lostAt)}: the server is not answering, so everything here may be old.</strong> ` : ""}${off.length ? `<strong>${off.map((r) => esc(r.name) + " (" + r.word.toLowerCase() + ")").join(", ")}.</strong>` : "<strong>Every feed is fresh.</strong>"} ${an}</div></div>
       <div class="sysdots" aria-hidden="true">${rows.map((r) => `<i class="${r.st}" title="${esc(r.name)}: ${r.word}"></i>`).join("")}</div>
       <div class="sysfull">${feedTable(rows)}<div class="logbar" role="group" aria-label="Times on this page">${zoneChips()}</div></div>`);
   }
@@ -238,6 +243,10 @@
     render(); if (WF.map) setTimeout(() => WF.map.resize(), 50);
   }
   const toMap = () => { if (narrow()) setPane("map"); };
+  // 1.7.3: the feeds a map view draws. A view picked with the map's own buttons, on a board that does not need those
+  // feeds, used to show an empty map (Sea with no ships, chokepoints or incidents; Air with no aircraft), and nothing
+  // refreshed them. WF.load skips a name that is not a data name (the air-raid and embassy alerts ride on "alerts").
+  const viewFeeds = (v) => ((WF.VIEWS[v] || {}).feeds || []).map(([f]) => f);
   document.addEventListener("click", (e) => {
     const t = e.target.closest ? e.target.closest("[data-board],[data-th],[data-fr],[data-go],[data-view],[data-src],[data-pane],[data-fly],[data-box],[data-act],[data-zone]") : null;
     if (!t || t === document.body) return;  // the body carries data-board / data-pane for the stylesheet only
@@ -246,12 +255,13 @@
     else if (d.th) { setTheatre(S.theatre === d.th ? "global" : d.th); }
     else if (d.fr) { const f = (WF.FRONTS || []).find((x) => x.id === d.fr); if (f) { toMap(); WF.fitBox(f.bbox); WF.popup(f.mid, WF.frontPop(f)); } }
     else if (d.go) { const i = LOGMAP.get(d.go); if (i && i.ll) { toMap(); WF.focus(i.ll, i.h); } }
-    else if (d.view) { WF.setView(d.view); renderMapHead(); }
+    else if (d.view) { WF.need(viewFeeds(d.view)); WF.setView(d.view); renderMapHead(); }  // 1.7.3: load what the view draws
     else if (d.src) { S.src = d.src; S.shown = 120; renderLog(); }
     else if (d.pane) setPane(d.pane);
-    else if (d.fly) { const [lon, lat, z] = d.fly.split(",").map(Number); toMap(); WF.map.flyTo({ center: [lon, lat], zoom: narrow() ? z - 0.8 : z, duration: 1000 }); }
+    else if (d.fly) { const [lon, lat, z] = d.fly.split(",").map(Number); if (![lon, lat, z].every(Number.isFinite)) return;  // 1.7.3: a row with no position does nothing (it used to throw inside the map)
+      toMap(); WF.map.flyTo({ center: [lon, lat], zoom: narrow() ? z - 0.8 : z, duration: 1000 }); }
     else if (d.box) { const b = d.box.split(",").map(Number); toMap(); WF.fitBox([[b[0], b[1]], [b[2], b[3]]]); }
-    else if (d.zone) { WF.setZone(d.zone); tick(); render(); if (!$("drawer").hidden && $("drawerH").textContent === "Boards") $("drawerB").innerHTML = boardPickHtml(); }
+    else if (d.zone) { WF.setZone(d.zone); tick(); render(); if (!$("drawer").hidden && $("drawerH").textContent === "Boards") { $("drawerB").innerHTML = boardPickHtml(); const z = $("drawerB").querySelector(`[data-zone="${WF.zone()}"]`); if (z) z.focus(); } }  // 1.7.3: focus stays in the drawer
     else if (d.act === "more") { S.shown += 120; renderLog(); }
     else if (d.act === "classic") { if (window.GTTheme) GTTheme.go("classic"); }  // "Open Classic" in a placeholder box
     else if (d.act === "picture") openDrawer("Analyst picture", pictureHtml());
@@ -293,9 +303,13 @@
   WF.tourTo = (i) => { tourI = i - 1; tourStep(); };  // for the screenshots
 
   // ---------- render and boot ----------
-  function render() { renderTop(); renderStrip(); renderPanels(); renderMapHead(); renderLog(); renderSys(); renderTicker(); }
+  function render() { flushMap(); renderTop(); renderStrip(); renderPanels(); renderMapHead(); renderLog(); renderSys(); renderTicker(); }
   WF.render = render;
-  WF.onData = (name) => WF.mapData(name);
+  // 1.7.3: map sources are rebuilt once a frame, just before the page is drawn (every reply already asks for that
+  // frame). The four pin replies each rebuilt every pin, popup and front count; replies landing together now share one.
+  const dirty = new Set();
+  WF.onData = (name) => { dirty.add(name); };
+  const flushMap = () => { if (!dirty.size) return; const names = [...dirty]; dirty.clear(); names.forEach((n) => WF.mapData(n)); };
   WF.actions = { setBoard, setTheatre, setPane, setWide, setWall };
 
   // Version and theme button (themes/switch.js): the version beside the feed light, the button directly under them.
@@ -314,6 +328,6 @@
   tick(); setInterval(tick, 1000);
   tickerBoot();
   render();
-  setInterval(() => { [...CORE, ...B[S.board].need].forEach((n) => WF.load(n)); }, 120000);
+  setInterval(() => { [...new Set([...CORE, ...B[S.board].need, ...viewFeeds(S.view)])].forEach((n) => WF.load(n)); }, 120000);
   setInterval(() => { renderStrip(); renderSys(); renderTicker(); }, 30000);
 })();

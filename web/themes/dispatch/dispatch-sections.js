@@ -86,14 +86,14 @@
     let choke = wait("portwatch");
     if (p) {
       const list = (p.chokepoints || []).filter((c) => (c.year_ago7 || {}).total >= 3 && (c.change_vs_year_pct || {}).total != null).sort((a, b) => Math.abs(b.change_vs_year_pct.total) - Math.abs(a.change_vs_year_pct.total)).slice(0, 10);
-      choke = `<table class="tbl"><thead><tr><th>Chokepoint</th><th class="num">Ships a day, last 7 days</th><th class="num">A year ago</th><th class="num">Change</th></tr></thead><tbody>${list.map((c) => { const ch = c.change_vs_year_pct.total; return `<tr><td>${esc(c.name)}</td><td class="num">${nf(c.avg7.total)}</td><td class="num">${nf(c.year_ago7.total)}</td><td class="num ${ch <= -50 ? "lv-high" : ch <= -20 ? "lv-mid" : ""}"><b>${ch > 0 ? "+" : ""}${nf(ch)}%</b></td></tr>`; }).join("")}</tbody></table>
+      choke = `<table class="tbl"><thead><tr><th>Chokepoint</th><th class="num">Ships a day, last 7 days</th><th class="num">A year ago</th><th class="num">Change</th></tr></thead><tbody>${list.map((c) => { const ch = (c.change_vs_year_pct || {}).total; return `<tr><td>${esc(c.name)}</td><td class="num">${nf((c.avg7 || {}).total)}</td><td class="num">${nf((c.year_ago7 || {}).total)}</td><td class="num ${ch <= -50 ? "lv-high" : ch <= -20 ? "lv-mid" : ""}"><b>${ch > 0 ? "+" : ""}${nf(ch)}%</b></td></tr>`; }).join("")}</tbody></table>
         <p class="muted">The ten chokepoints furthest from last year’s traffic. IMF PortWatch, counted from satellite, through ${D(p.data_through)}.</p>`;
     }
     let ships = wait("ships");
     if (sh) {
-      const a = Object.values(sh.areas || {}).sort((x, y) => (y.ships_1h || 0) - (x.ships_1h || 0));
-      ships = `<table class="tbl"><thead><tr><th>Area</th><th class="num">Ships heard</th><th class="num">Under way</th><th class="num">Tankers</th></tr></thead><tbody>${a.map((x) => `<tr><td>${esc(x.label)}${x.no_live_coverage ? ' <span class="muted">(no receivers here)</span>' : ""}</td><td class="num">${nf(x.ships_1h)}</td><td class="num">${nf(x.underway)}</td><td class="num">${nf(x.tankers)}</td></tr>`).join("")}</tbody></table>
-        <p class="muted">Heard in the last hour by volunteer receivers. A low count can mean no coverage, not no ships.${sh._ok === false ? " The last refresh of this feed failed; these are the previous figures." : ""}</p>`;
+      const a = Object.values(sh.areas || {}).sort((x, y) => (y.ships_1h || 0) - (x.ships_1h || 0)), at = G.shipsAt ? G.shipsAt(sh) : 0;
+      ships = !a.length ? `<p class="none">${sh._ok === false ? "The ship feed is failing and has sent no figures." : "No ship figures have arrived yet."}</p>` : `<table class="tbl"><thead><tr><th>Area</th><th class="num">Ships heard</th><th class="num">Under way</th><th class="num">Tankers</th></tr></thead><tbody>${a.map((x) => `<tr><td>${esc(x.label)}${x.no_live_coverage ? ' <span class="muted">(no receivers here)</span>' : ""}</td><td class="num">${nf(x.ships_1h)}</td><td class="num">${nf(x.underway)}</td><td class="num">${nf(x.tankers)}</td></tr>`).join("")}</tbody></table>
+        <p class="muted">Heard in the last hour by volunteer receivers. A low count can mean no coverage, not no ships.${sh.count != null ? ` ${nf(sh.count)} ships are on the <a href="#/map?topic=sea">map</a>.` : ""}${at ? ` Newest position heard ${esc(G.when(at))} ${G.zlabel()} (${esc(G.ago(at))}).` : ""}${sh._ok === false ? " The last refresh of this feed failed; these are the figures it had." : ""}</p>`;
     }
     return block("Incidents at sea (UKMTO)", inc) + block("Chokepoint traffic against a year ago", choke) + block("Ships heard, by area", ships, true)
       + block("Listed and sanctioned ships", placeholder("Ships on sanctions and watch lists", "Tankers and cargo ships named on sanctions lists, where they were last heard and where they say they are going.", "vessellists"))
@@ -212,7 +212,7 @@
   }
 
   const RENDER = { conflict, air, sea, outages, hazards, official, analysis, sources };
-  let asked = "";
+  let asked = "", jump = true;
   function render(r) {
     if (r.view !== "section") return;
     const page = PAGES[r.name];
@@ -220,13 +220,17 @@
     // 1.7.1: any UTC time left in the page's text ("05:38Z", the analyst's own words) gets its Eastern time beside it.
     const pic = (S.analysis || {}).picture, ref = pic ? G.isoMs(pic.generated_at) : NaN, tw = document.createTreeWalker($("section"), NodeFilter.SHOW_TEXT);
     for (let nd = tw.nextNode(); nd; nd = tw.nextNode()) { const v = G.zText(nd.nodeValue, ref); if (v !== nd.nodeValue) nd.nodeValue = v; }
-    const missing = page.feeds.filter((f) => !S.feeds[f] && !S.failed[f] && !G.absent(f));   // a feed this copy lacks is not asked for
+    // A feed this copy lacks is not asked for. 1.7.3: a feed is asked for again once its copy is 2.5 minutes old or its
+    // last try failed that long ago (G.due), so an open section follows the 3-minute reload and recovers from one failure.
+    const missing = page.feeds.filter(G.due);
     if (missing.length && asked !== r.name) {
       asked = r.name;
       Promise.all(page.feeds.map((f) => G.need(f).catch(() => null))).then(() => { asked = ""; if (S.route.name === r.name) render(S.route); });
     }
-    if (r.q.t) { const el = document.getElementById("th-" + r.q.t); if (el) el.scrollIntoView({ block: "start" }); }
+    // 1.7.3: the jump to a theatre happens once per visit, not again at every 3-minute reload (it pulled the reader back up)
+    if (r.q.t && jump) { const el = document.getElementById("th-" + r.q.t); if (el) { jump = false; el.scrollIntoView({ block: "start" }); } }
   }
+  G.on("route", () => { jump = true; });
   G.on("render", render);
   render(S.route);
 })();

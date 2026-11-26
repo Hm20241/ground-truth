@@ -18,7 +18,7 @@
 * { box-sizing: border-box; }
 html { font-size: 16px; }
 @media (min-width: 1800px) { html { font-size: 18px; } }
-html.wall { font-size: 1.146vw; }
+html.wall { font-size: max(16px, 1.146vw); }  /* 1.7.3: never under the page's own 16 px (it was 12.8 px type at 1280 wide, 4 px on a phone) */
 html, body { height: 100%; margin: 0; }
 body { background: var(--ground); color: var(--text); font: 400 .9375rem/1.4 var(--sans); font-variant-numeric: tabular-nums;
   display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); overflow: hidden; -webkit-text-size-adjust: 100%; }  /* top bar, ticker, strip, board */

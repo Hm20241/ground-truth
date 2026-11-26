@@ -1207,6 +1207,9 @@ def _poll(names, nt, fetch, clock, st):
             s.update(ok=False, error=_clip(str(e), 200))
         except Exception as e:  # noqa: BLE001  one source never fails the feed
             s.update(ok=False, error=_err(e))
+            # 1.7.3: _body() stores the new ETag before the handler parses the body. Without this a body the handler
+            # refused answered 304 on the next poll and the source read "ok" again on its old data.
+            s["etag"] = s["lm"] = None
             if isinstance(e, urllib.error.HTTPError) and e.code in (403, 429):
                 s["backoff_until"] = nt + BACKOFF
             fails += 1

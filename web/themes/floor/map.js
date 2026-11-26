@@ -186,9 +186,12 @@
       set("gps", fc(out));
     },
     ships() {
+      // 1.7.3: the amber mark is for a sanctioned (S) or shadow-fleet (G) ship only, the Classic theme's rule (web/app.js
+      // isSG) and the rule behind the "on watch lists" counts under the map. A ship with only a port detention on record
+      // (D, three in four of the list) was marked and worded as sanctioned; it now keeps its list line and nothing more.
       const d = WF.D.ships || {}, listed = new Map((d.listed || []).map((s) => [s.mmsi, s]));
-      set("ships", fc((d.points || []).map(([lon, lat, sog, cog, cls, name, mmsi, ts, dest, hdg, flag]) => { const l = listed.get(mmsi);
-        return pt([lon, lat], { listed: !!l, h: pop(name || "Ship, name not sent", `${esc(cls || "type not known")} · flag ${esc(flag || "–")}${l ? " · <b>on a sanctions or shadow-fleet list</b>" : ""}`, `${nf(sog)} kt${dest ? " · bound for " + esc(dest) : ""}. Heard ${esc(WF.ago(WF.ms(ts)))}.${l ? " Lists: " + esc((l.lists || []).join(", ")) + "." : ""}`, l && l.url, "Open the list entry") }); })));
+      set("ships", fc((d.points || []).map(([lon, lat, sog, cog, cls, name, mmsi, ts, dest, hdg, flag]) => { const l = listed.get(mmsi), sg = !!l && /[SG]/.test(l.marks || "");
+        return pt([lon, lat], { listed: sg, h: pop(name || "Ship, name not sent", `${esc(cls || "type not known")} · flag ${esc(flag || "–")}${sg ? " · <b>on a sanctions or shadow-fleet list</b>" : ""}`, `${nf(sog)} kt${dest ? " · bound for " + esc(dest) : ""}. Heard ${esc(WF.ago(WF.ms(ts)))}.${l ? " Lists: " + esc((l.lists || []).join(", ")) + "." : ""}`, l && l.url, "Open the list entry") }); })));
     },
     ukmto() {
       set("ukmto", fc(((WF.D.ukmto || {}).items || []).filter((i) => i.coord).map((i) => { const sev = /attack|hijack/i.test(i.type) ? 2 : /suspicious/i.test(i.type) ? 1 : 0;

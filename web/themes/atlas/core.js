@@ -3,7 +3,10 @@
    feed stays missing. The event pins follow Classic's rule: the source map's pins plus the GeoConfirmed, CIR and
    kinetic pins it does not already carry (web/app.js mergeEvents), and the fronts count those merged pins.
    1.7.1: a copy is asked only for the feeds its api/status lists (the public copy carries about 30 of them); a feed it
-   does not list is not an error, and the screens say "Not on this copy." */
+   does not list is not an error, and the screens say "Not on this copy."
+   1.7.3: every loaded feed is asked for again once it is older than its own refresh time (before, ships, aircraft and
+   most other layers kept their first reply for as long as the page stayed open), a feed that did not answer is tried
+   again, a run of failed replies reads as "Cannot reach the server", and one bad record cannot stop the page. */
 (() => {
   "use strict";
   const A = (window.ATLAS = {});
@@ -132,7 +135,7 @@
 
   // ---------- state ----------
   const S = { zone: ZONE, dest: "now", page: null, topic: "all", q: "", hours: 0, region: "all", groups: new Set(DEFAULT_GROUPS), sel: null,
-    d: {}, entries: [], byId: new Map(), fronts: [], cc: new Map(), reg: new Map(), loaded: new Set(), failed: new Set(), net: "loading",
+    d: {}, entries: [], byId: new Map(), fronts: [], cc: new Map(), reg: new Map(), loaded: new Set(), failed: new Set(), at: {}, tried: {}, net: "loading",
     lastSeen: Number(LS.get("seen", 0)) || 0, opened: Date.now() };
   const subs = {};
   const on = (ev, fn) => { (subs[ev] = subs[ev] || []).push(fn); };
@@ -170,9 +173,9 @@
   const hash = (s) => { let h = 5381; s = String(s); for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36); };
 
   // ---------- loading ----------
-  let okN = 0, badN = 0;
+  let okN = 0, badN = 0, badRun = 0;   // badRun: failed replies in a row (1.7.3)
   const api = (p) => fetch("api/" + p, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
-    .then((j) => { okN++; return j; }, (e) => { badN++; return Promise.reject(e); });
+    .then((j) => { okN++; badRun = 0; return j; }, (e) => { badN++; badRun++; return Promise.reject(e); });
   // name -> path; "feed/x" replies wrap their data in {ok, at, error, data}
   const PATHS = { events: "events", summary: "summary", analysis: "analysis", status: "status", alerts: "alerts", news_geo: "news_geo",
     outages_geo: "outages_geo", cyber_geo: "cyber_geo", advisories_geo: "advisories_geo" };
@@ -208,23 +211,45 @@
   const pending = new Map();
   let statusP = null;
   // Everything but the core waits for the first status reply, then is asked for only if this copy carries it.
+  // 1.7.3: a reply older than its feed's own refresh time (never under 5 minutes) is asked for again, so a topic
+  // opened a second time, or left open, does not keep showing its first reply.
+  const TIMED = ["alerts", "summary", "events", "wire", "telegram", "analysis", "status"];   // these have their own timers in start()
+  const HEAVY = ["ships", "firms", "cables", "cyber_geo"];   // big replies: refreshed only while their topic is the one on the map
+  const ttl = (name) => Math.max(300, +((((S.d.status || {}).feeds || {})[(WITH[name] || [name])[0]] || {}).every) || 300) * 1000;
+  const aged = (name, now) => S.loaded.has(name) && (now || Date.now()) - (S.at[name] || 0) > ttl(name);
   function load(name, force) {
     if (ALWAYS.includes(name)) return fetchOne(name, force);
-    return (statusP || (statusP = fetchOne("status"))).then(() => (has(name) ? fetchOne(name, force) : undefined));
+    return (statusP || (statusP = fetchOne("status"))).then(() => (has(name) ? fetchOne(name, force || aged(name)) : undefined));
   }
   function fetchOne(name, force) {
     if (pending.has(name)) return pending.get(name);
     if (S.loaded.has(name) && !force) return Promise.resolve();
+    S.tried[name] = Date.now();
     const p = api(PATHS[name] || "feed/" + name).then((j) => {
       const d = PATHS[name] ? j : j && j.data;
       if (d == null) { S.failed.add(name); return; }
-      S.d[name] = d; S.loaded.add(name); S.failed.delete(name);
+      S.d[name] = d; S.loaded.add(name); S.failed.delete(name); S.at[name] = Date.now();
     }).catch(() => { S.failed.add(name); }).finally(() => { pending.delete(name); changed(name); });
     pending.set(name, p); return p;
   }
   const need = (names) => Promise.all((names || []).map((n) => load(n)));
+  // What the minute timer asks for again: a feed past its refresh time, and one that did not answer (after 2 minutes).
+  // The feeds with their own timers and the three extra pin feeds are left to those timers.
+  function due(now) {
+    const view = TOPIC_NEEDS[S.topic] || [];
+    return [...new Set([...S.loaded, ...S.failed])].filter((n) => !TIMED.includes(n) && !EXTRA.includes(n) && has(n) && !(HEAVY.includes(n) && !view.includes(n)) &&
+      (S.failed.has(n) ? now - (S.tried[n] || 0) > 120000 : aged(n, now)));
+  }
+  let refreshing = false;
+  async function refresh() {
+    if (refreshing || document.hidden) return;
+    refreshing = true;
+    try { for (const n of due(Date.now())) { await load(n, true); await new Promise((r) => setTimeout(r, 250)); } } finally { refreshing = false; }   // one at a time
+  }
   let t0 = null;
-  const changed = (name) => { clearTimeout(t0); t0 = setTimeout(() => { build(); S.net = badN && !okN ? "offline" : S.failed.size ? "partial" : "ok"; emit("data", name); }, 60); };
+  const changed = (name) => { clearTimeout(t0); t0 = setTimeout(() => {
+    try { build(); } catch (err) { console.error("Atlas build", err); }   // one bad record must not stop the screens from drawing
+    S.net = (badN && !okN) || badRun >= 4 ? "offline" : S.failed.size ? "partial" : "ok"; emit("data", name); }, 60); };
 
   function start(wall) {
     fetch("geo/alert-regions.json").then((r) => r.json()).then((fc) => { fc.features.forEach((f) => S.reg.set(f.id, f)); changed("reg"); }).catch(() => {});
@@ -238,6 +263,7 @@
     setInterval(() => { if (!document.hidden) ["alerts", "summary"].forEach((n) => load(n, true)); }, 60000);
     setInterval(() => { if (!document.hidden) ["events", "wire", "telegram", "analysis", "status"].forEach((n) => load(n, true)); }, 180000);
     setInterval(() => { if (!document.hidden) extras().forEach((n) => load(n, true)); }, 900000);
+    setInterval(refresh, 60000);   // 1.7.3: everything else, when it is due
   }
 
   // ---------- the event pins: the source map plus three more sources, one rule with the Classic page ----------
@@ -272,7 +298,7 @@
   function build() {
     const now = Date.now(), out = [], d = S.d;
     const add = (e) => { if (!Number.isFinite(e.ts)) return; if (e.ts > now) e.ts = now; e.topics = e.topics || []; out.push(e); };
-    ((d.news_geo || {}).features || []).forEach((f) => S.cc.set(f.properties.a3, { name: f.properties.name, ll: f.geometry.coordinates, region: f.properties.theatre }));
+    ((d.news_geo || {}).features || []).forEach((f) => { if (f && f.properties && f.geometry) S.cc.set(f.properties.a3, { name: f.properties.name || f.properties.a3 || "", ll: f.geometry.coordinates, region: f.properties.theatre }); });
     const feats = mergedFeatures();
     feats.forEach((f) => {
       const p = f.properties; if (p.kind !== "event" || !f.geometry || f.geometry.type !== "Point") return;
@@ -310,11 +336,11 @@
         src: "US Embassy" + (p.city ? " " + p.city : ""), place: p.n || "", ll: p.lon != null ? [p.lon, p.lat] : null, url: safeUrl(i.url), summary: i.event, urlLabel: "Read the alert" }); });
     ((((d.quakes || {}).geojson) || {}).features || []).forEach((f) => { const p = f.properties;
       add({ id: "q" + hash(p.id), ts: isoMs(p.time), title: `Magnitude ${p.mag} earthquake: ${p.place}`, kind: "Earthquake", label: p.suspected ? "Possible explosion" : "Earthquake", group: "hazards", topics: ["hazards"],
-        glyph: "quake", src: p.source, place: p.country_name || p.place, ll: f.geometry.coordinates, url: safeUrl(p.url), urlLabel: "Open the earthquake record",
+        glyph: "quake", src: p.source, place: p.country_name || p.place, ll: (f.geometry || {}).coordinates || null, url: safeUrl(p.url), urlLabel: "Open the earthquake record",
         facts: [["Depth", p.depth_km != null ? p.depth_km + " km" : "–"]].concat(p.watch_reason ? [["Why it is listed", p.watch_reason]] : []), tone: p.watch ? "amber" : "slate" }); });
     ((((d.hazards || {}).geojson) || {}).features || []).forEach((f) => { const p = f.properties;
       add({ id: "h" + hash(p.id), ts: isoMs(p.from), title: p.name, kind: p.type_label || "Hazard", label: (p.type_label || "Hazard") + (p.alert ? ", " + String(p.alert).toLowerCase() + " alert" : ""), group: "hazards", topics: ["hazards"],
-        glyph: p.type === "EQ" ? "quake" : "fire", src: "GDACS", place: p.gdacs_country ? String(p.gdacs_country).split(",").slice(0, 2).join(",") : "", ll: f.geometry.coordinates, url: safeUrl(p.url), urlLabel: "Open the GDACS record",
+        glyph: p.type === "EQ" ? "quake" : "fire", src: "GDACS", place: p.gdacs_country ? String(p.gdacs_country).split(",").slice(0, 2).join(",") : "", ll: (f.geometry || {}).coordinates || null, url: safeUrl(p.url), urlLabel: "Open the GDACS record",
         summary: p.severity, tone: p.alert === "Red" ? "red" : p.alert === "Orange" ? "amber" : "slate" }); });
     Object.keys(OUT_KIND).forEach((name) => ((d[name] || {}).items || []).forEach((i) => add({ id: "x" + hash(i.id), ts: i.ts_ms, title: i.title, kind: OUT_KIND[name][0], label: OUT_KIND[name][0] + (i.status ? ", " + i.status : ""),
       group: "outages", topics: ["outages"], glyph: OUT_KIND[name][1], src: i.provider, place: i.where, ll: i.ll || null, url: safeUrl(i.url), summary: i.summary, urlLabel: "Open the source", active: !!i.active,
@@ -349,12 +375,14 @@
     const now = Date.now(), pins = entries.filter((e) => e.group === "pins" && e.ts);   // entries are newest first
     S.fronts = feats.filter((f) => f.properties.kind === "overlay" && f.geometry && f.geometry.type === "LineString" && FRONT_KIND[f.properties.front_kind]).map((f) => {
       const p = f.properties, cs = f.geometry.coordinates, k = FRONT_KIND[p.front_kind];
-      const near = pins.filter((e) => lineKm(e.ll, cs) <= 75);
       const xs = cs.map((c) => c[0]), ys = cs.map((c) => c[1]), km = lenKm(cs);
+      // 1.7.3: a pin well outside the line's box cannot be within 75 km, so it skips the segment-by-segment sum (same counts, less work)
+      const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), my = 0.75, mx = 0.75 / Math.max(0.05, Math.cos(Math.min(89, Math.max(Math.abs(y0), Math.abs(y1)) + my) * RAD));
+      const near = pins.filter((e) => e.ll[0] >= x0 - mx && e.ll[0] <= x1 + mx && e.ll[1] >= y0 - my && e.ll[1] <= y1 + my && lineKm(e.ll, cs) <= 75);
       const n24 = near.filter((e) => now - e.ts < 24 * 3600e3).length, n72 = near.filter((e) => now - e.ts < 72 * 3600e3).length;
       return { id: "f" + hash(p.id), front: true, fkind: p.front_kind, title: p.title || k[0], kind: k[0], label: k[0], glyph: k[1], tone: "red", c: COL.red, region: p.theatre,
         place: p.sea && !["offshore", "open ocean"].includes(p.sea) ? p.sea : p.country_name, cs, ll: midPoint(cs), km, n24, n72, last: near[0] || null,
-        bbox: [[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], summary: k[2],
+        bbox: [[x0, y0], [x1, y1]], summary: k[2],
         facts: [["Length", "about " + nf(Math.round(km)) + " km"], ["Pins within 75 km", `${n24} in the last 24 hours, ${n72} in 72 hours`]].concat(near[0] ? [["Newest nearby", `${near[0].title} (${ago(near[0].ts)})`]] : []),
         note: "Drawn by the source map's curator. It moves only when they redraw it; it is not a live trace of the front." };
     }).sort((a, b) => b.n72 - a.n72 || b.km - a.km);
@@ -371,5 +399,5 @@
   const setZone = (z) => { ZONE = S.zone = z === "utc" ? "utc" : "et"; LS.set("tz", ZONE); emit("zone"); };
 
   Object.assign(A, { $, esc, nf, LS, REDUCED, S, on, emit, ico, GLYPHS, COL, CATS, REGIONS, regionName, TOPICS, GROUPS, DEFAULT_GROUPS, FRONT_KIND, TOPIC_NEEDS, PIN_SRC, has, hasAny, topicOn, groupOn,
-    fmtT, fmtDate, dayKey, dayLabel, ago, when, whenShort, zText, zoneAbbr, isoMs, setZone, load, need, start, feed, centre, safeUrl, hash, ccName });
+    fmtT, fmtDate, dayKey, dayLabel, ago, when, whenShort, zText, zoneAbbr, isoMs, setZone, load, need, start, feed, centre, safeUrl, hash, ccName, due, ttl });
 })();

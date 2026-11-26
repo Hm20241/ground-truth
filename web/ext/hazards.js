@@ -8,11 +8,12 @@
   const empty = { type: "FeatureCollection", features: [] };
   const ALERT = { Red: "#f05252", Orange: "#f2853d", Green: "#3ecf8e" };
   const QK = "#67e8f9", WATCH = "#f2b33d";
+  const link = (u) => (/^https?:\/\//i.test(u || "") ? u : null);  // 1.7.3: only http(s) addresses become links
   const when = (v, rel) => GTX.when(v, rel);  // 1.3.0: the page's zone (Eastern or UTC) and the time since
 
   GTX.layer({ key: "hazards", label: "Natural hazards (GDACS alerts)", feed: "hazards", after: "outages",
     ids: ["hz-green", "hz-pt", "hz-label"], click: ["hz-pt", "hz-green"], clickBefore: "th-pt",
-    count: () => { const d = GTX.S.feeds.hazards; return d ? (d.by_alert || {}).Orange + ((d.by_alert || {}).Red || 0) || 0 : null; },
+    count: () => { const d = GTX.S.feeds.hazards; return d ? ((d.by_alert || {}).Orange || 0) + ((d.by_alert || {}).Red || 0) : null; },
     legend: Object.entries(ALERT).map(([k, c]) => `<span><i class="lsw dot" style="background:${c}"></i>${k}${k === "Green" ? " (zoom in)" : ""}</span>`).join("") });
   GTX.layer({ key: "quakes", label: "Earthquakes M4+ (EMSC, USGS)", feed: "quakes", after: "hazards",
     ids: ["qk-ring", "qk-pt"], click: ["qk-pt"], clickBefore: "th-pt",
@@ -82,17 +83,17 @@
       <div>${esc(p.name || "")}</div>
       ${p.severity ? `<div class="post">${esc(p.severity)}</div>` : ""}
       <div>From ${span(p, p.from)}${p.to ? " to " + span(p, p.to) : ""}${p.type === "DR" ? " · drought: the point is a regional centre" : ""}</div>
-      ${p.url ? `<div><a href="${esc(p.url)}" target="_blank" rel="noopener">GDACS report ↗</a></div>` : ""}
+      ${link(p.url) ? `<div><a href="${esc(link(p.url))}" target="_blank" rel="noopener">GDACS report ↗</a></div>` : ""}
       <div class="muted small">GDACS (UN OCHA and European Commission JRC)${p.origin ? ", data from " + esc(p.origin) : ""}. Alert levels are modelled estimates of humanitarian impact.</div></div>`);
   };
   GTX.popup("hz-pt", hzPopup);
   GTX.popup("hz-green", hzPopup);
   GTX.popup("qk-pt", (f, lngLat) => {
     const p = f.properties, expl = /explosion/.test(p.kind || "");
-    showPopup(lngLat, `<div class="pop"><h5>${expl ? esc(p.kind) : "M" + (p.mag != null ? p.mag : "?") + " earthquake"}: ${esc(p.place || "")}</h5>
-      <div class="meta">${when(p.time)} · ${p.depth_km != null ? p.depth_km + " km deep" : "depth unknown"}${p.magtype ? " · " + esc(p.magtype) : ""} · ${esc(p.agency || p.source || "")}</div>
+    showPopup(lngLat, `<div class="pop"><h5>${expl ? esc(p.kind) : "M" + esc(p.mag != null ? p.mag : "?") + " earthquake"}: ${esc(p.place || "")}</h5>
+      <div class="meta">${when(p.time)} · ${p.depth_km != null ? esc(p.depth_km) + " km deep" : "depth unknown"}${p.magtype ? " · " + esc(p.magtype) : ""} · ${esc(p.agency || p.source || "")}</div>
       ${p.watch ? `<div class="stale">Tripwire: ${esc(p.watch_reason)}. A shallow quake or an explosion in a watched area can be a test or a strike; it is usually natural.</div>` : ""}
-      <div>${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.source)} event ↗</a>` : ""}${p.usgs_url ? ` · <a href="${esc(p.usgs_url)}" target="_blank" rel="noopener">USGS ↗</a>` : ""}</div>
+      <div>${link(p.url) ? `<a href="${esc(link(p.url))}" target="_blank" rel="noopener">${esc(p.source || "Source")} event ↗</a>` : ""}${link(p.usgs_url) ? ` · <a href="${esc(link(p.usgs_url))}" target="_blank" rel="noopener">USGS ↗</a>` : ""}</div>
       <div class="muted small">Preliminary parameters. ${p.source === "EMSC" ? "Credit: EMSC-CSEM SeismicPortal (CC BY 4.0)." : "USGS, public domain."}</div></div>`);
   });
 

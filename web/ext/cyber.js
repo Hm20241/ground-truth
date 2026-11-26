@@ -18,6 +18,7 @@
   const ui = { metric: "ransom_7d", kinds: new Set(Object.keys(KINDS)), ci: false };
   const F = () => GTX.S.feeds;
   const when = (v, rel) => GTX.when(v, rel);  // 1.3.0: the page's zone (Eastern or UTC) and the time since
+  const link = (u) => (/^https?:\/\//i.test(u || "") ? u : null);  // 1.7.3: only http(s) addresses become links
   const pct = (v) => (v == null ? "–" : (v > 0 ? "+" : "") + (Math.round(v * 10) / 10) + "%");
 
   GTX.layer({ key: "cyber", label: "Cyber: ransomware, DDoS targets, routing drops (7 d)", feed: "cyber", after: "outages",
@@ -49,7 +50,10 @@
     if (m.getLayer("cy-fill")) { m.setPaintProperty("cy-fill", "fill-color", fillColor()); m.setPaintProperty("cy-fill", "fill-opacity", fillOpacity()); }
   });
 
-  const loadGeo = () => GTX.api("cyber_geo").then((fc) => { const s = GTX.map.getSource("cyber"); if (s) s.setData(fc || empty); }).catch(() => {});
+  // 1.7.3: the cyber and routing feeds land together, so one request serves both (it was asked for twice at every load)
+  let geoT = null;
+  const loadGeo = () => { if (geoT) return; geoT = setTimeout(() => { geoT = null;
+    GTX.api("cyber_geo").then((fc) => { const s = GTX.map.getSource("cyber"); if (s) s.setData(fc || empty); }).catch(() => {}); }, 1000); };
   const redraw = () => { if (GTX.isOpen("cyber")) renderTab(document.getElementById("tab-cyber")); };
   GTX.feed("cyber", () => { loadGeo(); redraw(); });
   GTX.feed("bgp", () => { loadGeo(); redraw(); });
@@ -91,15 +95,15 @@
     const per = {}, items = ((c || {}).items || []).filter((i) => ui.kinds.has(i.kind) && (!ui.ci || i.ci) && (per[i.kind] = (per[i.kind] || 0) + 1) <= 30);
     const bgpRows = ((b || {}).countries || []).map((r) => `<tr><td>${esc(r.name)}</td>
       <td style="color:${BGP[r.level] || "var(--muted)"}">${esc(r.level)}</td><td>${pct((r.pct || {}).v4)}</td><td>${pct((r.pct || {}).asns)}</td>
-      <td><a href="${esc(r.url)}" target="_blank" rel="noopener">RIPE</a></td></tr>`).join("");
+      <td>${link(r.url) ? `<a href="${esc(link(r.url))}" target="_blank" rel="noopener">RIPE</a>` : ""}</td></tr>`).join("");
     el.innerHTML = `<div class="card"><h4>Threat level <span class="badge" style="color:${info.level === "green" ? "var(--ok)" : "var(--accent)"}">SANS ISC ${esc(info.level || "?")}</span></h4>
         <div class="small">${esc((c || {}).summary || "")}</div></div>
       <div class="card"><h4>Internet routing, 19 watched countries</h4><div class="small">${esc((b || {}).summary || "No routing data yet.")}</div>
         <table class="src"><tr><th>Country</th><th>Level</th><th>IPv4</th><th>ASNs</th><th></th></tr>${bgpRows}</table></div>
       <div class="chips" id="cykinds">${Object.entries(KINDS).map(([k, t]) => `<button class="chip${ui.kinds.has(k) ? "" : " off"}" data-cykind="${k}">${t}</button>`).join("")}
         <button class="chip${ui.ci ? "" : " off"}" data-cyci="1">Critical infrastructure only</button></div>
-      <ul class="feed">${items.map((i) => `<li style="--c:${i.ci ? CY : "var(--dim)"}"><div>${i.url ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a>` : esc(i.title)}</div>
-        <div class="muted small"><span class="badge">${esc(KINDS[i.kind] || i.kind)}</span> ${dayOnly(i) ? GTX.fmtDay(i.ts_ms || i.ts) : when(i.ts)}${(i.countries || []).length ? " · " + esc(i.countries.join(", ")) : ""}${i.sector ? " · " + esc(String(i.sector).slice(0, 60)) : ""}${i.cvss ? " · CVSS " + i.cvss : ""}</div></li>`).join("")}</ul>
+      <ul class="feed">${items.map((i) => `<li style="--c:${i.ci ? CY : "var(--dim)"}"><div>${link(i.url) ? `<a href="${esc(link(i.url))}" target="_blank" rel="noopener">${esc(i.title)}</a>` : esc(i.title)}</div>
+        <div class="muted small"><span class="badge">${esc(KINDS[i.kind] || i.kind)}</span> ${dayOnly(i) ? GTX.fmtDay(i.ts_ms || i.ts) : when(i.ts)}${(i.countries || []).length ? " · " + esc(i.countries.join(", ")) : ""}${i.sector ? " · " + esc(String(i.sector).slice(0, 60)) : ""}${i.cvss ? " · CVSS " + esc(i.cvss) : ""}</div></li>`).join("")}</ul>
       <div class="muted small">Ransomware claims are the groups' own leak-site posts, not confirmed; victim names are not stored. ${RWL} (non-commercial).
         CISA: public domain / CC0. SANS ISC (CC BY-NC-SA). DDoSia target lists: witha.name. Routing: RIPEstat (no redistribution).</div>`;
     el.querySelector("#cykinds").onclick = (e) => {

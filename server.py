@@ -8,6 +8,7 @@ All URLs the page uses are relative, so it also works behind a path prefix (e.g.
 """
 import collections
 import datetime as dt
+import gzip
 import hashlib
 import json
 import math
@@ -41,16 +42,22 @@ def _load_disk_cache():
         p = os.path.join(CACHE, name + ".json")
         if os.path.exists(p):
             try:
-                STATE[name] = json.load(open(p))
+                with open(p) as fh:
+                    rec = json.load(fh)
             except Exception:
-                pass
+                continue
+            if isinstance(rec, dict):  # 1.7.3: a cache file holding null or a list used to stop the scheduler
+                STATE[name] = rec
 
 
 def _age(name):
     s = STATE.get(name)
     if not s or not s.get("at"):
         return 1e12
-    t = dt.datetime.strptime(s["at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc)
+    try:
+        t = dt.datetime.strptime(s["at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc)
+    except (TypeError, ValueError):  # 1.7.3: an unreadable stamp means "refresh now", not a dead scheduler
+        return 1e12
     return (dt.datetime.now(dt.timezone.utc) - t).total_seconds()
 
 
@@ -75,8 +82,10 @@ def _run(name, fn):
     try:
         data = fn()
         rec = {"ok": True, "at": feeds.now_iso(), "data": data, "error": None, "ms": int((time.time() - t0) * 1000)}
-        with open(os.path.join(CACHE, name + ".json"), "w") as fh:
+        p = os.path.join(CACHE, name + ".json")
+        with open(p + ".tmp", "w") as fh:  # 1.7.3: temp file + rename, so a crash mid-write cannot truncate the cache
             json.dump(rec, fh, separators=(",", ":"))
+        os.replace(p + ".tmp", p)
     except Exception as e:
         prev = STATE.get(name, {})
         rec = {"ok": False, "at": prev.get("at"), "data": prev.get("data"), "error": "%s: %s" % (type(e).__name__, str(e)[:200]),
@@ -86,7 +95,10 @@ def _run(name, fn):
         RUNNING.discard(name)
     if name in ("mymaps", "firms", "ukmto", "czib", "mil", "losses", "pla", "outages", "advisories", "ships", "gfw",
                 "portwatch", "vessellists"):  # alerts: live in /api/alerts
-        derive()
+        try:
+            derive()
+        except Exception:  # 1.7.3: a failed summary must not swallow the feed's own "finished" event below
+            traceback.print_exc()
     publish("feed", feed=name, ok=rec["ok"], at=rec.get("at"))
 
 
@@ -201,19 +213,36 @@ def scheduler():
     jobs = dict(feeds.REGISTRY)
     jobs["mymaps"] = (_mymaps, MAP_REFRESH)
     while True:
-        for name, (fn, every) in jobs.items():
-            failed_recently = STATE.get(name, {}).get("failed_at")
+        _tick(jobs)
+        time.sleep(5)
+
+
+def _tick(jobs):
+    """One scheduler pass. 1.7.3: a job that cannot be started (bad cached stamp, no thread to spare) is logged and
+    skipped; before, the exception ended the scheduler thread and every feed stopped refreshing for good."""
+    for name, (fn, every) in jobs.items():
+        try:
+            failed_recently = (STATE.get(name) or {}).get("failed_at")
             if name in RUNNING:
                 continue
             if _age(name) >= every and not (failed_recently and _since(failed_recently) < min(every, 300)):
                 with LOCK:
                     RUNNING.add(name)
-                threading.Thread(target=_run, args=(name, fn), daemon=True).start()
-        time.sleep(5)
+                try:
+                    threading.Thread(target=_run, args=(name, fn), daemon=True).start()
+                except Exception:
+                    with LOCK:
+                        RUNNING.discard(name)
+                    raise
+        except Exception:
+            traceback.print_exc()
 
 
 def _since(iso):
-    t = dt.datetime.strptime(iso, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc)
+    try:
+        t = dt.datetime.strptime(iso, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc)
+    except (TypeError, ValueError):  # 1.7.3: an unreadable stamp never holds a retry back
+        return 1e12
     return (dt.datetime.now(dt.timezone.utc) - t).total_seconds()
 
 
@@ -500,11 +529,19 @@ def _advisories_geo(a):
     return {"type": "FeatureCollection", "features": [f for f in feats if f]}
 
 
+_CZIB_GEO = {"key": None, "fc": None}
+
+
 def _czib_geo():
     zones = ((STATE.get("czib") or {}).get("data") or {}).get("zones") or []
     names = {(z.get("country") or "").lower(): z for z in zones}
     if not names:
         return {"type": "FeatureCollection", "features": []}
+    # 1.7.3: derive() runs after every one of 13 feeds (one of them every 45 s) and this used to re-read the 3 MB
+    # Natural Earth file each time. The answer only changes when the zone list does.
+    key = json.dumps(zones, sort_keys=True)
+    if _CZIB_GEO["key"] == key:
+        return _CZIB_GEO["fc"]
     with open(geo.REF, encoding="utf-8") as fh:
         ne = json.load(fh)
     alias = {"russian federation": "russia", "iran (islamic republic of)": "iran", "syrian arab republic": "syria",
@@ -521,7 +558,9 @@ def _czib_geo():
         slim = [[[[round(x, 2), round(y, 2)] for x, y in ring[::3] + [ring[0]]] for ring in poly] for poly in polys]
         feats.append({"type": "Feature", "geometry": {"type": "MultiPolygon", "coordinates": slim},
                       "properties": {"name": hit["name"], "country": hit["country"], "valid_until": hit["valid_until"]}})
-    return {"type": "FeatureCollection", "features": feats}
+    fc = {"type": "FeatureCollection", "features": feats}
+    _CZIB_GEO.update(key=key, fc=fc)
+    return fc
 
 
 def brief():
@@ -573,6 +612,9 @@ def xpost(post_id):
 
 # ---------------- HTTP ----------------
 
+GZIP_MIN = 1024  # bytes; smaller answers are not worth a gzip header
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=WEB, **kw)
@@ -592,9 +634,17 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_header("Cache-Control", cache)
                 self.end_headers()
                 return
+        # 1.7.3: gzip for clients that ask for it. Nothing in front of this server compresses, and feed/ships alone
+        # is about 400 KB of JSON every few minutes per open page (about 130 KB gzipped, 8 ms at level 5).
+        zipped = len(body) >= GZIP_MIN and "gzip" in (self.headers.get("Accept-Encoding") or "").lower()
+        if zipped:
+            body = gzip.compress(body, 5)
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", cache)
+        self.send_header("Vary", "Accept-Encoding")
+        if zipped:
+            self.send_header("Content-Encoding", "gzip")
         if etag:
             self.send_header("ETag", tag)
         self.send_header("Content-Length", str(len(body)))

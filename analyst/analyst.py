@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Ground Truth analyst, v1.5 (2026-11-21; 1.5 adds `translate`, English for non-English Feed items; 1.1 adds a slow mode that expires by itself, see config.json;
+"""Ground Truth analyst, v1.6 (2026-11-26; 1.6, GT 1.7.3, asked for: "run the analyst every 15 minutes on the feed":
+launchd runs `cycle` every 15 min, and a new whole picture is also due when the Feed has moved, see picture_due;
+1.5, 2026-11-21: 1.5 adds `translate`, English for non-English Feed items; 1.1 adds a slow mode that expires by itself, see config.json;
 1.2 explains the 0.4.0 feeds; 1.3 explains the Global Fishing Watch ship traffic counts; 1.4 adds the 0.11+
 sources to the whole-picture prompt from the private /api/digest: GeoConfirmed, CIR and S2 pins per theatre,
 GDACS Orange/Red alerts, watch-area quakes, tsunami, radiation, NTAS, OFAC, squawks; the per-event pass still
@@ -42,7 +44,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-ANALYST_VERSION = "1.5.1"
+ANALYST_VERSION = "1.6"
 PROMPT_VERSION = "ev1/pic3"
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONF_DIR = os.path.expanduser("~/.config/ground-truth")
@@ -55,7 +57,11 @@ CFG = {
     "events_model": "claude-opus-5-5", "events_effort": "low",
     "events_batch": 20, "events_max_per_run": 60,
     "picture_model": "claude-opus-5-5", "picture_effort": "high",
-    "picture_every_h": 3.0, "picture_min_gap_min": 45, "picture_new_events_trigger": 15,
+    "picture_every_h": 3.0, "picture_min_gap_min": 14, "picture_new_events_trigger": 15,
+    # 1.6: the Feed also makes a picture due: this many wire + Telegram items newer than the last picture (0 = off).
+    # With the 15-minute launchd tick that is a picture about every 15 min while news is moving (about 9k output
+    # tokens each). To go back to the old pace set picture_feed_trigger to 0 and picture_min_gap_min to 45 in config.json.
+    "picture_feed_trigger": 5, "picture_feed_sources": ["wire", "telegram"],
     "lookback_h": 48, "picture_max_lines": 140, "timeout_s": 900,
     # 1.5: translation, asked for: "if a feed item is in another language please translate to english"
     "translate_model": "claude-haiku-5-5", "translate_effort": "low", "translate_max": 40,
@@ -456,7 +462,27 @@ def picture_due():
     newer = sum(1 for n in api_get("analysis/events").values() if (n.get("analyzed_at") or "") > pic["generated_at"])
     if newer >= CFG["picture_new_events_trigger"] and age_min >= CFG["picture_min_gap_min"]:
         return True, "%d newly analysed events" % newer
-    return False, "last one %.0f min old, %d newly analysed events" % (age_min, newer)
+    fresh = feed_items_since(t) if CFG.get("picture_feed_trigger") and age_min >= CFG["picture_min_gap_min"] else 0
+    if CFG.get("picture_feed_trigger") and fresh >= CFG["picture_feed_trigger"]:
+        return True, "%d new Feed items" % fresh
+    return False, "last one %.0f min old, %d newly analysed events, %d new Feed items" % (age_min, newer, fresh)
+
+
+def feed_items_since(t):
+    """1.6: how many wire / Telegram items are newer than epoch second t. A feed that cannot be read counts as 0,
+    and an item stamped in the future is not counted (it would make every tick look new)."""
+    n, now_ms = 0, time.time() * 1000
+    for feed in CFG.get("picture_feed_sources") or []:
+        try:
+            items = ((api_get("feed/" + feed) or {}).get("data") or {}).get("items") or []
+        except (OSError, ValueError) as e:
+            log("picture: feed/%s unreadable (%s)" % (feed, type(e).__name__))
+            continue
+        for i in items:
+            ts = i.get("ts_ms") if isinstance(i, dict) else None
+            if isinstance(ts, (int, float)) and t * 1000 < ts <= now_ms + 300000:
+                n += 1
+    return n
 
 
 def translate_todo(limit):

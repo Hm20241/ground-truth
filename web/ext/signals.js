@@ -10,10 +10,12 @@
   const RAD = "#e879f9";
   const when = (v, rel) => GTX.when(v, rel);  // 1.3.0: the page's zone (Eastern or UTC) and the time since
   const F = () => GTX.S.feeds;
+  const link = (u) => (/^https?:\/\//i.test(u || "") ? u : null);  // 1.7.3: only http(s) addresses become links
+  const feats = (d) => { const f = ((d || {}).geojson || {}).features; return Array.isArray(f) ? f.filter((x) => x && x.properties) : []; };  // 1.7.3
 
   GTX.layer({ key: "signals", label: "Tsunami bulletins, radiation flags", feed: "tsunami", after: "quakes",
     ids: ["sg-tsu", "sg-rad"], click: ["sg-tsu", "sg-rad"], clickBefore: "th-pt",
-    count: () => ((F().tsunami || {}).geojson ? F().tsunami.geojson.features.length : 0) + ((F().radiation || {}).count || 0),
+    count: () => feats(F().tsunami).length + ((F().radiation || {}).count || 0),
     legend: Object.entries(TSU).map(([k, c]) => `<span><i class="lsw dot" style="background:${c}"></i>${k}</span>`).join("") +
       `<span><i class="lsw ring" style="border-color:${RAD}"></i>radiation above baseline</span>` });
 
@@ -43,7 +45,7 @@
     title: `${i.cancelled && !/cancel/i.test(i.label || "") ? "Cancelled: " : ""}${i.label || i.title || "Bulletin"}${i.volcano || i.region ? ": " + (i.volcano || i.region) : ""}`,
     where: i.country_name || i.sea || "", th: i.theatre || (i.source === "JMA" ? "indo-pacific" : null),
     ll: i.lon != null && i.lat != null ? [i.lon, i.lat] : null, zoom: 5, cc: i.country || i.country_name || undefined })) });
-  GTX.stream({ key: "radiation", group: "hazards", label: "BfS gamma", data: () => F().radiation, items: (d) => ((d.geojson || {}).features || []).map((f) => { const p = f.properties || {};
+  GTX.stream({ key: "radiation", group: "hazards", label: "BfS gamma", data: () => F().radiation, items: (d) => feats(d).map((f) => { const p = f.properties;
     return { id: "rad:" + p.id + p.measured, ts: isoMs(p.measured), title: `Gamma dose above baseline: ${p.name} (${p.ratio}×, ${p.value_usv} µSv/h)`,
       th: "europe-nato", ll: pt(f), zoom: 7, cc: p.country || undefined }; }) });
   GTX.stream({ key: "ntas", group: "alerts", label: "DHS NTAS", data: () => F().ntas, items: (d) => (d.items || []).map((a) => ({
@@ -57,15 +59,15 @@
     const p = f.properties;
     showPopup(lngLat, `<div class="pop"><h5>${esc(p.label || p.title || "Bulletin")}</h5>
       <div class="meta"><span style="color:${TSU[p.level] || TSU.information}">●</span> ${esc(p.source)} · ${esc(p.level)} · ${when(p.issued)}</div>
-      <div>${p.magnitude != null ? "M" + p.magnitude + " · " : ""}${esc(p.region || "")}</div>
-      ${p.url ? `<div><a href="${esc(p.url)}" target="_blank" rel="noopener">Bulletin ↗</a></div>` : ""}
+      <div>${p.magnitude != null ? "M" + esc(p.magnitude) + " · " : ""}${esc(p.region || "")}</div>
+      ${link(p.url) ? `<div><a href="${esc(link(p.url))}" target="_blank" rel="noopener">Bulletin ↗</a></div>` : ""}
       <div class="muted small">${p.source === "JMA" ? "Source: Japan Meteorological Agency website (jma.go.jp); label and level are Ground Truth's reading of the Japanese text." : "NOAA tsunami warning centres, public domain."}</div></div>`);
   });
   GTX.popup("sg-rad", (f, lngLat) => {
     const p = f.properties;
     showPopup(lngLat, `<div class="pop"><h5>Gamma dose rate above baseline: ${esc(p.name)}</h5>
       <div class="meta">BfS station ${esc(p.id)} · measured ${when(p.measured)}</div>
-      <div><b>${p.value_usv} µSv/h</b>, ${p.ratio}× the ${p.baseline_kind === "station" ? "station's own" : "network"} baseline of ${p.baseline_usv} µSv/h.</div>
+      <div><b>${esc(p.value_usv)} µSv/h</b>, ${esc(p.ratio)}× the ${p.baseline_kind === "station" ? "station's own" : "network"} baseline of ${esc(p.baseline_usv)} µSv/h.</div>
       <div class="muted small">Rain washes radon progeny down and often doubles readings for an hour or two; a real release shows at many stations at once. Data: Bundesamt für Strahlenschutz (dl-de/by-2-0).</div></div>`);
   });
 
@@ -76,18 +78,18 @@
     const sec = (title, body) => `<div class="card"><h4>${title}</h4>${body}</div>`;
     el.innerHTML =
       sec("US terrorism advisory (DHS NTAS)", !n ? `<div class="muted small">No data yet.</div>` : n.active
-        ? n.items.map((a) => `<div class="stale">${esc(a.kind || a.type || "Bulletin")} · ${esc(a.start_et || "")} to ${esc(a.end_et || "open")}</div><div class="post">${esc(a.summary || "")}</div>${a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">DHS ↗</a>` : ""}`).join("")
+        ? (n.items || []).map((a) => `<div class="stale">${esc(a.kind || a.type || "Bulletin")} · ${esc(a.start_et || "")} to ${esc(a.end_et || "open")}</div><div class="post">${esc(a.summary || "")}</div>${link(a.url) ? `<a href="${esc(link(a.url))}" target="_blank" rel="noopener">DHS ↗</a>` : ""}`).join("")
         : `<div class="muted small">No active NTAS advisory (${nf(n.in_feed || 0)} in the feed).</div>`) +
       sec("Tsunami and volcano bulletins, 72 h", !t ? `<div class="muted small">No data yet.</div>` : (t.items || []).length
-        ? `<ul class="feed">${t.items.map((i) => `<li style="--c:${TSU[i.level] || TSU.information}"><div><b>${esc(i.label || i.title || "")}</b></div><div class="muted small">${esc(i.source)} · ${esc(i.level)} · ${when(i.issued)}${i.region ? " · " + esc(i.region) : ""}${i.url ? ` · <a href="${esc(i.url)}" target="_blank" rel="noopener">bulletin ↗</a>` : ""}</div></li>`).join("")}</ul>`
+        ? `<ul class="feed">${t.items.map((i) => `<li style="--c:${TSU[i.level] || TSU.information}"><div><b>${esc(i.label || i.title || "")}</b></div><div class="muted small">${esc(i.source)} · ${esc(i.level)} · ${when(i.issued)}${i.region ? " · " + esc(i.region) : ""}${link(i.url) ? ` · <a href="${esc(link(i.url))}" target="_blank" rel="noopener">bulletin ↗</a>` : ""}</div></li>`).join("")}</ul>`
         : `<div class="muted small">No bulletins in the last 72 hours.</div>`) +
       sec("Radiation (German gamma network, BfS)", !r ? `<div class="muted small">No data yet.</div>` :
-        `<div>${nf(rs.reporting || 0)} of ${nf(rs.stations || 0)} stations reporting · network median ${rs.network_median_usv != null ? rs.network_median_usv + " µSv/h" : "–"}${rs.network_change_pct != null ? ` (${rs.network_change_pct > 0 ? "+" : ""}${rs.network_change_pct}% vs baseline)` : ""} · measured to ${when(rs.measured_until)}</div>` +
+        `<div>${nf(rs.reporting || 0)} of ${nf(rs.stations || 0)} stations reporting · network median ${rs.network_median_usv != null ? esc(rs.network_median_usv) + " µSv/h" : "–"}${rs.network_change_pct != null ? ` (${rs.network_change_pct > 0 ? "+" : ""}${esc(rs.network_change_pct)}% vs baseline)` : ""} · measured to ${when(rs.measured_until)}</div>` +
         (rs.network_flag ? `<div class="stale">The whole network is up on its baseline: check the news and the wind.</div>` : "") +
-        ((r.geojson || empty).features.length ? `<ul class="feed">${r.geojson.features.map((f) => `<li style="--c:${RAD}"><b>${esc(f.properties.name)}</b> <span class="muted small">${f.properties.value_usv} µSv/h · ${f.properties.ratio}× baseline · ${when(f.properties.measured)}</span></li>`).join("")}</ul>`
-          : `<div class="muted small">No station above ${(rs.thresholds || {}).ratio || 2}× its baseline.</div>`)) +
+        (feats(r).length ? `<ul class="feed">${feats(r).map((f) => `<li style="--c:${RAD}"><b>${esc(f.properties.name)}</b> <span class="muted small">${esc(f.properties.value_usv)} µSv/h · ${esc(f.properties.ratio)}× baseline · ${when(f.properties.measured)}</span></li>`).join("")}</ul>`
+          : `<div class="muted small">No station above ${esc((rs.thresholds || {}).ratio || 2)}× its baseline.</div>`)) +
       sec("US sanctions actions (OFAC)", !o ? `<div class="muted small">No data yet.</div>` :
-        `<ul class="feed">${(o.items || []).slice(0, 15).map((i) => `<li><div><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a></div><div class="muted small">${esc(i.date)} · ${(i.programs || []).map((p) => `<span class="badge">${esc(p)}</span>`).join(" ")}</div></li>`).join("")}</ul>`) +
+        `<ul class="feed">${(o.items || []).slice(0, 15).map((i) => `<li><div>${link(i.url) ? `<a href="${esc(link(i.url))}" target="_blank" rel="noopener">${esc(i.title)}</a>` : esc(i.title)}</div><div class="muted small">${esc(i.date)} · ${(i.programs || []).map((p) => `<span class="badge">${esc(p)}</span>`).join(" ")}</div></li>`).join("")}</ul>`) +
       `<div class="muted small">NOAA, DHS and OFAC: US government, public domain. JMA: Japan Meteorological Agency website (edited). BfS: dl-de/by-2-0.</div>`;
   }
   GTX.tab({ id: "signals", label: "Signals", before: "sources", render: renderTab });

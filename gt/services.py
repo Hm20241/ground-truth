@@ -1885,6 +1885,8 @@ def build(feed, srcs, nt, radar=None):
         out["pops"] = pops
     while out["items"] and len(json.dumps(out, separators=(",", ":"), ensure_ascii=False).encode()) > MAX_BYTES:
         keep, extra = _cap(out["items"], max(1, len(out["items"]) * 9 // 10), budget=10 ** 12)
+        if not extra:  # 1.7.3: nothing left to drop (one item): stop, this loop used to spin for good
+            break
         out.update(items=keep, count=len(keep), trimmed=out["trimmed"] + extra, geojson=geojson(keep, pls, feed))
     return out
 

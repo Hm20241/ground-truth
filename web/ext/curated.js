@@ -16,7 +16,8 @@
     GTX.eventSource(name, (data) => {
       const att = credit(data.attribution);
       ((data.geojson || {}).features || []).forEach((f) => {
-        const p = f.properties;
+        const p = f && f.properties;
+        if (!p) return;  // 1.7.3: a pin with no properties is skipped, the rest keep their credit
         p.attribution = p.attribution || att;
         p.source_note = NOTES[name];
       });
@@ -41,7 +42,7 @@
   GTX.onRender(() => {
     const n = {};
     ((GTX.S.events || {}).features || []).forEach((f) => {
-      if (f.properties.kind !== "event") return;
+      if (!f.properties || f.properties.kind !== "event") return;
       const k = f.properties.source || "map"; n[k] = (n[k] || 0) + 1;
     });
     SRC.forEach(([k]) => { const el = document.getElementById("evsrc-" + k); if (el) el.textContent = GTX.nf(n[k] || 0); });

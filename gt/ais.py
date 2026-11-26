@@ -158,8 +158,25 @@ class WS:
 
     def __init__(self, host, path, timeout=20, deflate=True):
         raw = socket.create_connection((host, 443), timeout=timeout)
-        self.s = ssl.create_default_context().wrap_socket(raw, server_hostname=host)
+        try:
+            self.s = ssl.create_default_context().wrap_socket(raw, server_hostname=host)
+        except Exception:
+            raw.close()
+            raise
         self.wire = 0  # bytes read off the socket, for the sample stats
+        try:
+            self._handshake(host, path, deflate)
+        except socket.timeout:
+            # 1.7.3: seen 2026-11-26, the server took the connection and never answered. Say so (the bare
+            # "The read operation timed out" read like a bug here) and close the socket: a half-open one may count
+            # against AISStream's one-connection limit.
+            self.s.close()
+            raise ConnectionError("AISStream did not answer the websocket handshake within %d s" % timeout) from None
+        except Exception:
+            self.s.close()
+            raise
+
+    def _handshake(self, host, path, deflate):
         key = base64.b64encode(os.urandom(16)).decode()
         ext = "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits\r\n" if deflate else ""
         self.s.sendall(("GET %s HTTP/1.1\r\nHost: %s\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
@@ -176,7 +193,6 @@ class WS:
         parts = lines[0].split()
         code = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
         if code != 101:
-            self.s.close()
             raise HandshakeError(code, lines[0][:80])
         hdrs = {}
         for ln in lines[1:]:
@@ -361,7 +377,14 @@ STATIC_KINDS = ("ShipStaticData", "StaticDataReport")
 def sample(seconds=SAMPLE_S, boxes=None, world=True):
     """Listen for `seconds`; returns ({mmsi: partial record}, stats). 1.2: the whole world unless world=False."""
     boxes = BOXES if boxes is None else boxes
-    ws = WS(HOST, PATH)
+    try:
+        ws = WS(HOST, PATH)
+    except HandshakeError:
+        raise  # a refusal (429 and the like) is never retried: the back-off handles it
+    except ConnectionError:
+        # 1.7.3: AISStream sometimes takes the connection and answers the handshake late (seen 2026-11-26: two runs
+        # in a row lost to a 20 s wait, 17 minutes without ships). One more try with a longer wait before giving up.
+        ws = WS(HOST, PATH, timeout=40)
     try:
         ws.send_text(json.dumps({"APIKey": api_key(),
                                  "BoundingBoxes": [WORLD_BOX] if world else
@@ -408,6 +431,11 @@ def sample(seconds=SAMPLE_S, boxes=None, world=True):
                         "sog": body.get("Sog"), "cog": body.get("Cog"),
                         "hdg": body.get("TrueHeading") if body.get("TrueHeading") not in (None, 511) else None,
                         "nav": body.get("NavigationalStatus"), "cls_b": kind == "StandardClassBPositionReport"})
+        if not n_msgs:
+            # 1.7.3: a world subscription hears about 90 messages a second, so silence is a fault (stream stalled,
+            # or closed right after the subscription). Returning an empty sample here reported the feed fresh while
+            # the 3-hour store emptied itself.
+            raise RuntimeError("AISStream: connected but heard no messages (stream silent or closed)")
         return seen, {"messages": n_msgs, "static_messages": n_static, "ships_heard": len(seen),
                       "compressed": ws.deflate, "wire_kb": round(ws.wire / 1024), "json_kb": round(raw_bytes / 1024)}
     finally:

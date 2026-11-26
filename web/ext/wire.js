@@ -15,6 +15,8 @@
   const ui = { mode: "wire", q: "", unplaced: false, country: null, countryName: "", top: false };
   const F = () => GTX.S.feeds;
   const when = (ms) => (ms ? `${fmtD(ms)} ${fmtT(ms)} · ${ago(ms)}` : "–");
+  const link = (u) => (/^https?:\/\//i.test(u || "") ? u : null);  // 1.7.3: only http(s) addresses become links
+  const aTag = (u, html) => (link(u) ? `<a href="${esc(link(u))}" target="_blank" rel="noopener">${html}</a>` : html);
   const thCol = (th) => (THEATRES[th] ? THEATRES[th][1] : "var(--dim)");
 
   GTX.layer({ key: "news", label: "News volume by country (wire + Telegram, 24 h)", feed: "wire", after: "outages",
@@ -33,7 +35,10 @@
       paint: { "text-color": "#e5e7eb", "text-halo-color": "#0b0e11", "text-halo-width": 1 } }, GTX.below.events);
   });
 
-  const loadGeo = () => GTX.api("news_geo").then((fc) => { const s = GTX.map.getSource("news"); if (s) s.setData(fc || empty); }).catch(() => {});
+  // 1.7.3: the wire and Telegram feeds land together, so one request serves both (it was asked for twice at every load)
+  let geoT = null;
+  const loadGeo = () => { if (geoT) return; geoT = setTimeout(() => { geoT = null;
+    GTX.api("news_geo").then((fc) => { const s = GTX.map.getSource("news"); if (s) s.setData(fc || empty); }).catch(() => {}); }, 1000); };
   const redraw = () => { if (GTX.isOpen("wire")) renderList(); };
   GTX.feed("wire", () => { loadGeo(); redraw(); });
   GTX.feed("telegram", () => { loadGeo(); redraw(); });
@@ -56,8 +61,8 @@
     const p = f.properties, list = ofCountry(p.a3);
     showPopup(lngLat, `<div class="pop"><h5>${esc(p.name)}: news, 24 h</h5>
       <div class="meta">Wire ${nf(p.wire_24h)} stories, Telegram ${nf(p.tg_24h)} posts (48 h: ${nf(p.n48)})</div>
-      ${list.map((x) => `<div class="small" style="margin-top:4px">${x.kind === "telegram" ? `<span class="badge">@${esc(x.channel)}</span> ` : ""}<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>
-        <span class="muted">${x.kind === "telegram" ? "" : esc(x.source_label || "") + " · "}${fmtT(x.ts_ms)}</span></div>`).join("")}
+      ${list.map((x) => `<div class="small" style="margin-top:4px">${x.kind === "telegram" ? `<span class="badge">@${esc(x.channel)}</span> ` : ""}${aTag(x.url, esc(x.title))}
+        <span class="muted">${x.kind === "telegram" ? "" : esc(x.source_label || "") + " · "}${x.ts_ms ? fmtT(x.ts_ms) : ""}</span></div>`).join("")}
       <div style="margin-top:6px"><button class="chip" data-wirecountry="${esc(p.a3)}" data-wirename="${esc(p.name)}">All ${esc(p.name)} stories in the Wire tab</button></div>
       <div class="muted small" style="margin-top:4px">Placed by country names in the text; a story about a country is not always from it.</div></div>`);
   });
@@ -77,7 +82,7 @@
     ? ` <span class="badge tr" title="${esc(`Machine translation from ${langName(x.translated.from)}. Original: ${x.title_orig || ""}`)}">EN · from ${esc(langName(x.translated.from))}</span>` : "");
   function wireRow(x) {
     const also = (x.also_in || []).length;
-    return `<li style="--c:${thCol(x.theatre)}"><div><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></div>
+    return `<li style="--c:${thCol(x.theatre)}"><div>${aTag(x.url, esc(x.title))}</div>
       <div class="muted small">${esc(x.source_label || x.source)}${x.via ? ` <span class="badge">via ${esc(x.via)}</span>` : ""}${also ? ` <span class="badge" title="${esc(x.also_in.join(", "))}">+${also} outlet${also > 1 ? "s" : ""}</span>` : ""}
         · ${when(x.ts_ms)}${(x.countries || []).length ? " · " + esc(x.countries.slice(0, 4).join(", ")) : ""}${x.category && x.category !== "other" ? ` · ${esc(x.category)}` : ""}${x.translated ? trBadge(x) : x.lang && x.lang !== "en" ? ` · ${esc(x.lang)}` : ""}</div></li>`;
   }
@@ -85,7 +90,7 @@
     const extra = x.summary && x.summary !== x.title ? `<div class="small" style="margin-top:2px">${esc(String(x.summary).slice(0, 280))}${String(x.summary).length > 280 ? "…" : ""}</div>` : "";
     return `<li style="--c:${thCol(x.theatre)}"><div><span class="badge">@${esc(x.channel)}</span> ${esc(x.title)}</div>${extra}
       <div class="muted small">${when(x.ts_ms)}${x.views != null ? " · " + nf(x.views) + " views" : ""}${x.has_photo ? " · photo" : ""}${x.has_video ? " · video" : ""}${x.forwarded ? ` · forwarded${x.forwarded_from ? " from " + esc(x.forwarded_from) : ""}` : ""}${x.translated ? trBadge(x) : x.lang && x.lang !== "en" ? ` · ${esc(x.lang)}` : ""}${(x.countries || []).length ? " · " + esc(x.countries.slice(0, 4).join(", ")) : ""}
-        · <a href="${esc(x.url)}" target="_blank" rel="noopener">t.me ↗</a></div></li>`;
+        ${link(x.url) ? "· " + aTag(x.url, "t.me ↗") : ""}</div></li>`;
   }
 
   function filtered() {

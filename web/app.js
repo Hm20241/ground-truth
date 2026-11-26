@@ -317,8 +317,8 @@
       if (!ph.length && reg && reg.length >= 4 && /[A-Z]/i.test(reg)) ph = await get("reg/" + encodeURIComponent(reg));
       const x = ph[0], img = x && (x.thumbnail_large || x.thumbnail);
       if (!img || !PS_IMG.test(img.src || "") || !PS_LINK.test(x.link || "")) return noPhoto();
-      return `<a href="${esc(x.link)}" target="_blank"><img src="${esc(img.src)}" alt="Photo of ${esc(reg || hex)}"></a>` +
-        `<div class="muted small">Photo: ${esc(x.photographer || "unknown")} · <a href="${esc(x.link)}" target="_blank">Planespotters.net</a></div>`;
+      return `<a href="${esc(x.link)}" target="_blank" rel="noopener"><img src="${esc(img.src)}" alt="Photo of ${esc(reg || hex)}"></a>` +
+        `<div class="muted small">Photo: ${esc(x.photographer || "unknown")} · <a href="${esc(x.link)}" target="_blank" rel="noopener">Planespotters.net</a></div>`;
     })().catch(() => { PHOTOS.delete(hex); return `<span class="muted small">Photo lookup failed (Planespotters unreachable).</span>`; }));
     return PHOTOS.get(hex);
   }
@@ -484,7 +484,7 @@
     if (id === "ar-fill") return regionPopup(p.id, lngLat);
     if (id === "em-pt") return emPopup(p.c, lngLat);
     if (id === "uk-pt") {
-      return showPopup(lngLat, `<div class="pop"><h5>UKMTO ${esc(p.type)} #${p.num}</h5><div class="meta">${esc(p.date)} · ${esc(p.where || "")} · position ${p.geo_method === "offset" ? "from stated range/bearing" : "approximate (area)"}</div>${esc(p.text)}<div><a href="${esc(p.url)}" target="_blank" rel="noopener">UKMTO notice ↗</a></div></div>`);
+      return showPopup(lngLat, `<div class="pop"><h5>UKMTO ${esc(p.type)} #${esc(p.num)}</h5><div class="meta">${esc(p.date)} · ${esc(p.where || "")} · position ${p.geo_method === "offset" ? "from stated range/bearing" : "approximate (area)"}</div>${esc(p.text)}<div><a href="${esc(p.url)}" target="_blank" rel="noopener">UKMTO notice ↗</a></div></div>`);
     }
     if (id === "mil-pt") {
       const role = AC_ROLES[p.role] ? p.role : "other", hx = String(p.hex || ""), pid = "acph-" + hx.replace(/[^0-9a-z]/gi, "");
@@ -493,7 +493,7 @@
         `<div class="actype">${acIcon(role)}<b>${esc(p.tname || p.type || "Type not broadcast")}</b></div>` +
         `<div class="meta">${esc(AC_ROLES[role])}${p.owner ? " · " + esc(p.owner) : ""}${p.icao_reg ? ` · registry type ${esc(p.icao_reg)}, transponder says ${esc(p.type || "–")}` : ""}</div>` +
         `<div class="acphoto" id="${pid}"><span class="muted small">Looking for a photo…</span></div>` +
-        `<div class="meta">Reg ${esc(p.reg || "–")} · hex ${esc(p.hex)}</div>Alt ${alt} · ${nf(p.gs)} kt · track ${Math.round(p.track)}°<br>Squawk ${esc(p.squawk || "–")}${p.emerg ? ` · <b style="color:#f05252">EMERGENCY ${esc(p.emerg)}</b>` : ""}<br><span class="muted small">NIC ${esc(p.nic ?? "–")} · NACp ${esc(p.nacp ?? "–")} (low values can indicate GNSS interference)</span><div><a href="https://globe.adsb.lol/?icao=${esc(p.hex)}" target="_blank" rel="noopener">Track on adsb.lol ↗</a></div></div>`);
+        `<div class="meta">Reg ${esc(p.reg || "–")} · hex ${esc(p.hex)}</div>Alt ${alt} · ${nf(p.gs)} kt · track ${Number.isFinite(+p.track) && p.track != null ? Math.round(p.track) + "°" : "–"}<br>Squawk ${esc(p.squawk || "–")}${p.emerg ? ` · <b style="color:#f05252">EMERGENCY ${esc(p.emerg)}</b>` : ""}<br><span class="muted small">NIC ${esc(p.nic ?? "–")} · NACp ${esc(p.nacp ?? "–")} (low values can indicate GNSS interference)</span><div><a href="https://globe.adsb.lol/?icao=${esc(p.hex)}" target="_blank" rel="noopener">Track on adsb.lol ↗</a></div></div>`);
       acPhoto(hx, p.reg).then((h) => {
         const el = document.getElementById(pid); if (!el) return;
         el.innerHTML = h; el.classList.add("done");
@@ -523,8 +523,8 @@
         <div class="muted small">GFW "AIS off" event (prototype model): a gap of 12 h or more starting at least 50 nm from shore where satellite reception is good. Data runs about 4 days behind. ${GFW_ATTR}</div></div>`);
     }
     if (id === "adv-fill") return showPopup(lngLat, `<div class="pop"><h5>${esc(p.country)}: Level ${esc(p.level)}</h5><div class="meta">US State Department travel advisory · updated ${esc(p.date)}</div>${esc(p.label)}<div><a href="${esc(p.url)}" target="_blank" rel="noopener">Advisory ↗</a></div></div>`);
-    if (id === "th-pt") return showPopup(lngLat, `<div class="pop"><h5>Thermal anomaly</h5><div class="meta">${p.sat === "N21" ? "NOAA-21" : "NOAA-20"} VIIRS · ${esc(when(p.ts))} · conf ${esc(p.conf)} · ${esc(p.dn === "N" ? "night" : "day")}</div>Fire radiative power ${p.frp} MW.<br><span class="muted small">Could be a strike fire, a gas flare or a field fire. Corroborate before trusting.</span></div>`);
-    if (id === "gd-pt") return showPopup(lngLat, `<div class="pop"><h5>${esc(p.place)}</h5><div class="meta">GDELT CAMEO ${esc(p.cameo)} · ${esc(p.actor1)} → ${esc(p.actor2)} · ${p.mentions} mentions</div><a href="${esc(p.url)}" target="_blank" rel="noopener">Source article ↗</a><br><span class="muted small">Machine-coded from news. Noisy.</span></div>`);
+    if (id === "th-pt") return showPopup(lngLat, `<div class="pop"><h5>Thermal anomaly</h5><div class="meta">${p.sat === "N21" ? "NOAA-21" : "NOAA-20"} VIIRS · ${esc(when(p.ts))} · conf ${esc(p.conf)} · ${esc(p.dn === "N" ? "night" : "day")}</div>Fire radiative power ${esc(p.frp)} MW.<br><span class="muted small">Could be a strike fire, a gas flare or a field fire. Corroborate before trusting.</span></div>`);
+    if (id === "gd-pt") return showPopup(lngLat, `<div class="pop"><h5>${esc(p.place)}</h5><div class="meta">GDELT CAMEO ${esc(p.cameo)} · ${esc(p.actor1)} → ${esc(p.actor2)} · ${esc(p.mentions)} mentions</div><a href="${esc(p.url)}" target="_blank" rel="noopener">Source article ↗</a><br><span class="muted small">Machine-coded from news. Noisy.</span></div>`);
     if (id === "cz-fill") return showPopup(lngLat, `<div class="pop"><h5>${esc(p.name)}</h5><div class="meta">EASA Conflict Zone Information Bulletin · valid until ${esc(p.valid_until)}</div></div>`);
     if (id === "front-fill") return showPopup(lngLat, `<div class="pop"><h5>${esc(p.label)}</h5><div class="meta">DeepStateMap · ${esc((S.feeds.front || {}).updated || "")}</div></div>`);
     return showPopup(lngLat, `<div class="pop"><h5>${esc(p.title)}</h5><div class="meta">Map overlay · ${esc(p.overlay_type)}</div>${p.note && p.note !== "null" ? esc(p.note) : ""}</div>`);
@@ -534,8 +534,8 @@
     const p = f.properties, cat = CATS[p.category] || CATS.other;
     const where = [p.country_name, p.sea && !["offshore", "open ocean"].includes(p.sea) ? p.sea : null].filter(Boolean).join(" · ");
     let extra = "";
-    if (p.thermal) extra += `<div class="post">🛰 <b>Satellite thermal corroboration:</b> ${p.thermal.n} VIIRS detection(s) within ${p.thermal.nearest_km} km, max FRP ${p.thermal.max_frp} MW, first ${esc(when(p.thermal.first))}.</div>`;
-    if (p.ukmto) extra += `<div class="post">⚓ <b>UKMTO incidents within 60 km:</b> ${p.ukmto.map((u) => `#${u.num} ${esc(u.type)} (${esc(u.date)})`).join(", ")}</div>`;
+    if (p.thermal) extra += `<div class="post">🛰 <b>Satellite thermal corroboration:</b> ${esc(p.thermal.n)} VIIRS detection(s) within ${esc(p.thermal.nearest_km)} km, max FRP ${esc(p.thermal.max_frp)} MW, first ${esc(when(p.thermal.first))}.</div>`;
+    if (p.ukmto) extra += `<div class="post">⚓ <b>UKMTO incidents within 60 km:</b> ${p.ukmto.map((u) => `#${esc(u.num)} ${esc(u.type)} (${esc(u.date)})`).join(", ")}</div>`;
     // 1.5.0: no "Load post text" on the public copy: GitHub Pages has no api/xpost, so the button could only fail
     const html = `<div class="pop"><h5>${esc(p.title)}</h5>
       <div class="meta">${glyphOf(p) ? `<img class="glico" src="${glyphUrl(glyphOf(p), cat[1])}" alt="">` : `<span style="color:${cat[1]}">●</span>`} ${esc(cat[0])}${!p.source && p.icon_label && p.icon_label !== "Other" ? ` · map pin: ${esc(p.icon_label)}` : ""} · ${p.ts_ms ? (p.ts_source === "date" ? fmtDay(p.ts_ms) + " (day only)" : fmtD(p.ts_ms) + " " + fmtT(p.ts_ms) + (p.ts_source === "batch-estimate" ? " (est.)" : "") + " · " + ago(p.ts_ms)) : "undated"} · ${esc(where || (THEATRES[p.theatre] || [p.theatre])[0])}</div>
@@ -564,27 +564,30 @@
       api("feed/firms"), api("feed/gdelt"), api("feed/cables"), api("analysis"), api("analysis/events"),
       api("outages_geo"), api("advisories_geo"), api("feed/outages"), api("feed/ships"), api("feed/gfw"), api("feed/portwatch"),
       api("feed/official"), api("feed/pla"), api("feed/losses"), api("feed/czib"), api("feed/advisories")]).then(([ev, sum, st, cz, fr, uk, fi, gd, cb, ao, ae, og, ag, ou, sh, gw, pw, ...more]) => {
+      // 1.7.3: each reply is applied on its own, so one malformed reply (ships with no points, a front with no
+      // shape) no longer stops the layers after it, the redraw and every extension feed for that cycle.
+      const step = (what, fn) => { try { fn(); } catch (err) { console.error("loadAll: " + what, err); } };
       if (ao.value) S.ai.ov = ao.value;
       if (ae.value) S.ai.ev = ae.value;
-      if (ev.value) S.eventsBase = ev.value;
-      mergeEvents();
+      if (ev.value && Array.isArray(ev.value.features)) S.eventsBase = ev.value;
+      step("events", mergeEvents);
       if (sum.value) S.summary = sum.value;
       if (st.value) S.status = st.value.feeds || {};
-      if (cz.value) map.getSource("czib").setData(cz.value);
-      if (fr.value && fr.value.data) { S.feeds.front = fr.value.data; map.getSource("front").setData(fr.value.data.geojson); }
-      if (uk.value && uk.value.data) { S.feeds.ukmto = uk.value.data; setUkmto(); }
-      if (fi.value && fi.value.data) setThermal(fi.value.data);
-      if (gd.value && gd.value.data) setGdelt(gd.value.data);
-      if (cb.value && cb.value.data) map.getSource("cables").setData(cb.value.data.geojson);
-      if (og.value) map.getSource("outages").setData(og.value);
-      if (ag.value) map.getSource("advisories").setData(ag.value);
+      if (cz.value) step("czib", () => map.getSource("czib").setData(cz.value));
+      if (fr.value && fr.value.data) step("front", () => { S.feeds.front = fr.value.data; map.getSource("front").setData(fr.value.data.geojson || empty); });
+      if (uk.value && uk.value.data) step("ukmto", () => { S.feeds.ukmto = uk.value.data; setUkmto(); });
+      if (fi.value && fi.value.data) step("firms", () => setThermal(fi.value.data));
+      if (gd.value && gd.value.data) step("gdelt", () => setGdelt(gd.value.data));
+      if (cb.value && cb.value.data) step("cables", () => map.getSource("cables").setData(cb.value.data.geojson || empty));
+      if (og.value) step("outages", () => map.getSource("outages").setData(og.value));
+      if (ag.value) step("advisories", () => map.getSource("advisories").setData(ag.value));
       if (ou.value && ou.value.data) S.feeds.outages = ou.value.data;
-      if (sh.value && sh.value.data) setShips(sh.value.data);
-      if (gw.value && gw.value.data) setGfw(gw.value.data);
-      if (pw.value && pw.value.data) setPw(pw.value.data);
+      if (sh.value && sh.value.data) step("ships", () => setShips(sh.value.data));
+      if (gw.value && gw.value.data) step("gfw", () => setGfw(gw.value.data));
+      if (pw.value && pw.value.data) step("portwatch", () => setPw(pw.value.data));
       // 1.2.0: read only by the Feed tab
       ["official", "pla", "losses", "czib", "advisories"].forEach((k, n) => { const r = more[n]; if (r.value && r.value.data) S.feeds[k] = r.value.data; });
-      render();
+      step("render", render);
       Object.keys(EXT.feeds).forEach((name) => loadExt(name));  // after the status reply: it says which exist
     });
     loadLive();
@@ -638,18 +641,18 @@
     }).catch(() => {});
   }
   function setUkmto() {
-    const items = (S.feeds.ukmto.items || []).filter((i) => i.coord);
+    const items = (S.feeds.ukmto.items || []).filter((i) => i && Array.isArray(i.coord));
     const newest = items.length ? Date.parse(items[0].date) : Date.now();
     map.getSource("ukmto").setData({ type: "FeatureCollection", features: items.map((i) => ({ type: "Feature", geometry: { type: "Point", coordinates: i.coord },
       properties: { ...i, col: UKMTO_COL[i.type] || "#38bdf8", op: Math.max(0.35, 1 - (newest - Date.parse(i.date)) / (45 * 86400000)) } })) });
   }
   function setThermal(d) {
     S.feeds.firms = d;
-    map.getSource("thermal").setData({ type: "FeatureCollection", features: d.points.map(([lon, lat, frp, ts, conf, dn, sat]) => ({ type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] }, properties: { frp, ts, conf, dn, sat } })) });
+    map.getSource("thermal").setData({ type: "FeatureCollection", features: (d.points || []).map(([lon, lat, frp, ts, conf, dn, sat]) => ({ type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] }, properties: { frp, ts, conf, dn, sat } })) });
   }
   function setShips(d) {
     S.feeds.ships = d;
-    map.getSource("ships").setData({ type: "FeatureCollection", features: d.points.map(([lon, lat, sog, cog, cls, name, mmsi, ts, dest, hdg, flag, marks, imo, dr, len]) => {
+    map.getSource("ships").setData({ type: "FeatureCollection", features: (d.points || []).map(([lon, lat, sog, cog, cls, name, mmsi, ts, dest, hdg, flag, marks, imo, dr, len]) => {
       const rot = hdg ?? cog, moving = (sog || 0) >= 1;
       return { type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] },
         properties: { sog, cog, hdg, cls, grp: shipGrp(cls), name, mmsi, ts, dest, flag: flag || "", marks: marks || "", imo: imo || "", dr, len,
@@ -763,7 +766,7 @@
   }
   function setGdelt(d) {
     S.feeds.gdelt = d;
-    map.getSource("gdelt").setData({ type: "FeatureCollection", features: d.points.map(([lon, lat, cameo, place, a1, a2, mentions, url]) => ({ type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] }, properties: { cameo, place, actor1: a1, actor2: a2, mentions, url } })) });
+    map.getSource("gdelt").setData({ type: "FeatureCollection", features: (d.points || []).map(([lon, lat, cameo, place, a1, a2, mentions, url]) => ({ type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] }, properties: { cameo, place, actor1: a1, actor2: a2, mentions, url } })) });
   }
 
   // ---------- 0.7.0: air-raid and missile alerts ----------
@@ -976,7 +979,7 @@
     const pl = regList().filter((r) => r.c === "PL" && r.kind === "alert");
     if (pl.length) rows.push(["warn", "pl", `<b>POLAND</b>${sep}${esc([...new Set(pl.flatMap((r) => r.types || []))].join(", ") || "air-attack threat")}${sep}${esc(pl.map((r) => r.en).join(", "))}`]);
     const emU = (emData().items || []).filter((i) => EM_URGENT.has(i.kind) && Date.now() / 1000 - i.t <= 86400);
-    if (emU.length) rows.push(["warn", "em:" + emU[0].c, `<b>US EMBASSY</b>${sep}${esc(emK(emU[0].kind))}${sep}${esc(emWhere(emU[0]))}${sep}${esc(emU[0].title.slice(0, 90))}${emU.length > 1 ? `${sep}+${emU.length - 1} more` : ""}`]);
+    if (emU.length) rows.push(["warn", "em:" + emU[0].c, `<b>US EMBASSY</b>${sep}${esc(emK(emU[0].kind))}${sep}${esc(emWhere(emU[0]))}${sep}${esc(String(emU[0].title || "").slice(0, 90))}${emU.length > 1 ? `${sep}+${emU.length - 1} more` : ""}`]);
     const h = rows.map(([c, k, t]) => `<button class="${c}" data-k="${k}"><i></i><span>${t}${PUBLIC ? `${sep}<span class="muted small">public copy, up to 10 min old</span>` : ""}</span></button>`).join("");
     if (h === bannerHtml) return;
     bannerHtml = h; el.innerHTML = h; el.classList.toggle("hidden", !rows.length);
@@ -1167,7 +1170,7 @@
   const feedOff = new Set((() => { try { return JSON.parse(localStorage.getItem("gt-feed-off") || "[]"); } catch (err) { return []; } })());
   // country -> [theatre, lon, lat, name], from tools/build_theatres.py (the server's own placement rule)
   let TH = { a3: {}, a2: {}, names: {} };
-  fetch("geo/theatres.json?v=1.7.2").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
+  fetch("geo/theatres.json?v=1.7.3").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
   function country(k) {
     if (!k) return null;
     const s = String(k).trim(), u0 = s.toUpperCase();  // ISO-3, ISO-2, or a name ("Côte d’Ivoire", "Mexico Travel Advisory")
@@ -1902,17 +1905,21 @@
   function renderBrief() {
     api("brief").then((b) => {
       const s = S.summary;
+      if (!Array.isArray(b.theatres)) b.theatres = [];
       const head = `<div class="card"><h4>Situation picture</h4><div class="row"><span>Generated <b>${esc(when(b.generated))}</b></span><span>${esc(b.method)}</span></div>
         <ul><li><b>${nf(s.events_24h)}</b> curated events in the last 24h across ${Object.keys(s.events_24h_by_theatre || {}).length} theatres; <b>${nf(s.thermal_corroborated)}</b> strike/energy reports have a NASA thermal detection nearby.</li>
-        <li>Maritime: <b>${nf(s.ukmto_incidents_7d)}</b> UKMTO incidents in 7 days${s.ukmto_latest ? `, latest #${s.ukmto_latest.num} ${esc(s.ukmto_latest.type)} on ${esc(s.ukmto_latest.date)} (${esc(s.ukmto_latest.where || "")})` : ""}.</li>
+        <li>Maritime: <b>${nf(s.ukmto_incidents_7d)}</b> UKMTO incidents in 7 days${s.ukmto_latest ? `, latest #${esc(s.ukmto_latest.num)} ${esc(s.ukmto_latest.type)} on ${esc(s.ukmto_latest.date)} (${esc(s.ukmto_latest.where || "")})` : ""}.</li>
         <li>Ukraine: Russian losses per Ukraine's General Staff +${nf(s.ru_losses_personnel_today)} personnel (day ${nf(s.ru_losses_day)}). DeepState front snapshot ${esc((S.feeds.front || {}).updated || "–")}.</li>
         <li>Taiwan: ${(s.taiwan_pla || {}).aircraft ?? "–"} PLA aircraft, ${(s.taiwan_pla || {}).plan_ships ?? "–"} PLAN ships (MND ${esc((s.taiwan_pla || {}).date || "")}).</li>
         <li>${nf(s.airspace_czib_active)} active EASA conflict-zone airspace bulletins.</li>${briefExtra(s)}</ul></div>`;
       $("tab-brief").innerHTML = head + briefCoverage(s) + b.theatres.map((t) => `<div class="card"><h4><span class="sw" style="background:${(THEATRES[t.theatre] || ["", "#888"])[1]}"></span>${esc(t.label)}</h4>
-        <div class="row"><span><b>${t.count}</b> events</span><span><b>${t.last_24h}</b> in 24h</span><span><b>${t.thermal}</b> thermal ✓</span></div>
-        <div class="row">Mostly: ${t.top_categories.map((c) => `${esc((CATS[c.category] || CATS.other)[0])} (${c.n})`).join(", ")}</div>
-        <div class="row">Hotspots: ${t.hotspots.map((h) => `${esc(h.place)} (${h.n})`).join(", ")}</div>
-        <ul>${t.headlines.map((h) => `<li><a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.title)}</a> <span class="muted small">${esc(when(h.ts))} · ${esc(h.handle || "")}</span></li>`).join("")}</ul></div>`).join("");
+        <div class="row"><span><b>${nf(t.count)}</b> events</span><span><b>${nf(t.last_24h)}</b> in 24h</span><span><b>${nf(t.thermal)}</b> thermal ✓</span></div>
+        <div class="row">Mostly: ${(t.top_categories || []).map((c) => `${esc((CATS[c.category] || CATS.other)[0])} (${nf(c.n)})`).join(", ")}</div>
+        <div class="row">Hotspots: ${(t.hotspots || []).map((h) => `${esc(h.place)} (${nf(h.n)})`).join(", ")}</div>
+        <ul>${(t.headlines || []).map((h) => { const u = linkUrl(h.url); return `<li>${u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(h.title)}</a>` : esc(h.title)} <span class="muted small">${esc(when(h.ts))} · ${esc(h.handle || "")}</span></li>`; }).join("")}</ul></div>`).join("");
+    }).catch((err) => {  // 1.7.3: a failed or malformed reply no longer leaves the tab blank; the next redraw tries again
+      if (err instanceof Error) console.error("Brief", err);
+      const el = $("tab-brief"); if (el && !el.querySelector(".card")) el.innerHTML = `<div class="card"><h4>Situation picture</h4><div class="muted">The brief did not load. It is tried again at the next refresh.</div></div>`;
     });
   }
   // 1.0.0: one row per theatre, one column per source (columns come from the page extensions, so only sources this
@@ -1959,13 +1966,28 @@
     }
     return h;
   }
+  // 1.7.3: how fresh the ship positions are, and a plain warning when the feed's last run failed or is overdue (the
+  // server keeps serving its last good ships, which the lists below would otherwise show as current).
+  let shipNewest = [null, null];  // [the feed object, its newest position time]
+  function shipFreshNote() {
+    const d = S.feeds.ships, st = (S.status || {}).ships;
+    if (!d) return "";
+    if (shipNewest[0] !== d) shipNewest = [d, (d.points || []).reduce((m, p) => { const t = isoMs(p[7]); return Number.isFinite(t) && t > m ? t : m; }, 0) || null];
+    const t = shipNewest[1], bad = st && (st.ok === false || st.stale);
+    const heard = t ? `Newest ship position heard ${esc(when(t))}.` : "";
+    return bad ? `<div class="stale">The ship feed's last refresh ${st.ok === false ? "failed" : "is overdue"}, so the map and the lists below show the ships from its last good run. ${heard}</div>`
+      : heard ? `<div class="muted small" style="margin:0 0 8px">${nf(d.count)} ships on the map. ${heard}</div>` : "";
+  }
   function renderSea() {
-    const d = S.feeds.ukmto || { items: [] }, g = S.feeds.gfw;
+    const d = S.feeds.ukmto || {}, g = S.feeds.gfw, el = $("tab-sea");
+    // 1.7.3: the tab is rebuilt at every redraw (about once a minute while live); a list the reader opened stays open
+    const open = new Set([...el.querySelectorAll("details[open] > summary")].map((x) => x.textContent.replace(/[\d,]+\s*$/, "").trim()));
     const gfwCards = g && g.areas ? `<div class="sub" style="margin:0 0 6px">Ship traffic, non-fishing ships a day (Global Fishing Watch, through ${esc(g.data_through)})</div>` +
       Object.entries(g.areas).map(([k, a]) => `<div class="card gfwcard" data-area="${esc(k)}" style="cursor:pointer">${gfwHtml(a, false)}</div>`).join("") : "";
-    $("tab-sea").innerHTML = pwTable() + militaryCard() + listedCard() + tankerCards() + gfwCards + `<div class="muted small" style="margin-bottom:8px">UKMTO notices scraped via Firecrawl (site blocks plain clients). Positions from stated range/bearing where given, else area centroid.</div>` +
-      d.items.map((i) => `<div class="card" style="cursor:${i.coord ? "pointer" : "default"}" data-c="${i.coord ? i.coord.join(",") : ""}"><h4><span class="sw" style="background:${UKMTO_COL[i.type] || "#38bdf8"}"></span>${esc(i.type)} #${i.num}<span class="muted small" style="margin-left:auto">${esc(i.date)}</span></h4><div class="small">${esc(i.text)}</div><div class="row" style="margin:6px 0 0">${esc(i.where || "unlocated")} · <a href="${esc(i.url)}" target="_blank" rel="noopener">notice ↗</a></div></div>`).join("");
-    $("tab-sea").onclick = (e) => {
+    el.innerHTML = shipFreshNote() + pwTable() + militaryCard() + listedCard() + tankerCards() + gfwCards + `<div class="muted small" style="margin-bottom:8px">UKMTO notices scraped via Firecrawl (site blocks plain clients). Positions from stated range/bearing where given, else area centroid.</div>` +
+      (d.items || []).map((i) => `<div class="card" style="cursor:${i.coord ? "pointer" : "default"}" data-c="${Array.isArray(i.coord) ? esc(i.coord.join(",")) : ""}"><h4><span class="sw" style="background:${UKMTO_COL[i.type] || "#38bdf8"}"></span>${esc(i.type)} #${esc(i.num)}<span class="muted small" style="margin-left:auto">${esc(i.date)}</span></h4><div class="small">${esc(i.text)}</div><div class="row" style="margin:6px 0 0">${esc(i.where || "unlocated")} · <a href="${esc(i.url)}" target="_blank" rel="noopener">notice ↗</a></div></div>`).join("");
+    if (open.size) el.querySelectorAll("details > summary").forEach((x) => { if (open.has(x.textContent.replace(/[\d,]+\s*$/, "").trim())) x.parentNode.open = true; });
+    el.onclick = (e) => {
       if (e.target.tagName === "A") return;
       const pr = e.target.closest("[data-pw]");
       if (pr) {
@@ -1986,7 +2008,8 @@
       const ga = e.target.closest(".gfwcard");
       if (ga && e.target.tagName !== "A") {
         // Zoom to the area and open its popup here: other layers (e.g. the Hormuz minefield zone) can cover the box on the map.
-        const a = ((S.feeds.gfw || {}).areas || {})[ga.dataset.area], r = a.ring, xs = r.map((p) => p[0]), ys = r.map((p) => p[1]);
+        const a = ((S.feeds.gfw || {}).areas || {})[ga.dataset.area]; if (!a || !a.ring) return;
+        const r = a.ring, xs = r.map((p) => p[0]), ys = r.map((p) => p[1]);
         const w = Math.min(...xs), s = Math.min(...ys), e2 = Math.max(...xs), n = Math.max(...ys);
         map.fitBounds([[w, s], [e2, n]], { padding: 60, maxZoom: 9 });
         return showPopup([(w + e2) / 2, (s + n) / 2], `<div class="pop">${gfwHtml(a, true)}</div>`);
@@ -2008,7 +2031,7 @@
   }
   function shipRow(c) {
     const was = c.dr_was && c.dr != null && Math.abs(c.dr_was[0] - c.dr) >= 0.2 ? (c.dr > c.dr_was[0] ? " ↑" : " ↓") : "";
-    return `<li data-ship="${c.mmsi}" style="cursor:pointer">${c.marks ? markBadges(c.marks) + " " : ""}<b>${esc(c.name || "unnamed")}</b>${c.flag ? ` <span class="muted">${esc(c.flag)}</span>` : ""}` +
+    return `<li data-ship="${esc(c.mmsi)}" style="cursor:pointer">${c.marks ? markBadges(c.marks) + " " : ""}<b>${esc(c.name || "unnamed")}</b>${c.flag ? ` <span class="muted">${esc(c.flag)}</span>` : ""}` +
       ` · ${c.sog != null ? nf(c.sog) + " kt" : "–"}${c.dest ? " · to " + esc(c.dest) : ""}${c.dr != null ? ` · ${nf(c.dr)} m${was}` : ""}</li>`;
   }
   function listedCard() {
@@ -2028,7 +2051,7 @@
     all.forEach((c) => (by[c.flag || "?"] = by[c.flag || "?"] || []).push(c));
     const flags = Object.keys(by).sort((a, b) => by[b].length - by[a].length || a.localeCompare(b));
     const where = (c) => [c.area ? AREA_NAME(c.area) : c.sea && !["offshore", "open ocean"].includes(c.sea) ? c.sea : "", c.near ? (c.sea ? "near " : "") + c.near : c.sea || ""].filter(Boolean).join(", ");
-    const row = (c) => `<li data-ship="${c.mmsi}" style="cursor:pointer" title="Fly the map to ${esc(c.name || "this ship")}"><b>${esc(c.name || "unnamed")}</b> · ${c.sog != null ? nf(c.sog) + " kt" : "–"}${c.dest ? " · to " + esc(c.dest) : ""}<div class="muted small">${esc(where(c) || "position known")} · heard ${esc(ago(isoMs(c.ts)))}</div></li>`;
+    const row = (c) => `<li data-ship="${esc(c.mmsi)}" style="cursor:pointer" title="Fly the map to ${esc(c.name || "this ship")}"><b>${esc(c.name || "unnamed")}</b> · ${c.sog != null ? nf(c.sog) + " kt" : "–"}${c.dest ? " · to " + esc(c.dest) : ""}<div class="muted small">${esc(where(c) || "position known")} · heard ${esc(ago(isoMs(c.ts)))}</div></li>`;
     return `<div class="card"><h4><span class="sw" style="background:${SHIP_COL.military}"></span>Military ships heard worldwide <span class="muted small" style="margin-left:auto">${nf(all.length)} · last 3 h, AIS</span></h4>` +
       (all.length ? flags.map((f) => `<details${all.length <= 30 ? " open" : ""}><summary>${f !== "?" ? flag2(f) + " " + esc(regionName(f)) : "Flag unknown"} <span class="muted">${nf(by[f].length)}</span></summary><ul class="shiplist">${by[f].map(row).join("")}</ul></details>`).join("")
         : `<div class="muted small">None heard in the last 3 hours.</div>`) +
@@ -2038,7 +2061,7 @@
     const d = S.feeds.ships;
     if (!d || !d.tankers) return "";
     const by = {};
-    d.tankers.forEach((t) => (by[t.area] = by[t.area] || []).push(t));
+    (d.tankers || []).forEach((t) => (by[t.area] = by[t.area] || []).push(t));
     const areas = Object.entries(d.areas || {});
     const head = `<div class="sub" style="margin:0 0 6px">Tankers heard in the last hour (AIS)${d.typed_pct != null ? ` · ship type known for ${nf(d.typed_pct)}%` : ""}</div>`;
     return head + areas.map(([k, a]) => {
@@ -2064,8 +2087,8 @@
         }).join("")}</table>
         <div class="card" style="margin-top:10px"><h4>Official statements</h4><ul id="offl"></ul></div>
         <div class="muted small">Ground Truth ${esc(st.version)} · personal, non-commercial use. Content belongs to its sources; links go back to originals. Ship traffic: ${GFW_ATTR} (CC BY-NC 4.0). Aircraft types from <a href="https://hexdb.io" target="_blank" rel="noopener">hexdb.io</a>; aircraft photos © their photographers via <a href="https://www.planespotters.net" target="_blank" rel="noopener">Planespotters.net</a>. Alerts: <a href="https://www.tzevaadom.co.il/en/" target="_blank" rel="noopener">Tzeva Adom</a> and <a href="https://alerts.in.ua/en" target="_blank" rel="noopener">alerts.in.ua</a>; region shapes from Natural Earth. US embassy alerts: the posts' own feeds (US government, public domain). Chokepoint transits: ${PW_ATTR}. ${OS_ATTR}. Flags from the ITU maritime identification digits.${EXT.credits.map((c) => " " + c).join("")}</div>`;
-      api("feed/official").then((o) => { $("offl").innerHTML = ((o.data || {}).items || []).slice(0, 10).map((i) => `<li><span class="badge">${esc(i.source)}</span> <a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a></li>`).join(""); });
-    });
+      api("feed/official").then((o) => { const ol = $("offl"); if (ol) ol.innerHTML = ((o.data || {}).items || []).slice(0, 10).map((i) => { const u = linkUrl(i.url); return `<li><span class="badge">${esc(i.source)}</span> ${u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(i.title)}</a>` : esc(i.title)}</li>`; }).join(""); }).catch(() => {});
+    }).catch(() => { const el = $("tab-sources"); if (el && !el.querySelector("table")) el.innerHTML = `<div class="card"><div class="muted">The source list did not load. It is tried again at the next refresh.</div></div>`; });
   }
 
   // ---------- 1.0: push ----------
@@ -2074,6 +2097,7 @@
   // stream (the static public mirror, an old server) the timers keep the page fresh as before.
   const PAGE_V = ((document.querySelector('script[src*="app.js"]') || {}).src || "").split("v=")[1] || "";
   const PUSH_SKIP = new Set(["tzeva", "tzevalive", "airalerts", "embassy"]); // the alerts timer is already faster
+  const PUSH_RETRY = 2 * 60000;  // a closed stream is opened again after this long
   function pushLoadAll() {
     if (allTimer) return;
     allTimer = setTimeout(() => { allTimer = null; loadAll(); }, Math.max(1500, 60000 - (Date.now() - lastAll)));
@@ -2103,7 +2127,9 @@
     });
     es.onerror = () => {
       S.push = false; $("utc").classList.remove("push"); zoneUi();
-      if (++fails >= 3 || es.readyState === 2) es.close();
+      // 1.7.3: the stream used to be closed for good after three errors, so a page left open through a server restart
+      // stayed on its timers and never saw the "hello" that reloads it for a new release. It is now tried again.
+      if (++fails >= 3 || es.readyState === 2) { es.close(); setTimeout(startPush, PUSH_RETRY); }
     };
   }
 

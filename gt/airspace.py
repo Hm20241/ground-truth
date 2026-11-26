@@ -297,7 +297,12 @@ def squawk(now=None, fetch=None):
     for code, (provider, d) in got.items():
         snap = d.get("now")
         snap = snap / 1000.0 if isinstance(snap, (int, float)) and abs(snap / 1000.0 - now_ts) < 3600 else now_ts
-        sightings += [_sighting(a, code, provider, snap) for a in d["ac"] if isinstance(a, dict)]
+        for a in d["ac"]:
+            if isinstance(a, dict):
+                try:
+                    sightings.append(_sighting(a, code, provider, snap))
+                except (TypeError, ValueError):  # 1.7.3: one malformed aircraft used to fail the whole 60 s feed
+                    continue
     state = _load("squawk")
     memory, current = merge_sightings(state.get("aircraft") or {}, sightings, now_ts)
     _save("squawk", {"t": int(now_ts), "aircraft": memory})
@@ -716,6 +721,10 @@ def tfr(now=None, fetch=None):
 
     try:
         lst = parse_list(json.loads(_gunzip(fetch(TFR_LIST))))
+        if not lst and (state.get("list") or {}).get("items"):
+            # 1.7.3: the FAA always has TFRs in force; an empty answer after a full one is a fault, and taking it as
+            # the list emptied the map and threw away every cached NOTAM detail
+            raise ValueError("getTfrList: empty list")
         state["list"] = {"t": int(now_ts), "items": lst}
         lsrc["ok"] = True
     except Exception as e:  # noqa: BLE001  fall back to the last good list

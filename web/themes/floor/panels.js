@@ -24,7 +24,7 @@
   const NOC = WF.NOC, gone = (f) => WF.absent(f);  // 1.7.1: a feed this copy does not carry shows one plain line, never "Loading…" or an error
   const goneRow = (name) => row({ lead: lead.mark(), name, sub: NOC, val: "" });
   const sub = (t) => `<div class="sub">${esc(t)}</div>`;
-  const fly = (ll, z, key) => `data-fly="${ll[0]},${ll[1]},${z || 5}" data-k="${esc(key)}"`;
+  const fly = (ll, z, key) => `data-fly="${+ll[0]},${+ll[1]},${+z || 5}" data-k="${esc(key)}"`;  // 1.7.3: numbers only, so feed text can never reach the attribute
   WF.ui = { row, tile, tiles, colhead, placeholder, note, sub, lead };
 
   const levelSt = (n) => (n == null ? "none" : n >= 7 ? "red" : n >= 4 ? "amber" : "green");
@@ -142,8 +142,12 @@
   function seaC() {
     const short = { hormuz: "Hormuz area", red_sea: "Red Sea", black_sea: "Black Sea", baltic: "Baltic", taiwan: "Taiwan Strait" }, all = (D.ships || {}).areas || {};
     const ar = Object.keys(short).filter((k) => all[k]).map((k) => ({ ...all[k], short: short[k] }));
+    // 1.7.3: when the status says the ship feed's last run failed or is overdue, the panel says so; before, old counts
+    // stood under "heard in the last hour" with nothing to mark them
+    const fs = ((D.status || {}).feeds || {}).ships, old = fs && (!fs.ok || fs.stale);
     return { title: "Ships heard in the last hour", right: D.ships ? `${nf((D.ships || {}).count)} on the map` : "",
-      html: WF.wait(["ships"]) || tiles(ar.map((a, i) => ({ tag: a.bbox ? "button" : "div", attrs: a.bbox ? `data-box="${a.bbox.join(",")}" data-k="sa-${i}"` : "", st: a.no_live_coverage ? "" : a.listed ? "amber" : "green", k: a.short, b: nf(a.ships_1h),
+      html: WF.wait(["ships"]) || (old ? note(`The ship feed ${fs.ok ? "is overdue" : "failed at its last run"}. These are the ships from its last good run${Number.isFinite(+fs.age_s) ? ", " + esc(WF.ago(Date.now() - fs.age_s * 1000)) : ""}.`) : "") +
+        tiles(ar.map((a, i) => ({ tag: a.bbox ? "button" : "div", attrs: a.bbox ? `data-box="${a.bbox.map(Number).join(",")}" data-k="sa-${i}"` : "", st: a.no_live_coverage ? "" : a.listed ? "amber" : "green", k: a.short, b: nf(a.ships_1h),
         s: a.no_live_coverage ? `<span title="Volunteer receivers do not reach this sea, so a low count is not an empty sea">No receivers here</span>` : `<span title="Watch lists: sanctions lists and shadow-fleet lists">${nf(a.tankers)} tankers, ${nf(a.listed)} on watch lists</span>` }))) };
   }
 

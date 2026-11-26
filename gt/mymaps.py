@@ -337,10 +337,13 @@ def run(kml_path=None):
         st["follow"] = follow
     st["fetched_at"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     os.makedirs(DATA, exist_ok=True)
-    with open(os.path.join(DATA, "latest.geojson"), "w", encoding="utf-8") as fh:
-        json.dump(fc, fh, separators=(",", ":"))
-    with open(os.path.join(DATA, "stats.json"), "w", encoding="utf-8") as fh:
-        json.dump(st, fh, indent=1)
+    # 1.7.3: written to a temp file and renamed. server.derive() reads both files from other feed threads, and a
+    # read that landed mid-write saw half a file (JSONDecodeError in that feed's thread).
+    for name, obj, kw in (("latest.geojson", fc, {"separators": (",", ":")}), ("stats.json", st, {"indent": 1})):
+        path = os.path.join(DATA, name)
+        with open(path + ".tmp", "w", encoding="utf-8") as fh:
+            json.dump(obj, fh, **kw)
+        os.replace(path + ".tmp", path)
     return fc, st
 
 

@@ -47,14 +47,19 @@
   let FRONTS = [];
   function build() {
     const feats = (S.events || {}).features || [], now = Date.now();
-    const pins = feats.filter((f) => f.properties.kind === "event" && f.geometry && f.geometry.type === "Point" && f.properties.ts_ms);
-    FRONTS = feats.filter((f) => f.properties.kind === "overlay" && f.geometry.type === "LineString").map((f) => {
+    const pins = feats.filter((f) => f.properties && f.properties.kind === "event" && f.geometry && f.geometry.type === "Point" && f.properties.ts_ms);
+    // 1.7.3: an overlay with no geometry or under two points is skipped (it used to stop every front from drawing)
+    FRONTS = feats.filter((f) => f.properties && f.properties.kind === "overlay" && f.geometry && f.geometry.type === "LineString" && Array.isArray(f.geometry.coordinates) && f.geometry.coordinates.length >= 2).map((f) => {
       const p = f.properties, cs = f.geometry.coordinates, kind = kindOf(p, cs.length);
       if (!kind || !KIND[kind]) return null;
-      const near = pins.filter((e) => lineKm(e.geometry.coordinates, cs) <= NEAR_KM).sort((a, b) => b.properties.ts_ms - a.properties.ts_ms);
       const xs = cs.map((c) => c[0]), ys = cs.map((c) => c[1]);
+      // 1.7.3: a pin outside the line's box plus NEAR_KM cannot be within NEAR_KM of it, so it skips the segment sums
+      const w = Math.min(...xs), e0 = Math.max(...xs), s = Math.min(...ys), n = Math.max(...ys);
+      const my = NEAR_KM / 110.57 + 0.01, ck = Math.cos(Math.min(89, Math.max(Math.abs(s), Math.abs(n))) * RAD), mx = NEAR_KM / (111.32 * ck) + 0.01;
+      const near = pins.filter((e) => { const c = e.geometry.coordinates;
+        return c[0] >= w - mx && c[0] <= e0 + mx && c[1] >= s - my && c[1] <= n + my && lineKm(c, cs) <= NEAR_KM; }).sort((a, b) => b.properties.ts_ms - a.properties.ts_ms);
       return { id: p.id, kind, name: p.title || KIND[kind][0], theatre: p.theatre, where: p.sea && !["offshore", "open ocean"].includes(p.sea) ? p.sea : p.country_name,
-        cs, mid: midPoint(cs), km: lenKm(cs), bbox: [[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]],
+        cs, mid: midPoint(cs), km: lenKm(cs), bbox: [[w, s], [e0, n]],
         n24: near.filter((e) => now - e.properties.ts_ms < 24 * 3600e3).length, n72: near.filter((e) => now - e.properties.ts_ms < 72 * 3600e3).length,
         last: near[0] ? near[0].properties : null };
     }).filter(Boolean).sort((a, b) => b.n72 - a.n72 || b.km - a.km);
@@ -86,10 +91,12 @@
       paint: { "text-color": "#ffd9d9", "text-halo-color": "#0d0f11", "text-halo-width": 1.6 } }, below);
   });
 
+  const ICO = {};  // 1.7.3: one badge image per kind, drawn once (it was redrawn for every row at every render)
+  const icoUrl = (kind, glyph, col) => ICO[kind] || (ICO[kind] = GTX.drawGlyph(glyph, 40, "#0d0f11", { fill: col }).toDataURL());
   const rowHtml = (f) => {
     const [label, col, glyph] = KIND[f.kind];
     return `<button type="button" class="frrow" data-fr="${esc(f.id)}" title="${esc(label)} · ${esc(f.where || "")} · ${nf(Math.round(f.km))} km long. Pins within ${NEAR_KM} km in the last 72 h. Click to go there.">
-      <img class="glico" src="${GTX.drawGlyph(glyph, 40, "#0d0f11", { fill: col }).toDataURL()}" alt=""><span class="nm">${esc(f.name)}</span><span class="ct${f.n24 ? " hot" : ""}">${nf(f.n72)}</span></button>`;
+      <img class="glico" src="${icoUrl(f.kind, glyph, col)}" alt=""><span class="nm">${esc(f.name)}</span><span class="ct${f.n24 ? " hot" : ""}">${nf(f.n72)}</span></button>`;
   };
   function popup(f, lngLat) {
     const [label, col, , what] = KIND[f.kind], l = f.last;

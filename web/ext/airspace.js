@@ -13,6 +13,7 @@
   const TFR_COL = { active: "#f05252", upcoming: "#f2b33d", unknown: "#9aa4ae", expired: "#5d656e" };
   const GJ_COL = { medium: "#f2b33d", high: "#f05252" };  // GPSJAM's own scale is yellow / red; low hexes are not sent
   const when = (v, rel) => GTX.when(v, rel);  // 1.3.0: the page's zone (Eastern or UTC) and the time since
+  const link = (u) => (/^https?:\/\//i.test(u || "") ? u : null);  // 1.7.3: only http(s) addresses become links
   const gjShare = (good, bad) => Math.max(0, (bad - 1) / (good + bad));  // GPSJAM's rule (gt/airspace.py level())
 
   GTX.layer({ key: "squawk", label: "Emergency squawks 7500 / 7600 / 7700 (live)", feed: "squawk", after: "mil",
@@ -101,7 +102,7 @@
       <div class="meta">${esc(p.flight || "no callsign")} · ${esc(p.reg || p.hex)}${p.type ? " · " + esc(p.type) : ""}${p.mil ? " · military" : ""}</div>
       <div>${alt}${p.gs != null ? " · " + Math.round(p.gs) + " kt" : ""} · ${esc(p.country_name || p.sea || "")}${p.mlat ? " · MLAT position (estimate)" : ""}</div>
       <div>${confirmed ? `Transponder emergency field: <b>${esc(p.emergency)}</b>.` : "No emergency field from the transponder: may be a mis-set code."}
-        Seen in ${p.polls} check${p.polls === 1 ? "" : "s"} since ${when(p.first_seen)}.</div>
+        Seen in ${nf(p.polls)} check${p.polls === 1 ? "" : "s"} since ${when(p.first_seen)}.</div>
       <div><a href="https://globe.adsb.lol/?icao=${encodeURIComponent(p.hex)}" target="_blank" rel="noopener">Track on adsb.lol ↗</a></div>
       <div class="muted small">${esc((GTX.S.feeds.squawk || {}).attribution || "adsb.lol (ODbL)")}</div></div>`);
   });
@@ -111,17 +112,18 @@
       <div class="meta">${esc(p.status)}${p.area ? " · " + esc(p.area) : ""} · ${esc(p.facility || "")} ${esc(p.state || "")}</div>
       <div>${esc(p.title || "")}</div>
       <div>${p.floor || p.ceiling ? `Altitudes: ${esc(p.floor || "?")} to ${esc(p.ceiling || "?")}` : "Altitudes and times: not read yet"}${p.effective ? `<br>From ${when(p.effective, false)} to ${p.expires ? when(p.expires, false) : "further notice"}` : ""}</div>
-      <div><a href="${esc(p.url)}" target="_blank" rel="noopener">FAA notice ↗</a></div>
+      ${link(p.url) ? `<div><a href="${esc(link(p.url))}" target="_blank" rel="noopener">FAA notice ↗</a></div>` : ""}
       <div class="muted small">FAA (tfr.faa.gov), US public domain. Not for navigation.</div></div>`);
   });
   GTX.popup("gj-fill", (f, lngLat) => {
     const p = f.properties, g = GTX.S.feeds.gpsjam || {}, total = p.good + p.bad;
-    const [lat, lon] = window.h3 ? window.h3.cellToLatLng(p.h3) : [lngLat.lat, lngLat.lng];
+    let lat = lngLat.lat, lon = lngLat.lng;
+    try { if (window.h3) [lat, lon] = window.h3.cellToLatLng(p.h3); } catch (err) { /* 1.7.3: a cell h3 cannot read: link to the clicked point */ }
     const link = `https://gpsjam.org/?lat=${lat.toFixed(2)}&lon=${lon.toFixed(2)}&z=6&date=${encodeURIComponent(g.date || "")}`;
     showPopup(lngLat, `<div class="pop"><h5>GPS interference: ${p.level === "high" ? "high" : "medium"}</h5>
       <div class="meta">GPSJAM · UTC day ${esc(g.date || "?")}${g.suspect ? " · GPSJAM flags this day's data as suspect" : ""}</div>
       <div><b>${nf(p.bad)}</b> of ${nf(total)} aircraft in this hexagon reported degraded GPS accuracy
-        (${Math.round(p.share * 1000) / 10} % by GPSJAM's rule).</div>
+        (${Math.round(gjShare(p.good, p.bad) * 1000) / 10} % by GPSJAM's rule).</div>
       <div class="muted small">Usually jamming or spoofing, but not always: some military aircraft block their own antennas.
         Each hexagon is about 1,770 km².</div>
       <div><a href="${link}" target="_blank" rel="noopener">Open in GPSJAM ↗</a></div>

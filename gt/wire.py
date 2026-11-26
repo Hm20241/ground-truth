@@ -86,9 +86,12 @@ SLACK = 20                 # s: a source due within this of now counts as due (t
 WINDOW = 48 * 3600         # items kept
 DEDUPE_WINDOW = 24 * 3600  # title duplicates only within this
 JACCARD = 0.8
-MAX_ITEMS = 600            # stories returned
+# 1.7.4: was 600 stories / 400 KB, which served only the newest ~10 hours (542 of ~4,900 held) although every page
+# says "last 24 hours". About 2,100 stories land in a day (about 750 bytes each), so the cap now covers a full day with
+# headroom for a busy one; the server gzips the reply (about 4x), and the oldest stories still go first if it is exceeded.
+MAX_ITEMS = 4000           # stories returned
 MAX_STORE = 6000           # items kept in the state file
-MAX_BYTES = 400000         # returned JSON
+MAX_BYTES = 2500000        # returned JSON
 MAX_BODY = 8 * 1024 * 1024
 SUMMARY_MAX = 200
 WORKERS = 6
@@ -597,6 +600,9 @@ def fit(out, max_bytes=MAX_BYTES):
         del items[-drop:]
         size = len(json.dumps(out, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
     out["count"] = len(items)
+    ts = [x.get("ts_ms") for x in items if isinstance(x, dict) and isinstance(x.get("ts_ms"), (int, float))]
+    if ts:  # 1.7.4: how far back the served list reaches, so a page can say so
+        out["span_h"] = round((time.time() * 1000 - min(ts)) / 3600000, 1)
     return out
 
 

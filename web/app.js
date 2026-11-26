@@ -1170,7 +1170,7 @@
   const feedOff = new Set((() => { try { return JSON.parse(localStorage.getItem("gt-feed-off") || "[]"); } catch (err) { return []; } })());
   // country -> [theatre, lon, lat, name], from tools/build_theatres.py (the server's own placement rule)
   let TH = { a3: {}, a2: {}, names: {} };
-  fetch("geo/theatres.json?v=1.7.3").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
+  fetch("geo/theatres.json?v=1.7.4").then((r) => r.json()).then((t) => { TH = t; STREAMS.forEach((st) => { st._d = null; }); feedSoon(); }).catch(() => {});
   function country(k) {
     if (!k) return null;
     const s = String(k).trim(), u0 = s.toUpperCase();  // ISO-3, ISO-2, or a name ("Côte d’Ivoire", "Mexico Travel Advisory")

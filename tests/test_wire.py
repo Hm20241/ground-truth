@@ -224,8 +224,16 @@ check(by_c.get("UKR") == 2 and by_th.get("ukraine-russia") == 2 and by_th.get("u
 check(by_c24 == by_c, "by_country_24h (all within 24 h here)")
 many = [dict(items[0], id="m%03d" % k, url="https://x.example/m%d" % k, ts_ms=(NOW - k * 60) * 1000,
              title="Example story alpha%03d beta%03d gamma%03d" % (k, k, k)) for k in range(700)]
-s4 = wire.build(many, NOW)
-check(len(s4[0]) == wire.MAX_ITEMS == 600 and s4[4] == 700, "newest 600 stories returned, total 700 reported")
+s4 = wire.build(many, NOW, max_items=600)
+check(len(s4[0]) == 600 and s4[4] == 700 and s4[0][0]["id"] == "m000", "max_items: newest 600 stories returned, total 700 reported")
+check(wire.MAX_ITEMS >= 3000 and wire.MAX_BYTES >= 2000000, "1.7.4: the default cap covers a full day (about 2,100 stories, 1.6 MB)")
+day = [dict(items[0], id="d%04d" % k, url="https://x.example/d%d" % k, ts_ms=(NOW - k * 34) * 1000,
+            title="Day story alpha%04d beta%04d gamma%04d delta%04d" % (k, k, k, k), summary="s" * 190) for k in range(2500)]
+s5 = wire.build(day, NOW)
+o5 = wire.fit({"items": s5[0]})
+check(len(s5[0]) == 2500 and o5["count"] == 2500 and o5["span_h"] >= 23.5,
+      "1.7.4: 2,500 stories over 24 h are all served (%d bytes), span_h %s" % (len(json.dumps(o5)), o5.get("span_h")))
+check(wire.fit({"items": []}).get("span_h") is None, "fit() on an empty list: no span_h, no crash")
 big = {"items": [dict(items[0], summary="x" * 200, id=str(k)) for k in range(400)]}
 wire.fit(big, 20000)
 check(len(json.dumps(big, ensure_ascii=False, separators=(",", ":")).encode()) < 20000 and

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.7.4 (2026-11-26): the news wire covers a full day
+- **Server:** the news wire reply used to be cut to the newest 600 stories (about the last 10 hours) although the pages say "last 24 hours". It now carries a full day and more (about 3,600 stories, 38 hours on a busy day), and says how many hours back it reaches (`span_h`). Self-hosted copies that run the wire see this; the Pages copy does not carry the wire.
+
 ## 1.7.3 (2026-11-26): ship feed fixes and a full code audit
 - **Ships (AIS):** when the provider is slow to answer, the server now tries once more with a longer wait, so a slow handshake no longer costs a whole run. A connection that hears nothing counts as a failure (it used to report "fresh" with no ships). A crash in the ship list is fixed. The pages now say when the ship feed's last refresh failed and how old the newest position is.
 - **Server:** one unexpected error can no longer stop every feed from refreshing; cache files are written safely; an empty FAA reply no longer wipes the flight-restriction map. JSON replies are gzip-compressed for clients that ask (the ship feed goes from about 400 KB to 130 KB).

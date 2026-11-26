@@ -2,7 +2,7 @@
 
 ## 1.7.2 (2026-11-25): a news ticker in every theme; EPA air monitors
 - **Ticker in Dispatch, Atlas and Watch Floor,** each in its theme's own look: a paper "Latest" strip, a glass pill over the map, an ops band under the top bar. It carries the 30 newest timed entries the copy has (on this copy: event pins), with pause, hover and keyboard hold, and no movement when the system asks for reduced motion. Classic keeps the ticker it has had since 1.5.0.
-- **New source for self-hosted copies:** EPA AirNow air-quality monitors (`gt/airnow.py`, no key needed). Classic shows monitors reading AQI 101 or more as a map layer, with an "Air" tab of counts by category. The data are preliminary and belong to the reporting agencies; read AirNow's Data Exchange Guidelines before you redistribute them. This Pages copy does not carry the feed.
+- **New source for self-hosted copies:** EPA AirNow air-quality monitors (`gt/airnow.py`, no key needed). Classic shows monitors reading AQI 101 or more as a map layer, with an "Air" tab of counts by category. The data are preliminary and belong to the reporting agencies; read AirNow's Data Exchange Guidelines before you redistribute them. This Pages copy carries it too.
 
 ## 1.7.1 (2026-11-25): themes fit the copy they run on; Eastern times read am/pm
 - **Fix for copies that carry fewer feeds (such as this GitHub Pages copy):** Dispatch, Atlas and Watch Floor now ask only for the feeds the copy's `api/status` lists. Before, they asked for all of them, the browser logged "404" errors, and Atlas said "Some sources did not answer".

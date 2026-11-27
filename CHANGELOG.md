@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.8.2 (2026-11-26): version bump
+- No change to what this copy does; the version moves with a layout fix to an optional private page on self-hosted copies.
+
 ## 1.8.1 (2026-11-26): version bump
 - No change to what this copy does; the version moves with a fix to an optional private module on self-hosted copies.
 
